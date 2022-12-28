@@ -1,7 +1,6 @@
 package com.pcariou.generator;
 
-import com.pcariou.model.Document;
-import com.pcariou.model.Pain;
+import com.pcariou.model.*;
 
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
@@ -10,16 +9,55 @@ import javax.xml.bind.Marshaller;
 import java.io.*;
 
 import com.aspose.cells.*;
-
+import java.util.*;
 
 public class Generator
 {
+    public static Document createDocument(HashMap<String, String> accountHolderInfo)
+    {
+        InitiatingParty initiatingParty = new InitiatingParty();
+
+        GroupHeader groupHeader = new GroupHeader("messageIdentification", "creationDateTime", "numberOfTransactions", initiatingParty);
+        groupHeader.setControlSum("2000");
+
+        CreditTransferTransactionInformation creditTransferTransactionInformation = new CreditTransferTransactionInformation("pmtId", "amt", "cdtrAgt", "cdtr", "cdtrAcct", "rmtInf");
+
+        ServiceLevel serviceLevel = new ServiceLevel("Cd");
+        PaymentTypeInformation paymentTypeInformation = new PaymentTypeInformation("instructionPriority", serviceLevel, "categoryPurpose");
+
+        Debtor debtor = new Debtor("name");
+
+        AccountIdentification accountIdentification = new AccountIdentification("iban");
+        DebtorAccount debtorAccount = new DebtorAccount(accountIdentification, "EUR");
+
+        FinancialInstitutionIdentification financialInstitutionIdentification = new FinancialInstitutionIdentification("bic");
+        DebtorAgent debtorAgent = new DebtorAgent(financialInstitutionIdentification);
+
+        OrganisationIdentification organisationIdentification = new OrganisationIdentification();
+
+        PartyIdentification partyIdentification = new PartyIdentification(organisationIdentification);
+
+        UltimateDebtor ultimateDebtor = new UltimateDebtor("name", partyIdentification);
+
+        ArrayList<PaymentInformation> paymentInformations = new ArrayList<>();
+        PaymentInformation paymentInformation = new PaymentInformation("paymentInformationIdentification", "paymentMethod", paymentTypeInformation, "requestedExecutionDate", debtor, debtorAccount, debtorAgent, ultimateDebtor, "chargeBearer");
+        paymentInformations.add(paymentInformation);
+        paymentInformations.add(paymentInformation);
+        Pain pain = new Pain(groupHeader, paymentInformations);
+        Document document = new Document(pain);
+        return document;
+    }
+
     public static void convertJavaToXml(Object object, String filename) throws JAXBException
     {
-        JAXBContext jc = JAXBContext.newInstance(object.getClass());
-        Marshaller marshaller = jc.createMarshaller();
+        JAXBContext context = JAXBContext.newInstance(object.getClass());
+        Marshaller marshaller = context.createMarshaller();
 
+        //marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
+        //modify the standalone attribute to false
+        marshaller.setProperty(Marshaller.JAXB_FRAGMENT, true);
         marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
+        marshaller.setProperty("com.sun.xml.bind.xmlHeaders", "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\" ?>");
         marshaller.marshal(object, new File(filename));
     }
 
@@ -53,8 +91,16 @@ public class Generator
             System.out.println("Input file must be a CSV or XLS file");
             System.exit(1);
         }
+
+        HashMap<String, String> accountHolderInfo = new HashMap<String, String>();
+        accountHolderInfo.put("name", "John Doe");
+        accountHolderInfo.put("IBAN", "DE89370400440532013000");
+        accountHolderInfo.put("BIC", "COBADEFFXXX");
+        accountHolderInfo.put("id", "DE98ZZZ09999999999");
+        accountHolderInfo.put("currency", "EUR");
         
-        Document document = new Document(new Pain());
+        Document document = createDocument(accountHolderInfo);
+       // Document document = new Document(new Pain());
         try {
             convertJavaToXml(document, outputFile);
         } catch (JAXBException e) {
