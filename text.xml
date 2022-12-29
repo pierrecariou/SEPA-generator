@@ -10,68 +10,43 @@
             <InitgPty/>
         </GrpHdr>
         <PmtInf>
-            <PmtInfId>paymentInformationIdentification</PmtInfId>
-            <PmtMtd>paymentMethod</PmtMtd>
-            <PmtTpInf>
-                <InstrPrty>instructionPriority</InstrPrty>
-                <SvcLvl>
-                    <Cd>Cd</Cd>
-                </SvcLvl>
-            </PmtTpInf>
+            <PmtMtd>TRF</PmtMtd>
             <ReqdExctnDt>requestedExecutionDate</ReqdExctnDt>
-            <Dbtr>
-                <Nm>name</Nm>
-            </Dbtr>
+            <Dbtr/>
             <DbtrAcct>
                 <Id>
                     <IBAN>iban</IBAN>
                 </Id>
-                <Ccy>EUR</Ccy>
             </DbtrAcct>
             <DbtrAgt>
                 <FinInstnId>
                     <BIC>bic</BIC>
                 </FinInstnId>
             </DbtrAgt>
-            <UlmtDbtr>
-                <Nm>name</Nm>
-                <Id>
-                    <OrgId/>
-                </Id>
-            </UlmtDbtr>
-            <ChrgBr>chargeBearer</ChrgBr>
-        </PmtInf>
-        <PmtInf>
-            <PmtInfId>paymentInformationIdentification</PmtInfId>
-            <PmtMtd>paymentMethod</PmtMtd>
-            <PmtTpInf>
-                <InstrPrty>instructionPriority</InstrPrty>
-                <SvcLvl>
-                    <Cd>Cd</Cd>
-                </SvcLvl>
-            </PmtTpInf>
-            <ReqdExctnDt>requestedExecutionDate</ReqdExctnDt>
-            <Dbtr>
-                <Nm>name</Nm>
-            </Dbtr>
-            <DbtrAcct>
-                <Id>
-                    <IBAN>iban</IBAN>
-                </Id>
-                <Ccy>EUR</Ccy>
-            </DbtrAcct>
-            <DbtrAgt>
-                <FinInstnId>
-                    <BIC>bic</BIC>
-                </FinInstnId>
-            </DbtrAgt>
-            <UlmtDbtr>
-                <Nm>name</Nm>
-                <Id>
-                    <OrgId/>
-                </Id>
-            </UlmtDbtr>
-            <ChrgBr>chargeBearer</ChrgBr>
+            <CdtTrfTxInf>
+                <PmtId>
+                    <EndToEndId>endToEndIdentification</EndToEndId>
+                </PmtId>
+                <Amt>
+                    <InstdAmt>instructedAmount</InstdAmt>
+                </Amt>
+            </CdtTrfTxInf>
+            <CdtTrfTxInf>
+                <PmtId>
+                    <EndToEndId>endToEndIdentification</EndToEndId>
+                </PmtId>
+                <Amt>
+                    <InstdAmt>instructedAmount</InstdAmt>
+                </Amt>
+            </CdtTrfTxInf>
+            <CdtTrfTxInf>
+                <PmtId>
+                    <EndToEndId>endToEndIdentification</EndToEndId>
+                </PmtId>
+                <Amt>
+                    <InstdAmt>instructedAmount</InstdAmt>
+                </Amt>
+            </CdtTrfTxInf>
         </PmtInf>
     </pain.001.001.02>
 </Document>

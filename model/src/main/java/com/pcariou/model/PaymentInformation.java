@@ -45,13 +45,13 @@ public class PaymentInformation
 
 	@XmlElement(name = "CdtTrfTxInf")
 	@NotNull(message = "CreditTransferTransactionInformation for PaymentInformation is mandatory")
-	private ArrayList<CreditTransferTransactionInformation> creditTransferTransactionInformation;
+	private List<CreditTransferTransactionInformation> creditTransferTransactionInformation;
 
 	public PaymentInformation()
 	{
 	}
 
-	public PaymentInformation(String requestedExecutionDate, Debtor debtor, DebtorAccount debtorAccount, DebtorAgent debtorAgent, ArrayList<CreditTransferTransactionInformation> creditTransferTransactionInformation)
+	public PaymentInformation(String requestedExecutionDate, Debtor debtor, DebtorAccount debtorAccount, DebtorAgent debtorAgent, List<CreditTransferTransactionInformation> creditTransferTransactionInformation)
 	{
 		this.requestedExecutionDate = requestedExecutionDate;
 		this.debtor = debtor;

@@ -3,6 +3,8 @@ package com.pcariou.model;
 import javax.xml.bind.annotation.*;
 import javax.validation.constraints.*;
 
+import com.opencsv.bean.*;
+
 /**
  * ISO 20022 pain.001.001.02 - SEPA Credit Transfer
  *
@@ -12,10 +14,12 @@ public class CreditTransferTransactionInformation
 {
 	@XmlElement(name = "PmtId")
 	@NotNull(message = "PaymentIdentification for CreditTransferTransactionInformation is mandatory")
+	@CsvRecurse()
 	private PaymentIdentification paymentIdentification;
 
 	@XmlElement(name = "Amt")
 	@NotNull(message = "Amount for CreditTransferTransactionInformation is mandatory")
+	@CsvRecurse()
 	private Amount amount;
 
 	@XmlElement(name = "UltmtDbtr")
@@ -31,7 +35,7 @@ public class CreditTransferTransactionInformation
 	private AccountIdentification creditorAccount;
 
 	@XmlElement(name = "UltmtCdtr")
-	private UltimateCreditor ultimateCreditor;
+	private PartyIdentification ultimateCreditor;
 
 	@XmlElement(name = "Purp")
 	private Purpose purpose;
@@ -57,16 +61,6 @@ public class CreditTransferTransactionInformation
 	public void setPaymentIdentification(PaymentIdentification paymentIdentification)
 	{
 		this.paymentIdentification = paymentIdentification;
-	}
-
-	public PaymentTypeInformation getPaymentTypeInformation()
-	{
-		return paymentTypeInformation;
-	}
-
-	public void setPaymentTypeInformation(PaymentTypeInformation paymentTypeInformation)
-	{
-		this.paymentTypeInformation = paymentTypeInformation;
 	}
 
 	public Amount getAmount()
@@ -129,16 +123,6 @@ public class CreditTransferTransactionInformation
 		this.ultimateDebtor = ultimateDebtor;
 	}
 
-	public UltimateCreditor getUltimateCreditor()
-	{
-		return ultimateCreditor;
-	}
-
-	public void setUltimateCreditor(UltimateCreditor ultimateCreditor)
-	{
-		this.ultimateCreditor = ultimateCreditor;
-	}
-
 	public Purpose getPurpose()
 	{
 		return purpose;
@@ -147,5 +131,15 @@ public class CreditTransferTransactionInformation
 	public void setPurpose(Purpose purpose)
 	{
 		this.purpose = purpose;
+	}
+
+	public PartyIdentification getUltimateCreditor()
+	{
+		return ultimateCreditor;
+	}
+
+	public void setUltimateCreditor(PartyIdentification ultimateCreditor)
+	{
+		this.ultimateCreditor = ultimateCreditor;
 	}
 }
