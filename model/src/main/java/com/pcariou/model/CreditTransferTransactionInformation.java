@@ -1,6 +1,7 @@
 package com.pcariou.model;
 
 import javax.xml.bind.annotation.*;
+import javax.validation.Valid;
 import javax.validation.constraints.*;
 
 import com.opencsv.bean.*;
@@ -19,6 +20,7 @@ public class CreditTransferTransactionInformation
 
 	@XmlElement(name = "Amt")
 	@NotNull(message = "Amount for CreditTransferTransactionInformation is mandatory")
+	@Valid
 	@CsvRecurse()
 	private Amount amount;
 
@@ -26,13 +28,19 @@ public class CreditTransferTransactionInformation
 	private UltimateDebtor ultimateDebtor;
 
 	@XmlElement(name = "CdtrAgt")
-	private FinancialInstitutionIdentification creditorAgent;
+	@NotNull(message = "CreditorAgent for CreditTransferTransactionInformation is mandatory")
+	@CsvRecurse()
+	private CreditorAgent creditorAgent;
 
 	@XmlElement(name = "Cdtr")
-	private PartyIdentification creditor;
+	@NotNull(message = "Creditor for CreditTransferTransactionInformation is mandatory")
+	@CsvRecurse()
+	private Creditor creditor;
 
 	@XmlElement(name = "CdtrAcct")
-	private AccountIdentification creditorAccount;
+	@NotNull(message = "CreditorAccount for CreditTransferTransactionInformation is mandatory")
+	@CsvRecurse()
+	private CreditorAccount creditorAccount;
 
 	@XmlElement(name = "UltmtCdtr")
 	private PartyIdentification ultimateCreditor;
@@ -41,6 +49,7 @@ public class CreditTransferTransactionInformation
 	private Purpose purpose;
 
 	@XmlElement(name = "RmtInf")
+	@CsvRecurse()
 	private RemittanceInformation remittanceInformation;
 
 	public CreditTransferTransactionInformation()
@@ -73,46 +82,6 @@ public class CreditTransferTransactionInformation
 		this.amount = amount;
 	}
 
-	public FinancialInstitutionIdentification getCreditorAgent()
-	{
-		return creditorAgent;
-	}
-
-	public void setCreditorAgent(FinancialInstitutionIdentification creditorAgent)
-	{
-		this.creditorAgent = creditorAgent;
-	}
-
-	public PartyIdentification getCreditor()
-	{
-		return creditor;
-	}
-
-	public void setCreditor(PartyIdentification creditor)
-	{
-		this.creditor = creditor;
-	}
-
-	public AccountIdentification getCreditorAccount()
-	{
-		return creditorAccount;
-	}
-
-	public void setCreditorAccount(AccountIdentification creditorAccount)
-	{
-		this.creditorAccount = creditorAccount;
-	}
-
-	public RemittanceInformation getRemittanceInformation()
-	{
-		return remittanceInformation;
-	}
-
-	public void setRemittanceInformation(RemittanceInformation remittanceInformation)
-	{
-		this.remittanceInformation = remittanceInformation;
-	}
-
 	public UltimateDebtor getUltimateDebtor()
 	{
 		return ultimateDebtor;
@@ -121,6 +90,46 @@ public class CreditTransferTransactionInformation
 	public void setUltimateDebtor(UltimateDebtor ultimateDebtor)
 	{
 		this.ultimateDebtor = ultimateDebtor;
+	}
+
+	public CreditorAgent getCreditorAgent()
+	{
+		return creditorAgent;
+	}
+
+	public void setCreditorAgent(CreditorAgent creditorAgent)
+	{
+		this.creditorAgent = creditorAgent;
+	}
+
+	public Creditor getCreditor()
+	{
+		return creditor;
+	}
+
+	public void setCreditor(Creditor creditor)
+	{
+		this.creditor = creditor;
+	}
+
+	public CreditorAccount getCreditorAccount()
+	{
+		return creditorAccount;
+	}
+
+	public void setCreditorAccount(CreditorAccount creditorAccount)
+	{
+		this.creditorAccount = creditorAccount;
+	}
+
+	public PartyIdentification getUltimateCreditor()
+	{
+		return ultimateCreditor;
+	}
+
+	public void setUltimateCreditor(PartyIdentification ultimateCreditor)
+	{
+		this.ultimateCreditor = ultimateCreditor;
 	}
 
 	public Purpose getPurpose()
@@ -133,13 +142,13 @@ public class CreditTransferTransactionInformation
 		this.purpose = purpose;
 	}
 
-	public PartyIdentification getUltimateCreditor()
+	public RemittanceInformation getRemittanceInformation()
 	{
-		return ultimateCreditor;
+		return remittanceInformation;
 	}
 
-	public void setUltimateCreditor(PartyIdentification ultimateCreditor)
+	public void setRemittanceInformation(RemittanceInformation remittanceInformation)
 	{
-		this.ultimateCreditor = ultimateCreditor;
+		this.remittanceInformation = remittanceInformation;
 	}
 }

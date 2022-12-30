@@ -1,6 +1,9 @@
 package com.pcariou.model;
 
 import javax.xml.bind.annotation.*;
+
+import com.opencsv.bean.CsvBindByName;
+
 import javax.validation.constraints.*;
 
 /**
@@ -12,6 +15,7 @@ public class FinancialInstitutionIdentification
 {
 	@XmlElement(name = "BIC")
 	@NotBlank(message = "BIC for FinancialInstitutionIdentification is mandatory")
+	@CsvBindByName(column = "BIC")
 	private String bic;
 
 	public FinancialInstitutionIdentification()

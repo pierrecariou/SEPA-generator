@@ -3,49 +3,138 @@
     <pain.001.001.02>
         <GrpHdr>
             <MsgId>messageIdentification</MsgId>
-            <CreDtTm>creationDateTime</CreDtTm>
-            <NbOfTxs>numberOfTransactions</NbOfTxs>
-            <CtrlSum>2000</CtrlSum>
+            <CreDtTm>2022-12-30T17:34:41</CreDtTm>
+            <NbOfTxs>4</NbOfTxs>
+            <CtrlSum>12181.2</CtrlSum>
             <Grpg>MIXD</Grpg>
-            <InitgPty/>
+            <InitgPty>
+                <Nm>name</Nm>
+                <Id>
+                    <OrgId>
+                        <PrtryId>
+                            <Id>SIRET</Id>
+                        </PrtryId>
+                    </OrgId>
+                </Id>
+            </InitgPty>
         </GrpHdr>
         <PmtInf>
+            <PmtInfId>ID</PmtInfId>
             <PmtMtd>TRF</PmtMtd>
-            <ReqdExctnDt>requestedExecutionDate</ReqdExctnDt>
-            <Dbtr/>
+            <PmtTpInf>
+                <SvcLvl>
+                    <Cd>SEPA</Cd>
+                </SvcLvl>
+            </PmtTpInf>
+            <ReqdExctnDt>someDate</ReqdExctnDt>
+            <Dbtr>
+                <Nm>John Doe</Nm>
+            </Dbtr>
             <DbtrAcct>
                 <Id>
-                    <IBAN>iban</IBAN>
+                    <IBAN>FR7612345678901234567890123</IBAN>
                 </Id>
             </DbtrAcct>
             <DbtrAgt>
                 <FinInstnId>
-                    <BIC>bic</BIC>
+                    <BIC>BNPAFRPP</BIC>
                 </FinInstnId>
             </DbtrAgt>
             <CdtTrfTxInf>
                 <PmtId>
-                    <EndToEndId>endToEndIdentification</EndToEndId>
+                    <EndToEndId>127A</EndToEndId>
                 </PmtId>
                 <Amt>
-                    <InstdAmt>instructedAmount</InstdAmt>
+                    <InstdAmt Ccy="EUR">3000</InstdAmt>
                 </Amt>
+                <CdtrAgt>
+                    <FinInstnId>
+                        <BIC>BANKNL2A</BIC>
+                    </FinInstnId>
+                </CdtrAgt>
+                <Cdtr>
+                    <Nm>Karlson GmbH</Nm>
+                </Cdtr>
+                <CdtrAcct>
+                    <Id>
+                        <IBAN>DE60123456781234567891</IBAN>
+                    </Id>
+                </CdtrAcct>
+                <RmtInf>
+                    <Ustrd>fournitures</Ustrd>
+                </RmtInf>
             </CdtTrfTxInf>
             <CdtTrfTxInf>
                 <PmtId>
-                    <EndToEndId>endToEndIdentification</EndToEndId>
+                    <EndToEndId>128A</EndToEndId>
                 </PmtId>
                 <Amt>
-                    <InstdAmt>instructedAmount</InstdAmt>
+                    <InstdAmt Ccy="EUR">1276</InstdAmt>
                 </Amt>
+                <CdtrAgt>
+                    <FinInstnId>
+                        <BIC>BANKNL2B</BIC>
+                    </FinInstnId>
+                </CdtrAgt>
+                <Cdtr>
+                    <Nm>Juan Pablo</Nm>
+                </Cdtr>
+                <CdtrAcct>
+                    <Id>
+                        <IBAN>DE21414254636646543654</IBAN>
+                    </Id>
+                </CdtrAcct>
+                <RmtInf>
+                    <Ustrd>salary1</Ustrd>
+                </RmtInf>
             </CdtTrfTxInf>
             <CdtTrfTxInf>
                 <PmtId>
-                    <EndToEndId>endToEndIdentification</EndToEndId>
+                    <EndToEndId>129A</EndToEndId>
                 </PmtId>
                 <Amt>
-                    <InstdAmt>instructedAmount</InstdAmt>
+                    <InstdAmt Ccy="EUR">4678</InstdAmt>
                 </Amt>
+                <CdtrAgt>
+                    <FinInstnId>
+                        <BIC>BANKNL2C</BIC>
+                    </FinInstnId>
+                </CdtrAgt>
+                <Cdtr>
+                    <Nm>Mickael Mickael</Nm>
+                </Cdtr>
+                <CdtrAcct>
+                    <Id>
+                        <IBAN>DE25125364577587567876</IBAN>
+                    </Id>
+                </CdtrAcct>
+                <RmtInf>
+                    <Ustrd>salary2</Ustrd>
+                </RmtInf>
+            </CdtTrfTxInf>
+            <CdtTrfTxInf>
+                <PmtId>
+                    <EndToEndId>130A</EndToEndId>
+                </PmtId>
+                <Amt>
+                    <InstdAmt Ccy="EUR">3227.2</InstdAmt>
+                </Amt>
+                <CdtrAgt>
+                    <FinInstnId>
+                        <BIC>BANKNL2D</BIC>
+                    </FinInstnId>
+                </CdtrAgt>
+                <Cdtr>
+                    <Nm>Peter Mc. Nugget</Nm>
+                </Cdtr>
+                <CdtrAcct>
+                    <Id>
+                        <IBAN>DE38768654343657687666</IBAN>
+                    </Id>
+                </CdtrAcct>
+                <RmtInf>
+                    <Ustrd>salary3</Ustrd>
+                </RmtInf>
             </CdtTrfTxInf>
         </PmtInf>
     </pain.001.001.02>

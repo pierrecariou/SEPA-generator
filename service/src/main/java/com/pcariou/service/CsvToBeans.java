@@ -10,6 +10,9 @@ import java.util.*;
 
 import javax.validation.*;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+
 /**
  * CSV Reader Service
  *
@@ -35,6 +38,7 @@ public class CsvToBeans
 			List<CreditTransferTransactionInformation> creditTransferTransactionInformations = CsvToBeanBuilder.build().parse();
 			for (CreditTransferTransactionInformation creditTransferTransactionInformation : creditTransferTransactionInformations) {
 				if (!validate(creditTransferTransactionInformation)) {
+					System.out.println("Validation failed");
 					return null;
 				}
 			}
@@ -46,13 +50,37 @@ public class CsvToBeans
 	}
 
 	private Document createDocument(List<CreditTransferTransactionInformation> creditTransferTransactionInformations) {
-		GroupHeader groupHeader = new GroupHeader();
+		DebtorInformations debtorInformations = new DebtorInformations();
 
-		Debtor debtor = new Debtor();
-		DebtorAccount debtorAccount = new DebtorAccount();
-		DebtorAgent debtorAgent = new DebtorAgent();
-		PaymentInformation paymentInformation = new PaymentInformation("2023-01-12", debtor, debtorAccount, debtorAgent, creditTransferTransactionInformations);
+		// Group Header
+		LocalDateTime now = LocalDateTime.now();
+		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
+		String creationDateTime = now.format(formatter);
 
+		String numberOfTransactions = Integer.toString(creditTransferTransactionInformations.size());
+
+		double totalAmount = 0;
+		for (CreditTransferTransactionInformation creditTransferTransactionInformation : creditTransferTransactionInformations) {
+			totalAmount += Double.valueOf(creditTransferTransactionInformation.getAmount().getInstructedAmount().getInstructedAmount());
+		}
+		String controlSum = Double.toString(totalAmount);
+		
+		ProprietaryIdentification proprietaryIdentification = new ProprietaryIdentification("SIRET");
+		OrganisationIdentification organisationIdentification = new OrganisationIdentification(proprietaryIdentification);
+		PartyIdentification partyIdentification = new PartyIdentification(organisationIdentification);
+		InitiatingParty initiatingParty = new InitiatingParty("name", partyIdentification);
+
+
+		GroupHeader groupHeader = new GroupHeader("messageIdentification", creationDateTime, numberOfTransactions, controlSum, initiatingParty);
+
+		// Payment Information
+		PaymentTypeInformation paymentTypeInformation = new PaymentTypeInformation(new ServiceLevel());
+		Debtor debtor = new Debtor(debtorInformations.name);
+		DebtorAccount debtorAccount = new DebtorAccount( new AccountIdentification(debtorInformations.iban));
+		DebtorAgent debtorAgent = new DebtorAgent(new FinancialInstitutionIdentification(debtorInformations.bic));
+		PaymentInformation paymentInformation = new PaymentInformation("ID", paymentTypeInformation, "someDate", debtor, debtorAccount, debtorAgent, creditTransferTransactionInformations);
+
+		// Document
 		ArrayList<PaymentInformation> paymentInformations = new ArrayList<>();
 		paymentInformations.add(paymentInformation);
 		Pain pain = new Pain(groupHeader, paymentInformations);

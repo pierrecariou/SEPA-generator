@@ -26,6 +26,7 @@ public class GroupHeader
 	private String numberOfTransactions;
 
 	@XmlElement(name = "CtrlSum")
+	@NotBlank(message = "Control sum is mandatory")
 	private String controlSum;
 
 	@XmlElement(name = "Grpg")
@@ -39,10 +40,11 @@ public class GroupHeader
 	public GroupHeader() {
 	}
 
-	public GroupHeader(String messageIdentification, String creationDateTime, String numberOfTransactions, InitiatingParty initiatingParty) {
+	public GroupHeader(String messageIdentification, String creationDateTime, String numberOfTransactions, String controlSum, InitiatingParty initiatingParty) {
 		this.messageIdentification = messageIdentification;
 		this.creationDateTime = creationDateTime;
 		this.numberOfTransactions = numberOfTransactions;
+		this.controlSum = controlSum;
 		this.initiatingParty = initiatingParty;
 	}
 

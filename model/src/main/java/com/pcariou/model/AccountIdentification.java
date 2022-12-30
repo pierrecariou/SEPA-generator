@@ -3,6 +3,8 @@ package com.pcariou.model;
 import javax.xml.bind.annotation.*;
 import javax.validation.constraints.*;
 
+import com.opencsv.bean.*;
+
 /**
  * ISO 20022 pain.001.001.02 - SEPA Credit Transfer
  * 
@@ -12,6 +14,7 @@ public class AccountIdentification
 {
 	@XmlElement(name = "IBAN")
 	@NotBlank(message = "IBAN for AccountIdentification is mandatory")
+	@CsvBindByName(column = "IBAN")
 	private String iban;
 
 	public AccountIdentification()

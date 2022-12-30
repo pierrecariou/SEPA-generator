@@ -3,11 +3,32 @@ package com.pcariou.generator;
 import com.pcariou.model.*;
 import com.pcariou.service.*;
 
+import java.io.RandomAccessFile;
+
 import com.aspose.cells.*;
 
 
 public class Generator
 {
+    private static void eraseNoLicenseMessage(String inputFile) 
+    {
+        Byte b;
+
+        try {
+            RandomAccessFile f = new RandomAccessFile(inputFile, "rw");
+            long length = f.length() - 1;
+            do {                     
+                length -= 1;
+                f.seek(length);
+                b = f.readByte();
+            } while(b != 10);
+            f.setLength(length+1);
+            f.close();
+        } catch (Exception e) {
+            System.out.println("Error: " + e.getMessage());
+        }
+    }
+
     public static void main( String[] args )
     {
         if (args.length != 2) {
@@ -31,6 +52,7 @@ public class Generator
                 Workbook workbook = new Workbook(args[0]);
                 workbook.save("input_file.csv");
                 inputFile = "input_file.csv";
+                eraseNoLicenseMessage(inputFile);
             } catch (Exception e) {
                 e.printStackTrace();
             }

@@ -1,6 +1,7 @@
 package com.pcariou.model;
 
 import javax.xml.bind.annotation.*;
+import javax.validation.Valid;
 import javax.validation.constraints.*;
 
 import com.opencsv.bean.*;
@@ -13,29 +14,24 @@ import com.opencsv.bean.*;
 @XmlAccessorType(XmlAccessType.FIELD)
 public class Amount
 {
-	//declare xml element InstdAmt with Ccy="EUR" inside
 	@XmlElement(name = "InstdAmt", required = true)
-	//@XmlAttribute(name = "Ccy", required = true)
-	@NotBlank(message = "InstructedAmount from Amount is mandatory")
-	@CsvBindByName(column = "amount")
-	private String instructedAmount;
+	@NotNull(message = "InstructedAmount from Amount is mandatory")
+	@Valid
+	@CsvRecurse()
+	private InstructedAmount instructedAmount;
 
-	public Amount()
-	{
+	public Amount() {
 	}
 
-	public Amount(String instructedAmount)
-	{
+	public Amount(InstructedAmount instructedAmount) {
 		this.instructedAmount = instructedAmount;
 	}
 
-	public String getInstructedAmount()
-	{
+	public InstructedAmount getInstructedAmount() {
 		return instructedAmount;
 	}
 
-	public void setInstructedAmount(String instructedAmount)
-	{
+	public void setInstructedAmount(InstructedAmount instructedAmount) {
 		this.instructedAmount = instructedAmount;
 	}
 }

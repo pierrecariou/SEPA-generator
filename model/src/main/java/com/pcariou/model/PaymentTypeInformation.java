@@ -1,6 +1,7 @@
 package com.pcariou.model;
 
 import javax.xml.bind.annotation.*;
+import javax.validation.constraints.*;
 
 /**
  * ISO 20022 pain.001.001.02 - SEPA Credit Transfer
@@ -13,6 +14,7 @@ public class PaymentTypeInformation
 	private String instructionPriority;
 
 	@XmlElement(name = "SvcLvl")
+	@NotNull(message = "ServiceLevel for PaymentTypeInformation is mandatory")
 	private ServiceLevel serviceLevel;
 
 	@XmlElement(name = "CtgyPurp")
@@ -22,14 +24,20 @@ public class PaymentTypeInformation
 	{
 	}
 
+	public PaymentTypeInformation(ServiceLevel serviceLevel)
+	{
+		this.serviceLevel = serviceLevel;
+	}
+
 	public String getInstructionPriority()
 	{
 		return instructionPriority;
 	}
 
-	public void setInstructionPriority(String instructionPriority)
+	public void setInstructionPriority(String instructionPriority, ServiceLevel serviceLevel)
 	{
 		this.instructionPriority = instructionPriority;
+		this.serviceLevel = serviceLevel;
 	}
 
 	public ServiceLevel getServiceLevel()

@@ -1,6 +1,5 @@
-debtor_name,debtor_IBAN,debtor_BIC,execution_date,amount,end_to_end_id,creditor_name,creditor_IBAN,creditor_BIC
-Karlson GmbH,DE60123456781234567891,BANKNL2A,2023-01-28,3000,127A,Digistrat1,FR6786786762309,Bank2rf
-Karlson GmbH,DE60123456781234567891,BANKNL2A,2023-01-29,1276,127B,Digistrat2,FR4802384930820,Bank2rf
-Karlson GmbH,DE60123456781234567891,BANKNL2A,2023-01-30,248.2,127C,Digistrat3,FR2372819614001,Bank2rf
-
-Evaluation Only. Created with Aspose.Cells for Java.Copyright 2003 - 2022 Aspose Pty Ltd.
+name,IBAN,BIC,amount,end_to_end_id,information
+Karlson GmbH,DE60123456781234567891,BANKNL2A,3000,127A,fournitures
+Juan Pablo,DE21414254636646543654,BANKNL2B,1276,128A,salary1
+Mickael Mickael,DE25125364577587567876,BANKNL2C,4678,129A,salary2
+Peter Mc. Nugget,DE38768654343657687666,BANKNL2D,3227.2,130A,salary3

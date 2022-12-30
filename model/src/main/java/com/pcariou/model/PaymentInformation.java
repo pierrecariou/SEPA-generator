@@ -12,6 +12,7 @@ import java.util.*;
 public class PaymentInformation
 {
 	@XmlElement(name = "PmtInfId")
+	@NotBlank(message = "PaymentInformationId for PaymentInformation is mandatory")
 	private String paymentInformationIdentification;
 
 	@XmlElement(name = "PmtMtd")
@@ -19,6 +20,7 @@ public class PaymentInformation
 	private final String paymentMethod = "TRF";
 
 	@XmlElement(name = "PmtTpInf")
+	@NotNull(message = "PaymentTypeInformation for PaymentInformation is mandatory")
 	private PaymentTypeInformation paymentTypeInformation;
 
 	@XmlElement(name = "ReqdExctnDt")
@@ -51,8 +53,10 @@ public class PaymentInformation
 	{
 	}
 
-	public PaymentInformation(String requestedExecutionDate, Debtor debtor, DebtorAccount debtorAccount, DebtorAgent debtorAgent, List<CreditTransferTransactionInformation> creditTransferTransactionInformation)
+	public PaymentInformation(String paymentInformationIdentification, PaymentTypeInformation paymentTypeInformation, String requestedExecutionDate, Debtor debtor, DebtorAccount debtorAccount, DebtorAgent debtorAgent, List<CreditTransferTransactionInformation> creditTransferTransactionInformation)
 	{
+		this.paymentInformationIdentification = paymentInformationIdentification;
+		this.paymentTypeInformation = paymentTypeInformation;
 		this.requestedExecutionDate = requestedExecutionDate;
 		this.debtor = debtor;
 		this.debtorAccount = debtorAccount;

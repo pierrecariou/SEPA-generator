@@ -18,6 +18,10 @@ public class OrganisationIdentification
 	public OrganisationIdentification() {
 	}
 
+	public OrganisationIdentification(ProprietaryIdentification proprietaryIdentification) {
+		this.proprietaryIdentification = proprietaryIdentification;
+	}
+
 	public ProprietaryIdentification getProprietaryIdentification() {
 		return proprietaryIdentification;
 	}
