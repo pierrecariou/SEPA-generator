@@ -3,6 +3,8 @@ package com.pcariou.generator;
 import com.pcariou.model.*;
 import com.pcariou.service.*;
 
+import org.apache.commons.io.FilenameUtils;
+
 import java.io.RandomAccessFile;
 
 import com.aspose.cells.*;
@@ -26,6 +28,7 @@ public class Generator
             f.close();
         } catch (Exception e) {
             System.out.println("Error: " + e.getMessage());
+            System.exit(1);
         }
     }
 
@@ -44,24 +47,24 @@ public class Generator
             System.exit(1);
         }
 
-        String inputFile = args[0];
-        String outputFile = args[1];
+        String inputFilename = args[0];
+        String outputFilename = args[1];
 
-        if (inputFile.endsWith(".xls") || inputFile.endsWith(".xlsx")) {
+        if (inputFilename.endsWith(".xls") || inputFilename.endsWith(".xlsx")) {
             try {
                 Workbook workbook = new Workbook(args[0]);
-                workbook.save("input_file.csv");
-                inputFile = "input_file.csv";
-                eraseNoLicenseMessage(inputFile);
+                inputFilename = FilenameUtils.getBaseName(inputFilename) + ".csv";
+                workbook.save(FilenameUtils.getBaseName(inputFilename) + ".csv");
+                eraseNoLicenseMessage(inputFilename);
             } catch (Exception e) {
                 e.printStackTrace();
             }
-        } else if (!inputFile.endsWith(".csv")) {
+        } else if (!inputFilename.endsWith(".csv")) {
             System.out.println("Input file must be a CSV or XLS/XLSX file");
             System.exit(1);
         }
 
-        Document document = new CsvToBeans().read(inputFile);
-        new BeansToXml().write(document, outputFile);
+        Document document = new CsvToBeans().read(inputFilename);
+        new BeansToXml().write(document, outputFilename);
     }
 }

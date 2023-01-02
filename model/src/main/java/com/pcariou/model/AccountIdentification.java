@@ -14,6 +14,7 @@ public class AccountIdentification
 {
 	@XmlElement(name = "IBAN")
 	@NotBlank(message = "IBAN for AccountIdentification is mandatory")
+	@Pattern(regexp = "^[A-Z]{2}[0-9]{2}[A-Z0-9]{4}[0-9]{7}([A-Z0-9]?){0,16}$", message = "IBAN for AccountIdentification is invalid")
 	@CsvBindByName(column = "IBAN")
 	private String iban;
 

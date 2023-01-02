@@ -4,12 +4,12 @@
   <parent>
     <artifactId>sepa</artifactId>
     <groupId>com.pcariou.sepa</groupId>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.0</version>
   </parent>
 
   <groupId>com.pcariou.generator</groupId>
   <artifactId>generator</artifactId>
-  <version>1.0-SNAPSHOT</version>
+  <version>1.0</version>
 
   <name>generator</name>
   <!-- FIXME change it to the project's website -->
@@ -46,13 +46,13 @@
     <dependency>
       <groupId>com.pcariou.model</groupId>
       <artifactId>model</artifactId>
-      <version>1.0-SNAPSHOT</version>
+      <version>1.0</version>
     </dependency>
 
     <dependency>
       <groupId>com.pcariou.service</groupId>
       <artifactId>service</artifactId>
-      <version>1.0-SNAPSHOT</version>
+      <version>1.0</version>
     </dependency>
   </dependencies>
 

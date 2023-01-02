@@ -2,31 +2,31 @@
 <Document xmlns="urn:iso:std:iso:20022:tech:xsd:pain.001.001.02">
     <pain.001.001.02>
         <GrpHdr>
-            <MsgId>messageIdentification</MsgId>
-            <CreDtTm>2022-12-30T17:34:41</CreDtTm>
+            <MsgId>Payments-template-example.csv</MsgId>
+            <CreDtTm>2023-01-02T14:56:51</CreDtTm>
             <NbOfTxs>4</NbOfTxs>
-            <CtrlSum>12181.2</CtrlSum>
+            <CtrlSum>10132.5</CtrlSum>
             <Grpg>MIXD</Grpg>
             <InitgPty>
-                <Nm>name</Nm>
+                <Nm>John Doe</Nm>
                 <Id>
                     <OrgId>
                         <PrtryId>
-                            <Id>SIRET</Id>
+                            <Id>12345678901234</Id>
                         </PrtryId>
                     </OrgId>
                 </Id>
             </InitgPty>
         </GrpHdr>
         <PmtInf>
-            <PmtInfId>ID</PmtInfId>
+            <PmtInfId>Payments-template-example.csv-1</PmtInfId>
             <PmtMtd>TRF</PmtMtd>
             <PmtTpInf>
                 <SvcLvl>
                     <Cd>SEPA</Cd>
                 </SvcLvl>
             </PmtTpInf>
-            <ReqdExctnDt>someDate</ReqdExctnDt>
+            <ReqdExctnDt>2023-01-05</ReqdExctnDt>
             <Dbtr>
                 <Nm>John Doe</Nm>
             </Dbtr>
@@ -45,7 +45,7 @@
                     <EndToEndId>127A</EndToEndId>
                 </PmtId>
                 <Amt>
-                    <InstdAmt Ccy="EUR">3000</InstdAmt>
+                    <InstdAmt Ccy="EUR">3000.00</InstdAmt>
                 </Amt>
                 <CdtrAgt>
                     <FinInstnId>
@@ -61,7 +61,7 @@
                     </Id>
                 </CdtrAcct>
                 <RmtInf>
-                    <Ustrd>fournitures</Ustrd>
+                    <Ustrd>furnitures</Ustrd>
                 </RmtInf>
             </CdtTrfTxInf>
             <CdtTrfTxInf>
@@ -69,7 +69,7 @@
                     <EndToEndId>128A</EndToEndId>
                 </PmtId>
                 <Amt>
-                    <InstdAmt Ccy="EUR">1276</InstdAmt>
+                    <InstdAmt Ccy="EUR">1276.00</InstdAmt>
                 </Amt>
                 <CdtrAgt>
                     <FinInstnId>
@@ -93,7 +93,7 @@
                     <EndToEndId>129A</EndToEndId>
                 </PmtId>
                 <Amt>
-                    <InstdAmt Ccy="EUR">4678</InstdAmt>
+                    <InstdAmt Ccy="EUR">2856.47</InstdAmt>
                 </Amt>
                 <CdtrAgt>
                     <FinInstnId>
@@ -117,7 +117,7 @@
                     <EndToEndId>130A</EndToEndId>
                 </PmtId>
                 <Amt>
-                    <InstdAmt Ccy="EUR">3227.2</InstdAmt>
+                    <InstdAmt Ccy="EUR">3000.03</InstdAmt>
                 </Amt>
                 <CdtrAgt>
                     <FinInstnId>

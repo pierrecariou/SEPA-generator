@@ -14,7 +14,7 @@ public class InstructedAmount
 {
 	@XmlValue
 	@NotBlank(message = "InstructedAmount is mandatory")
-	@Pattern(regexp = "^[0-9]{1,13}([.][0-9]{1,2})?$", message = "InstructedAmount must be a number with 2 decimals")
+	@Pattern(regexp = "^[0-9]*\\.[0-9][0-9]$", message = "InstructedAmount must be a number with 2 decimals")
 	@CsvBindByName(column = "amount")
 	private String instructedAmount;
 

@@ -17,6 +17,7 @@ public class BeansToXml
 			marshaller.marshal(document, new File(outputFile));
 		} catch (JAXBException e) {
 			System.out.println(e.getMessage());
+			System.exit(1);
 		}
 	}
 }

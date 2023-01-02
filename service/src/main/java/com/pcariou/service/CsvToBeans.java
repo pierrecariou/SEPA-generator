@@ -4,7 +4,6 @@ import com.pcariou.model.*;
 import java.io.FileReader;
 
 import com.opencsv.bean.*;
-import com.opencsv.bean.exceptionhandler.CsvExceptionHandler;
 
 import java.util.*;
 
@@ -38,18 +37,19 @@ public class CsvToBeans
 			List<CreditTransferTransactionInformation> creditTransferTransactionInformations = CsvToBeanBuilder.build().parse();
 			for (CreditTransferTransactionInformation creditTransferTransactionInformation : creditTransferTransactionInformations) {
 				if (!validate(creditTransferTransactionInformation)) {
-					System.out.println("Validation failed");
-					return null;
+					System.out.println("Validation failed: Please check and modify your CSV / Excel file");
+					System.exit(1);
 				}
 			}
-			return createDocument(creditTransferTransactionInformations);
+			return createDocument(creditTransferTransactionInformations, inputFile);
 		} catch (Exception e) {
 			System.out.println(e.getMessage());
+			System.exit(1);
 		}
 		return null;
 	}
 
-	private Document createDocument(List<CreditTransferTransactionInformation> creditTransferTransactionInformations) {
+	private Document createDocument(List<CreditTransferTransactionInformation> creditTransferTransactionInformations, String inputFile) {
 		DebtorInformations debtorInformations = new DebtorInformations();
 
 		// Group Header
@@ -65,20 +65,20 @@ public class CsvToBeans
 		}
 		String controlSum = Double.toString(totalAmount);
 		
-		ProprietaryIdentification proprietaryIdentification = new ProprietaryIdentification("SIRET");
+		ProprietaryIdentification proprietaryIdentification = new ProprietaryIdentification(debtorInformations.initiatingPartySiret);
 		OrganisationIdentification organisationIdentification = new OrganisationIdentification(proprietaryIdentification);
 		PartyIdentification partyIdentification = new PartyIdentification(organisationIdentification);
-		InitiatingParty initiatingParty = new InitiatingParty("name", partyIdentification);
+		InitiatingParty initiatingParty = new InitiatingParty(debtorInformations.initiatingPartyName, partyIdentification);
 
 
-		GroupHeader groupHeader = new GroupHeader("messageIdentification", creationDateTime, numberOfTransactions, controlSum, initiatingParty);
+		GroupHeader groupHeader = new GroupHeader(inputFile, creationDateTime, numberOfTransactions, controlSum, initiatingParty);
 
 		// Payment Information
 		PaymentTypeInformation paymentTypeInformation = new PaymentTypeInformation(new ServiceLevel());
 		Debtor debtor = new Debtor(debtorInformations.name);
 		DebtorAccount debtorAccount = new DebtorAccount( new AccountIdentification(debtorInformations.iban));
 		DebtorAgent debtorAgent = new DebtorAgent(new FinancialInstitutionIdentification(debtorInformations.bic));
-		PaymentInformation paymentInformation = new PaymentInformation("ID", paymentTypeInformation, "someDate", debtor, debtorAccount, debtorAgent, creditTransferTransactionInformations);
+		PaymentInformation paymentInformation = new PaymentInformation(inputFile + "-1", paymentTypeInformation, debtorInformations.requestedExecutionDate, debtor, debtorAccount, debtorAgent, creditTransferTransactionInformations);
 
 		// Document
 		ArrayList<PaymentInformation> paymentInformations = new ArrayList<>();

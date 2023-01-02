@@ -4,12 +4,12 @@
   <parent>
     <artifactId>sepa</artifactId>
     <groupId>com.pcariou.sepa</groupId>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.0</version>
   </parent>
 
   <groupId>com.pcariou.model</groupId>
   <artifactId>model</artifactId>
-  <version>1.0-SNAPSHOT</version>
+  <version>1.0</version>
 
   <name>model</name>
   <!-- FIXME change it to the project's website -->

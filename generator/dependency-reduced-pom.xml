@@ -3,13 +3,13 @@
   <parent>
     <artifactId>sepa</artifactId>
     <groupId>com.pcariou.sepa</groupId>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.0</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.pcariou.generator</groupId>
   <artifactId>generator</artifactId>
   <name>generator</name>
-  <version>1.0-SNAPSHOT</version>
+  <version>1.0</version>
   <url>http://www.example.com</url>
   <build>
     <pluginManagement>

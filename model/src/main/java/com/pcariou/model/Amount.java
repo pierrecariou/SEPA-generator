@@ -14,7 +14,7 @@ import com.opencsv.bean.*;
 @XmlAccessorType(XmlAccessType.FIELD)
 public class Amount
 {
-	@XmlElement(name = "InstdAmt", required = true)
+	@XmlElement(name = "InstdAmt")
 	@NotNull(message = "InstructedAmount from Amount is mandatory")
 	@Valid
 	@CsvRecurse()

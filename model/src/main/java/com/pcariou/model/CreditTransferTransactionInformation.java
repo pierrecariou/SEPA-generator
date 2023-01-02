@@ -15,12 +15,13 @@ public class CreditTransferTransactionInformation
 {
 	@XmlElement(name = "PmtId")
 	@NotNull(message = "PaymentIdentification for CreditTransferTransactionInformation is mandatory")
+	@Valid()
 	@CsvRecurse()
 	private PaymentIdentification paymentIdentification;
 
 	@XmlElement(name = "Amt")
 	@NotNull(message = "Amount for CreditTransferTransactionInformation is mandatory")
-	@Valid
+	@Valid()
 	@CsvRecurse()
 	private Amount amount;
 
@@ -29,16 +30,19 @@ public class CreditTransferTransactionInformation
 
 	@XmlElement(name = "CdtrAgt")
 	@NotNull(message = "CreditorAgent for CreditTransferTransactionInformation is mandatory")
+	@Valid()
 	@CsvRecurse()
 	private CreditorAgent creditorAgent;
 
 	@XmlElement(name = "Cdtr")
 	@NotNull(message = "Creditor for CreditTransferTransactionInformation is mandatory")
+	@Valid()
 	@CsvRecurse()
 	private Creditor creditor;
 
 	@XmlElement(name = "CdtrAcct")
 	@NotNull(message = "CreditorAccount for CreditTransferTransactionInformation is mandatory")
+	@Valid()
 	@CsvRecurse()
 	private CreditorAccount creditorAccount;
 
