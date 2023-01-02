@@ -11,7 +11,7 @@
     <parent>
         <groupId>org.hibernate.validator</groupId>
         <artifactId>hibernate-validator-parent</artifactId>
-        <version>6.0.0.Final</version>
+        <version>6.0.13.Final</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -22,7 +22,6 @@
 
     <properties>
         <hibernate-validator-parent.path>..</hibernate-validator-parent.path>
-        <automatic.module.name>org.hibernate.validator</automatic.module.name>
     </properties>
 
     <distributionManagement>
@@ -80,8 +79,8 @@
         Optional dependencies
         -->
         <dependency>
-            <groupId>org.hibernate.javax.persistence</groupId>
-            <artifactId>hibernate-jpa-2.1-api</artifactId>
+            <groupId>javax.persistence</groupId>
+            <artifactId>javax.persistence-api</artifactId>
             <optional>true</optional>
         </dependency>
         <dependency>
@@ -148,11 +147,6 @@
             <artifactId>moneta</artifactId>
             <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-            <scope>test</scope>
-        </dependency>
     </dependencies>
 
     <build>
@@ -200,7 +194,7 @@
                                 <manifestEntries>
                                     <Specification-Title>Bean Validation</Specification-Title>
                                     <Specification-Version>2.0</Specification-Version>
-                                    <Automatic-Module-Name>${automatic.module.name}</Automatic-Module-Name>
+                                    <Automatic-Module-Name>${hibernate-validator.module-name}</Automatic-Module-Name>
                                 </manifestEntries>
                             </archive>
                         </configuration>
@@ -212,14 +206,16 @@
                 <artifactId>maven-bundle-plugin</artifactId>
                 <configuration>
                     <instructions>
+                        <Bundle-SymbolicName>${hibernate-validator.bundle-name}</Bundle-SymbolicName>
                         <Import-Package>
                             javax.persistence.*;version="[2.0.0,3.0.0)";resolution:=optional,
                             javax.validation.*;version="[2.0.0,3.0.0)",
+                            javax.script.*;version="0",
                             javax.xml.*;version="0",
                             javax.el.*;version="[2.0.0,4.0.0)";resolution:=optional,
                             org.xml.sax.*;version="0",
                             org.jboss.logging.*;version="[3.1.0,4.0.0)",
-                            com.fasterxml.classmate.*;version="[${classmate.version},2.0.0)",
+                            com.fasterxml.classmate.*;version="[1.3,2.0.0)",
                             org.joda.time.*;version="[2.0.0,3.0.0)";resolution:=optional,
                             org.jsoup.*;version="[1.5.2,2.0.0)";resolution:=optional,
                             javax.money;version="[1.0.0,2.0.0)";resolution:=optional,
@@ -278,110 +274,76 @@
     </build>
     <profiles>
         <profile>
-            <id>pre-jdk9</id>
+            <id>jdk9+</id>
             <activation>
-                <jdk>1.8</jdk>
+                <jdk>[9,)</jdk>
             </activation>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.codehaus.mojo</groupId>
-                        <artifactId>jaxb2-maven-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <goals>
-                                    <goal>xjc</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                        <configuration>
-                            <packageName>org.hibernate.validator.internal.xml.binding</packageName>
-                            <extension>true</extension>
-                            <!-- Generate correct getters for Boolean properties -->
-                            <enableIntrospection>true</enableIntrospection>
-                            <!-- Makes sure the generated code is compatible with JAXB 2.1 which is what comes with Java 1.6 -->
-                            <target>2.1</target>
-                            <sources>
-                                <source>src/main/xsd/validation-configuration-2.0.xsd</source>
-                                <source>src/main/xsd/validation-mapping-2.0.xsd</source>
-                            </sources>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
+            <properties>
+                <maven-surefire-plugin.argLine>--illegal-access=deny</maven-surefire-plugin.argLine>
+            </properties>
         </profile>
         <profile>
-            <id>jdk9</id>
+            <id>jdk11+</id>
             <activation>
-                <jdk>9</jdk>
+                <jdk>[11,)</jdk>
             </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>org.openjfx</groupId>
+                    <artifactId>javafx-base</artifactId>
+                    <version>${version.org.openjfx}</version>
+                    <scope>provided</scope>
+                </dependency>
+            </dependencies>
+        </profile>
+        <profile>
+            <id>sigtest</id>
             <build>
                 <plugins>
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-antrun-plugin</artifactId>
+                        <artifactId>maven-dependency-plugin</artifactId>
                         <executions>
                             <execution>
-                                <phase>generate-sources</phase>
-                                <configuration>
-                                    <tasks>
-                                        <echo message="Creating target/generated-sources/jaxb"/>
-                                        <mkdir dir="./target/generated-sources/jaxb"/>
-                                    </tasks>
-                                </configuration>
+                                <id>copy-tck-bv-api-signature-file</id>
+                                <phase>generate-test-sources</phase>
                                 <goals>
-                                    <goal>run</goal>
+                                    <goal>unpack</goal>
                                 </goals>
+                                <configuration>
+                                    <artifactItems>
+                                        <artifactItem>
+                                            <groupId>org.hibernate.beanvalidation.tck</groupId>
+                                            <artifactId>beanvalidation-tck-tests</artifactId>
+                                            <version>${tck.version}</version>
+                                            <type>jar</type>
+                                            <overWrite>true</overWrite>
+                                        </artifactItem>
+                                    </artifactItems>
+                                    <!-- We just need the signature file and nothing else -->
+                                    <includes>**/*.sig</includes>
+                                    <outputDirectory>${project.build.directory}/api-signature</outputDirectory>
+                                </configuration>
                             </execution>
                         </executions>
                     </plugin>
                     <plugin>
-                        <groupId>org.codehaus.mojo</groupId>
-                        <artifactId>exec-maven-plugin</artifactId>
+                        <groupId>org.netbeans.tools</groupId>
+                        <artifactId>sigtest-maven-plugin</artifactId>
                         <executions>
                             <execution>
-                                <id>generate schema types</id>
-                                <phase>generate-sources</phase>
                                 <goals>
-                                    <goal>exec</goal>
+                                    <goal>check</goal>
                                 </goals>
                             </execution>
                         </executions>
                         <configuration>
-                            <executable>xjc</executable>
-                            <arguments>
-                                <argument>-enableIntrospection</argument>
-                                <argument>-p</argument>
-                                <argument>org.hibernate.validator.internal.xml.binding</argument>
-                                <argument>-extension</argument>
-                                <argument>-target</argument>
-                                <argument>2.1</argument>
-                                <argument>-d</argument>
-                                <argument>target/generated-sources/jaxb</argument>
-                                <argument>src/main/xsd/validation-configuration-2.0.xsd</argument>
-                                <argument>src/main/xsd/validation-mapping-2.0.xsd</argument>
-                                <argument>-b</argument>
-                                <argument>src/main/xjb/binding-customization.xjb</argument>
-                            </arguments>
+                            <packages>javax.validation,javax.validation.bootstrap,javax.validation.constraints,
+                                javax.validation.constraintvalidation,javax.validation.executable,javax.validation.groups,
+                                javax.validation.metadata,javax.validation.spi,javax.validation.valueextraction
+                            </packages>
+                            <sigfile>${project.build.directory}/api-signature/validation-api-java8.sig</sigfile>
                         </configuration>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.codehaus.mojo</groupId>
-                        <artifactId>build-helper-maven-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>add-source</id>
-                                <phase>generate-sources</phase>
-                                <goals>
-                                    <goal>add-source</goal>
-                                </goals>
-                                <configuration>
-                                    <sources>
-                                        <source>target/generated-sources/jaxb</source>
-                                    </sources>
-                                </configuration>
-                            </execution>
-                        </executions>
                     </plugin>
                 </plugins>
             </build>

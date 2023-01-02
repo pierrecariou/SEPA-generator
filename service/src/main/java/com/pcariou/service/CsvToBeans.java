@@ -6,6 +6,7 @@ import java.io.FileReader;
 import com.opencsv.bean.*;
 
 import java.util.*;
+import java.util.logging.Level;
 
 import javax.validation.*;
 
@@ -22,6 +23,7 @@ public class CsvToBeans
 
 	public CsvToBeans()
 	{
+		java.util.logging.Logger.getLogger("org.hibernate").setLevel(Level.SEVERE);
 		this.validator = Validation.buildDefaultValidatorFactory().getValidator();
 	}
 
@@ -31,9 +33,6 @@ public class CsvToBeans
 			CsvToBeanBuilder.withType(CreditTransferTransactionInformation.class);
 			CsvToBeanBuilder.withIgnoreLeadingWhiteSpace(true);
 			CsvToBeanBuilder.withThrowExceptions(true);
-			//CsvToBeanBuilder.withExceptionHandler(new CsvExceptionHandler(exception -> {
-			//	System.out.println(exception.getMessage());
-			//}));
 			List<CreditTransferTransactionInformation> creditTransferTransactionInformations = CsvToBeanBuilder.build().parse();
 			for (CreditTransferTransactionInformation creditTransferTransactionInformation : creditTransferTransactionInformations) {
 				if (!validate(creditTransferTransactionInformation)) {

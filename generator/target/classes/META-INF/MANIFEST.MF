@@ -1,46 +1,92 @@
 Manifest-Version: 1.0
-Bundle-License: http://www.apache.org/licenses/LICENSE-2.0.txt
-Bundle-SymbolicName: org.jboss.logging.jboss-logging
-Archiver-Version: Plexus Archiver
-Built-By: jperkins
-Bnd-LastModified: 1432831774903
-Specification-Title: JBoss Logging 3
-Implementation-Vendor-Id: org.jboss.logging
-Bundle-DocURL: http://www.jboss.org
-Import-Package: org.apache.log4j;resolution:=optional,org.apache.loggi
- ng.log4j;version="[2.0,3)";resolution:=optional,org.apache.logging.lo
- g4j.message;version="[2.0,3)";resolution:=optional,org.apache.logging
- .log4j.spi;version="[2.0,3)";resolution:=optional,org.jboss.logmanage
- r;version="[1.5,2)";resolution:=optional,org.slf4j;version="[1.7,2)";
- resolution:=optional,org.slf4j.spi;version="[1.7,2)";resolution:=opti
- onal
-Scm-Url: https://github.com/jboss-logging/jboss-logging
-Export-Package: org.jboss.logging;uses:="org.jboss.logmanager,org.apac
- he.logging.log4j,org.apache.logging.log4j.spi,org.apache.logging.log4
- j.message,org.apache.log4j,org.slf4j.spi,org.slf4j";version="3.3.0.Fi
- nal"
-Bundle-Name: JBoss Logging 3
-Implementation-Title: JBoss Logging 3
-Bundle-Description: The JBoss Logging Framework
-Implementation-Version: 3.3.0.Final
-Build-Timestamp: Thu, 28 May 2015 09:49:28 -0700
-Java-Version: 1.8.0_45
-Scm-Connection: scm:git:git://github.com/jboss-logging/jboss-logging.g
- it
-Specification-Vendor: JBoss by Red Hat
-Os-Arch: amd64
+Export-Package: com.sun.xml.fastinfoset;uses:="com.sun.xml.fastinfoset
+ .util,com.sun.xml.fastinfoset.vocab,org.jvnet.fastinfoset,com.sun.xml
+ .fastinfoset.alphabet,com.sun.xml.fastinfoset.org.apache.xerces.util,
+ com.sun.xml.fastinfoset.algorithm,org.xml.sax.helpers,javax.xml.names
+ pace";version="1.2.13",com.sun.xml.fastinfoset.algorithm;uses:="com.s
+ un.xml.fastinfoset,org.jvnet.fastinfoset";version="1.2.13",com.sun.xm
+ l.fastinfoset.alphabet;version="1.2.13",com.sun.xml.fastinfoset.dom;u
+ ses:="com.sun.xml.fastinfoset.algorithm,com.sun.xml.fastinfoset.util,
+ com.sun.xml.fastinfoset,com.sun.xml.fastinfoset.vocab,org.jvnet.fasti
+ nfoset,org.w3c.dom";version="1.2.13",com.sun.xml.fastinfoset.org.apac
+ he.xerces.util;version="1.2.13",com.sun.xml.fastinfoset.resources;ver
+ sion="1.2.13",com.sun.xml.fastinfoset.sax;uses:="com.sun.xml.fastinfo
+ set.algorithm,com.sun.xml.fastinfoset,org.jvnet.fastinfoset,org.jvnet
+ .fastinfoset.sax,org.xml.sax.ext,org.xml.sax,com.sun.xml.fastinfoset.
+ util,com.sun.xml.fastinfoset.vocab,org.xml.sax.helpers";version="1.2.
+ 13",com.sun.xml.fastinfoset.stax;uses:="javax.xml.stream,com.sun.xml.
+ fastinfoset.util,javax.xml.namespace,com.sun.xml.fastinfoset.algorith
+ m,com.sun.xml.fastinfoset,com.sun.xml.fastinfoset.org.apache.xerces.u
+ til,com.sun.xml.fastinfoset.vocab,com.sun.xml.fastinfoset.sax,org.jvn
+ et.fastinfoset.stax,org.jvnet.fastinfoset";version="1.2.13",com.sun.x
+ ml.fastinfoset.stax.events;uses:="javax.xml.stream.events,javax.xml.n
+ amespace,com.sun.xml.fastinfoset.org.apache.xerces.util,com.sun.xml.f
+ astinfoset,javax.xml.stream,javax.xml.stream.util,com.sun.xml.fastinf
+ oset.stax";version="1.2.13",com.sun.xml.fastinfoset.stax.factory;uses
+ :="javax.xml.stream,com.sun.xml.fastinfoset.stax.events,javax.xml.str
+ eam.events,javax.xml.namespace,javax.xml.stream.util,com.sun.xml.fast
+ infoset,javax.xml.transform,com.sun.xml.fastinfoset.stax,com.sun.xml.
+ fastinfoset.stax.util,com.sun.xml.fastinfoset.tools,javax.xml.transfo
+ rm.stream";version="1.2.13",com.sun.xml.fastinfoset.stax.util;uses:="
+ javax.xml.stream,com.sun.xml.fastinfoset,javax.xml.namespace";version
+ ="1.2.13",com.sun.xml.fastinfoset.tools;uses:="com.sun.xml.fastinfose
+ t,javax.xml.transform,javax.xml.parsers,javax.xml.transform.dom,javax
+ .xml.transform.sax,com.sun.xml.fastinfoset.dom,org.w3c.dom,org.xml.sa
+ x,javax.xml.transform.stream,org.jvnet.fastinfoset,com.sun.xml.fastin
+ foset.sax,javax.xml.stream,org.xml.sax.ext,com.sun.xml.fastinfoset.st
+ ax,org.xml.sax.helpers,com.sun.xml.fastinfoset.util,com.sun.xml.fasti
+ nfoset.vocab,javax.xml.namespace";version="1.2.13",com.sun.xml.fastin
+ foset.util;uses:="com.sun.xml.fastinfoset,org.jvnet.fastinfoset,javax
+ .xml.namespace";version="1.2.13",com.sun.xml.fastinfoset.vocab;uses:=
+ "com.sun.xml.fastinfoset.util,com.sun.xml.fastinfoset,org.jvnet.fasti
+ nfoset,javax.xml.namespace";version="1.2.13",org.jvnet.fastinfoset;us
+ es:="org.xml.sax.ext,com.sun.xml.fastinfoset.sax,javax.xml.transform.
+ sax,org.xml.sax";version="1.2.13",org.jvnet.fastinfoset.sax;uses:="or
+ g.xml.sax,org.xml.sax.ext,org.jvnet.fastinfoset";version="1.2.13",org
+ .jvnet.fastinfoset.sax.helpers;uses:="com.sun.xml.fastinfoset.algorit
+ hm,com.sun.xml.fastinfoset,org.jvnet.fastinfoset,org.jvnet.fastinfose
+ t.sax,org.xml.sax,org.xml.sax.ext,org.xml.sax.helpers";version="1.2.1
+ 3",org.jvnet.fastinfoset.stax;uses:="javax.xml.stream";version="1.2.1
+ 3"
+Implementation-Title: Fast Infoset Implementation
+Built-By: mghudson
+Tool: Bnd-0.0.311
+Implementation-Vendor: Oracle
+Implementation-Vendor-Id: com.oracle
+Implementation-Build-Id: tags/fastinfoset-project-1.2.13-969, 2013-04-
+ 05T08:43:21-0700
+Specification-Title: ITU-T Rec. X.891 | ISO/IEC 24824-1 (Fast Infoset)
+Bundle-License: http://www.opensource.org/licenses/apache2.0.php
+Bundle-SymbolicName: com.sun.xml.fastinfoset.FastInfoset
+Extension-Name: com.sun.xml.fastinfoset
+Implementation-Version: 1.2.13
+Bundle-Name: fastinfoset
+Created-By: 1.7.0_07 (Oracle Corporation)
+URL: http://fi.java.net
+Bundle-Vendor: Oracle Corpration
+Build-Jdk: 1.7.0_07
+Bundle-Version: 1.2.13
+Bnd-LastModified: 1365176630927
 Bundle-ManifestVersion: 2
-Java-Vendor: Oracle Corporation
-Bundle-Vendor: JBoss by Red Hat
-Os-Name: Linux
-Tool: Bnd-1.50.0
-Implementation-Vendor: JBoss by Red Hat
-Os-Version: 4.0.4-201.fc21.x86_64
-Originally-Created-By: Apache Maven Bundle Plugin
-Scm-Revision: 1d26eed1862a43b2e66b9b5f04e590d8b31338e3
-Bundle-Version: 3.3.0.Final
-Created-By: Apache Maven Bundle Plugin
-Build-Jdk: 1.8.0_45
-Specification-Version: 3.3.0.Final
-Implementation-URL: http://www.jboss.org
+Bundle-Description: Open Source implementation of the Fast Infoset Sta
+ ndard for Binary XML (http://www.itu.int/ITU-T/asn1/).
+Import-Package: com.sun.xml.fastinfoset;version="1.2",com.sun.xml.fast
+ infoset.algorithm;version="1.2",com.sun.xml.fastinfoset.alphabet;vers
+ ion="1.2",com.sun.xml.fastinfoset.dom;version="1.2",com.sun.xml.fasti
+ nfoset.org.apache.xerces.util;version="1.2",com.sun.xml.fastinfoset.r
+ esources;version="1.2",com.sun.xml.fastinfoset.sax;version="1.2",com.
+ sun.xml.fastinfoset.stax;version="1.2",com.sun.xml.fastinfoset.stax.e
+ vents;version="1.2",com.sun.xml.fastinfoset.stax.factory;version="1.2
+ ",com.sun.xml.fastinfoset.stax.util;version="1.2",com.sun.xml.fastinf
+ oset.tools;version="1.2",com.sun.xml.fastinfoset.util;version="1.2",c
+ om.sun.xml.fastinfoset.vocab;version="1.2",javax.xml.namespace,javax.
+ xml.parsers,javax.xml.stream,javax.xml.stream.events,javax.xml.stream
+ .util,javax.xml.transform,javax.xml.transform.dom,javax.xml.transform
+ .sax,javax.xml.transform.stream,org.jvnet.fastinfoset;version="1.2",o
+ rg.jvnet.fastinfoset.sax;version="1.2",org.jvnet.fastinfoset.sax.help
+ ers;version="1.2",org.jvnet.fastinfoset.stax;version="1.2",org.w3c.do
+ m,org.xml.sax,org.xml.sax.ext,org.xml.sax.helpers
+Specification-Version: 1.0
+Bundle-DocURL: http://www.oracle.com
+Archiver-Version: Plexus Archiver
 

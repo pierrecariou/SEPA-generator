@@ -3,7 +3,7 @@
     <pain.001.001.02>
         <GrpHdr>
             <MsgId>Payments-template-example.csv</MsgId>
-            <CreDtTm>2023-01-02T17:40:29</CreDtTm>
+            <CreDtTm>2023-01-02T20:44:48</CreDtTm>
             <NbOfTxs>4</NbOfTxs>
             <CtrlSum>10132.5</CtrlSum>
             <Grpg>MIXD</Grpg>

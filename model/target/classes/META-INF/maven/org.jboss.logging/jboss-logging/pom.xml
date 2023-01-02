@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.jboss.logging</groupId>
     <artifactId>jboss-logging</artifactId>
-    <version>3.3.0.Final</version>
+    <version>3.3.2.Final</version>
     <packaging>jar</packaging>
     <name>JBoss Logging 3</name>
     <url>http://www.jboss.org</url>
@@ -123,11 +123,20 @@
                 <artifactId>maven-bundle-plugin</artifactId>
                 <extensions>true</extensions>
                 <configuration>
+                    <archive>
+                        <manifest>
+                            <addDefaultSpecificationEntries>false</addDefaultSpecificationEntries>
+                        </manifest>
+                        <manifestEntries>
+                            <Automatic-Module-Name>org.jboss.logging</Automatic-Module-Name>
+                        </manifestEntries>
+                    </archive>
                     <instructions>
                         <Export-Package>
                             ${project.groupId}.*;version=${project.version};-split-package:=error
                         </Export-Package>
                         <Import-Package>
+                            org.apache.log4j.config;resolution:=optional,
                             *;resolution:=optional
                         </Import-Package>
                     </instructions>
