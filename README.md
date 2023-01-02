@@ -34,7 +34,7 @@ java -jar generator/target/generator-1.0.jar [file.csv or file.xls or file.xlsx]
 ### Restrictions
 
 - The input file shoud be under a specific format: CSV or XLS or XLSX.
-- The input file should have detailed the Debtors infos under those colums names:
+- The input file should have detailed the Creditors infos under those colums names:
 
 | name          | IBAN          | BIC           | amount        | end_to_end_id | information   |
 | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- |

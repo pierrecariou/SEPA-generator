@@ -1,0 +1,12 @@
+{
+	"debtor": {
+		"name": "John Doe",
+		"iban": "FR7612345678901234567890123",
+		"bic": "BNPAFRPP"
+	},
+	"initiatingParty": {
+		"name": "John Doe",
+		"siret": "12345678901234"
+	},
+	"requestedExecutionDate": "2023-01-05"
+}

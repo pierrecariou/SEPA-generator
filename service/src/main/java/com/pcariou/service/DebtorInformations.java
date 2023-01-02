@@ -1,12 +1,47 @@
 package com.pcariou.service;
 
-public class DebtorInformations {
-	public final String name = "John Doe";
-	public final String iban = "FR7612345678901234567890123";
-	public final String bic = "BNPAFRPP";
+import org.json.simple.parser.*;
+import org.json.simple.*;
 
-	public final String initiatingPartyName = "John Doe";
-	public final String initiatingPartySiret = "12345678901234";
+import java.io.*;
+
+public class DebtorInformations {
+	public String name;
+	public String iban;
+	public String bic;
+
+	public String initiatingPartyName;
+	public String initiatingPartySiret;
 	
-	public final String requestedExecutionDate = "2023-01-05";
+	public String requestedExecutionDate;
+
+	public DebtorInformations() {
+		JSONParser parser = new JSONParser();
+		try {
+			Object obj = parser.parse(new FileReader("DebtorInformations.json"));
+
+			JSONObject jsonObject = (JSONObject) obj;
+
+			JSONObject debtor = (JSONObject) jsonObject.get("debtor");
+			this.name = (String)debtor.get("name");
+			this.iban = (String) debtor.get("iban");
+			this.bic = (String) debtor.get("bic");
+
+			JSONObject initiatingParty = (JSONObject) jsonObject.get("initiatingParty");
+			this.initiatingPartyName = (String) initiatingParty.get("name");
+			this.initiatingPartySiret = (String) initiatingParty.get("siret");
+
+			this.requestedExecutionDate = (String) jsonObject.get("requestedExecutionDate");
+
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+			System.exit(1);
+		} catch (IOException e) {
+			e.printStackTrace();
+			System.exit(1);
+		} catch (ParseException e) {
+			e.printStackTrace();
+			System.exit(1);
+		}
+	}
 }

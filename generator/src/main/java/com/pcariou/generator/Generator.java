@@ -66,5 +66,6 @@ public class Generator
 
         Document document = new CsvToBeans().read(inputFilename);
         new BeansToXml().write(document, outputFilename);
+        System.out.println("" + outputFilename + " generated successfully.");
     }
 }
