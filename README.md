@@ -12,7 +12,7 @@ This project is build with Java, thus it should be runnable under any OS.
 
 ### Prerequisites
 
-Java should be installed by default on your machine.
+Java (JRE at least) should be already installed by default on your machine.
 
 ### Installation
 
