@@ -12,7 +12,7 @@ This project is build with Java, thus it should be runnable under any OS.
 
 ### Prerequisites
 
-Java should be installed by default of your machine.
+Java should be installed by default on your machine.
 
 ### Installation
 
@@ -28,13 +28,10 @@ mvn clean package
 ```
 ## Usage
 
-```
-java -jar generator/target/generator-1.0.jar [file.csv or file.xls or file.xlsx] output_file.xml
-``` 
-### Restrictions
+1. You should have provided the Debtor infos inside the JSON file DebtorInformations.json; at the root of the project.
 
-- The input file shoud be under a specific format: CSV or XLS or XLSX.
-- The input file should have detailed the Creditors infos under those colums names:
+2. The input file shoud be under a specific format: CSV or XLS or XLSX. \
+The input file should have detailed the Creditors infos under those colums names:
 
 | name          | IBAN          | BIC           | amount        | end_to_end_id | information   |
 | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- |
@@ -46,7 +43,12 @@ Some error messages will be displayed if you're not respeccting the right format
 But as it's the Version 1.0 I may have forgotten some restrictions. Please check the validity of the XML File before using it: \
 [sepa_xml_validation](https://www.mobilefish.com/services/sepa_xml_validation/sepa_xml_validation.php)
 
-- The output file will be created. It should be an XML file.
+3. Running cmd:
+```
+java -jar generator/target/generator-1.0.jar [file.csv or file.xls or file.xlsx] output_file.xml
+```
+
+4. The output file will be created under the [output_file.xml] name (if the entry file was valid).
 
 ### Example
 ```
