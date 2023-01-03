@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report.xsd" name="com.pcariou.reader.AppTest" time="0.03" tests="1" errors="0" skipped="0" failures="0">
+<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report.xsd" name="com.pcariou.reader.AppTest" time="0.024" tests="1" errors="0" skipped="0" failures="0">
   <properties>
     <property name="java.specification.version" value="17"/>
     <property name="sun.jnu.encoding" value="UTF-8"/>
@@ -12,7 +12,7 @@
     <property name="sun.java.launcher" value="SUN_STANDARD"/>
     <property name="user.country" value="US"/>
     <property name="sun.boot.library.path" value="/usr/lib/jvm/jdk-17/lib"/>
-    <property name="sun.java.command" value="/home/pcariou7/code/sepa/service/target/surefire/surefirebooter8727881529852488838.jar /home/pcariou7/code/sepa/service/target/surefire 2023-01-02T20-45-02_513-jvmRun1 surefire17911126045362576495tmp surefire_116396021865299691249tmp"/>
+    <property name="sun.java.command" value="/home/pcariou7/code/sepa/service/target/surefire/surefirebooter7138732664239829947.jar /home/pcariou7/code/sepa/service/target/surefire 2023-01-03T10-17-17_540-jvmRun1 surefire13394688183905250790tmp surefire_15565412582788624970tmp"/>
     <property name="jdk.debug" value="release"/>
     <property name="surefire.test.class.path" value="/home/pcariou7/code/sepa/service/target/test-classes:/home/pcariou7/code/sepa/service/target/classes:/home/pcariou7/.m2/repository/junit/junit/4.11/junit-4.11.jar:/home/pcariou7/.m2/repository/org/hamcrest/hamcrest-core/1.3/hamcrest-core-1.3.jar:/home/pcariou7/code/sepa/model/target/model-1.0.jar:/home/pcariou7/.m2/repository/com/opencsv/opencsv/5.3/opencsv-5.3.jar:/home/pcariou7/.m2/repository/org/apache/commons/commons-lang3/3.11/commons-lang3-3.11.jar:/home/pcariou7/.m2/repository/org/apache/commons/commons-text/1.9/commons-text-1.9.jar:/home/pcariou7/.m2/repository/commons-beanutils/commons-beanutils/1.9.4/commons-beanutils-1.9.4.jar:/home/pcariou7/.m2/repository/commons-logging/commons-logging/1.2/commons-logging-1.2.jar:/home/pcariou7/.m2/repository/commons-collections/commons-collections/3.2.2/commons-collections-3.2.2.jar:/home/pcariou7/.m2/repository/org/apache/commons/commons-collections4/4.4/commons-collections4-4.4.jar:/home/pcariou7/.m2/repository/javax/xml/bind/jaxb-api/2.3.1/jaxb-api-2.3.1.jar:/home/pcariou7/.m2/repository/javax/activation/javax.activation-api/1.2.0/javax.activation-api-1.2.0.jar:/home/pcariou7/.m2/repository/javax/activation/activation/1.1.1/activation-1.1.1.jar:/home/pcariou7/.m2/repository/org/glassfish/jaxb/jaxb-runtime/2.3.0/jaxb-runtime-2.3.0.jar:/home/pcariou7/.m2/repository/org/glassfish/jaxb/jaxb-core/2.3.0/jaxb-core-2.3.0.jar:/home/pcariou7/.m2/repository/org/glassfish/jaxb/txw2/2.3.0/txw2-2.3.0.jar:/home/pcariou7/.m2/repository/com/sun/istack/istack-commons-runtime/3.0.5/istack-commons-runtime-3.0.5.jar:/home/pcariou7/.m2/repository/org/jvnet/staxex/stax-ex/1.7.8/stax-ex-1.7.8.jar:/home/pcariou7/.m2/repository/com/sun/xml/fastinfoset/FastInfoset/1.2.13/FastInfoset-1.2.13.jar:/home/pcariou7/.m2/repository/javax/validation/validation-api/2.0.1.Final/validation-api-2.0.1.Final.jar:/home/pcariou7/.m2/repository/org/hibernate/validator/hibernate-validator/6.0.13.Final/hibernate-validator-6.0.13.Final.jar:/home/pcariou7/.m2/repository/org/jboss/logging/jboss-logging/3.3.2.Final/jboss-logging-3.3.2.Final.jar:/home/pcariou7/.m2/repository/com/fasterxml/classmate/1.3.4/classmate-1.3.4.jar:/home/pcariou7/.m2/repository/org/glassfish/javax.el/3.0.0/javax.el-3.0.0.jar:/home/pcariou7/.m2/repository/javax/el/javax.el-api/3.0.0/javax.el-api-3.0.0.jar:/home/pcariou7/.m2/repository/commons-io/commons-io/2.4/commons-io-2.4.jar:/home/pcariou7/.m2/repository/com/googlecode/json-simple/json-simple/1.1.1/json-simple-1.1.1.jar:"/>
     <property name="sun.cpu.endian" value="little"/>
@@ -27,7 +27,7 @@
     <property name="line.separator" value="&#10;"/>
     <property name="java.vm.specification.vendor" value="Oracle Corporation"/>
     <property name="java.specification.name" value="Java Platform API Specification"/>
-    <property name="surefire.real.class.path" value="/home/pcariou7/code/sepa/service/target/surefire/surefirebooter8727881529852488838.jar"/>
+    <property name="surefire.real.class.path" value="/home/pcariou7/code/sepa/service/target/surefire/surefirebooter7138732664239829947.jar"/>
     <property name="sun.management.compiler" value="HotSpot 64-Bit Tiered Compilers"/>
     <property name="java.runtime.version" value="17.0.4.1+1-LTS-2"/>
     <property name="user.name" value="pcariou7"/>
@@ -51,5 +51,5 @@
     <property name="sun.io.unicode.encoding" value="UnicodeLittle"/>
     <property name="java.class.version" value="61.0"/>
   </properties>
-  <testcase name="shouldAnswerWithTrue" classname="com.pcariou.reader.AppTest" time="0"/>
+  <testcase name="shouldAnswerWithTrue" classname="com.pcariou.reader.AppTest" time="0.001"/>
 </testsuite>

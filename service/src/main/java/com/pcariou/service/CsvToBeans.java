@@ -50,6 +50,10 @@ public class CsvToBeans
 
 	private Document createDocument(List<CreditTransferTransactionInformation> creditTransferTransactionInformations, String inputFile) {
 		DebtorInformations debtorInformations = new DebtorInformations();
+		if (!validate(debtorInformations)) {
+			System.out.println("Validation failed: Please check and modify your JSON file");
+			System.exit(1);
+		}
 
 		// Group Header
 		LocalDateTime now = LocalDateTime.now();
