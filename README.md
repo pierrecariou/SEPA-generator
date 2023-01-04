@@ -8,7 +8,7 @@ This is a simple tool that will generate a SEPA valid XML File from a CSV File (
 
 ## Getting Started
 
-This project is build with Java, thus it should be runnable under any OS.
+This project is built with Java, therefore it should be runnable under any OS.
 
 ### Prerequisites
 
