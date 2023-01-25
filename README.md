@@ -26,7 +26,7 @@ Some error messages will be displayed if you're not respeccting the right format
 ## Authors
 
 * [Pierre Cariou github](https://github.com/pierrecariou)
-email: pierrecariou@outlook.fr
+* email: pierrecariou@outlook.fr
 
 ## License
 
