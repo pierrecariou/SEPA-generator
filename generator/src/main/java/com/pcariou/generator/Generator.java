@@ -2,16 +2,94 @@ package com.pcariou.generator;
 
 import com.pcariou.model.*;
 import com.pcariou.service.*;
+import com.pcariou.view.*;
 
 import org.apache.commons.io.FilenameUtils;
 
 import java.io.RandomAccessFile;
+import java.util.Arrays;
 
 import com.aspose.cells.*;
 
-
-public class Generator
+public class Generator implements IGenerator
 {
+    private static final String[] VALID_EXTENSIONS = {"xls", "xlsx", "csv"};
+    private static final String[] EXCEL_EXTENSIONS = {"xls", "xlsx"};
+
+    private GUIView view;
+
+    public Generator()
+    {
+    }
+
+    public void setView(GUIView view)
+    {
+        this.view = view;
+    }
+
+    public void generate(String inputFile, String outputFile)
+    {
+        if (!argumentsAreValid(inputFile, outputFile))
+            return;
+        if (isExcelFile(inputFile))
+            inputFile = convertToCsv(inputFile);
+        transformCsvToXml(inputFile, outputFile);
+    }
+
+    private void transformCsvToXml(String inputFile, String outputFile)
+    {
+        try {
+            Document document = new CsvToBeans().read(inputFile);
+            new BeansToXml().write(document, outputFile);
+            view.showSuccessMessage(outputFile + " generated successfully.");
+        } catch (Exception e) {
+            view.showErrorMessage(e.getMessage());
+        }
+    }
+
+    private boolean argumentsAreValid(String inputFile, String outputFile)
+    {
+        if (inputFile == null || inputFile.isEmpty())
+        {
+            view.showErrorMessage("Please select an input file.");
+            return false;
+        }
+        if (outputFile == null || outputFile.isEmpty())
+        {
+            view.showErrorMessage("Please select an output file.");
+            return false;
+        }
+        if (!(Arrays.asList(VALID_EXTENSIONS).contains(FilenameUtils.getExtension(inputFile))))
+        {
+            view.showErrorMessage("Please select a valid input file.");
+            return false;
+        }
+        if (!FilenameUtils.getExtension(outputFile).equals("xml"))
+        {
+            view.showErrorMessage("Please select a valid output file.");
+            return false;
+        }
+        return true;
+    }
+
+    private Boolean isExcelFile(String inputFile)
+    {
+        return Arrays.asList(EXCEL_EXTENSIONS).contains(FilenameUtils.getExtension(inputFile));
+    }
+
+    private String convertToCsv(String inputFile)
+    {
+        try {
+            Workbook workbook = new Workbook(inputFile);
+            inputFile = FilenameUtils.getBaseName(inputFile) + ".csv";
+            workbook.save(FilenameUtils.getBaseName(inputFile) + ".csv");
+            eraseNoLicenseMessage(inputFile);
+        } catch (Exception e) {
+            view.showErrorMessage(e.getMessage());
+        }
+        return inputFile;
+    }
+
     private static void eraseNoLicenseMessage(String inputFile) 
     {
         Byte b;
@@ -32,9 +110,9 @@ public class Generator
         }
     }
 
-    public static void main( String[] args )
+    public static void fromCommanLine(String[] args)
     {
-        if (args.length != 2) {
+    if (args.length != 4) {
             System.out.println("Usage: java -jar generator.jar <input file> <output file>");
             System.exit(1);
         }
@@ -64,8 +142,23 @@ public class Generator
             System.exit(1);
         }
 
-        Document document = new CsvToBeans().read(inputFilename);
-        new BeansToXml().write(document, outputFilename);
-        System.out.println("" + outputFilename + " generated successfully.");
+        try {
+            Document document = new CsvToBeans().read(inputFilename);
+            new BeansToXml().write(document, outputFilename);
+            //System.out.println("" + outputFilename + " generated successfully.");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void main( String[] args )
+    {
+        if (args.length == 0) {
+            Generator generator = new Generator();
+            GUIView view = new GUIView(generator);
+            generator.setView(view);
+        } else {
+            fromCommanLine(args);
+        }
     }
 }

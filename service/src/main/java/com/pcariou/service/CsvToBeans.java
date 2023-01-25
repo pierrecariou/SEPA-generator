@@ -20,6 +20,7 @@ import java.time.format.DateTimeFormatter;
 public class CsvToBeans
 {
 	private Validator validator;
+	private StringBuilder errors;
 
 	public CsvToBeans()
 	{
@@ -27,8 +28,7 @@ public class CsvToBeans
 		this.validator = Validation.buildDefaultValidatorFactory().getValidator();
 	}
 
-	public Document read(String inputFile) {
-		try {
+	public Document read(String inputFile) throws Exception {
 			CsvToBeanBuilder<CreditTransferTransactionInformation> CsvToBeanBuilder = new CsvToBeanBuilder<CreditTransferTransactionInformation>(new FileReader(inputFile));
 			CsvToBeanBuilder.withType(CreditTransferTransactionInformation.class);
 			CsvToBeanBuilder.withIgnoreLeadingWhiteSpace(true);
@@ -36,23 +36,16 @@ public class CsvToBeans
 			List<CreditTransferTransactionInformation> creditTransferTransactionInformations = CsvToBeanBuilder.build().parse();
 			for (CreditTransferTransactionInformation creditTransferTransactionInformation : creditTransferTransactionInformations) {
 				if (!validate(creditTransferTransactionInformation)) {
-					System.out.println("Validation failed: Please check and modify your CSV / Excel file");
-					System.exit(1);
+					throw new Exception("Invalid CSV file\n" + this.errors.toString());
 				}
 			}
 			return createDocument(creditTransferTransactionInformations, inputFile);
-		} catch (Exception e) {
-			System.out.println(e.getMessage());
-			System.exit(1);
-		}
-		return null;
 	}
 
-	private Document createDocument(List<CreditTransferTransactionInformation> creditTransferTransactionInformations, String inputFile) {
+	private Document createDocument(List<CreditTransferTransactionInformation> creditTransferTransactionInformations, String inputFile) throws Exception {
 		DebtorInformations debtorInformations = new DebtorInformations();
 		if (!validate(debtorInformations)) {
-			System.out.println("Validation failed: Please check and modify your JSON file");
-			System.exit(1);
+			throw new Exception("Validation failed: Please check and modify your JSON file\n" + this.errors.toString());
 		}
 
 		// Group Header
@@ -72,7 +65,6 @@ public class CsvToBeans
 		OrganisationIdentification organisationIdentification = new OrganisationIdentification(proprietaryIdentification);
 		PartyIdentification partyIdentification = new PartyIdentification(organisationIdentification);
 		InitiatingParty initiatingParty = new InitiatingParty(debtorInformations.initiatingPartyName, partyIdentification);
-
 
 		GroupHeader groupHeader = new GroupHeader(inputFile, creationDateTime, numberOfTransactions, controlSum, initiatingParty);
 
@@ -94,9 +86,10 @@ public class CsvToBeans
 
 	private boolean validate(Object object) {
 		Set<ConstraintViolation<Object>> violations = validator.validate(object);
+		this.errors = new StringBuilder();
 		if (violations.size() > 0) {
 			for (ConstraintViolation<Object> violation : violations) {
-				System.out.println(violation.getMessage());
+				errors.append(violation.getMessage() + "\n");
 			}
 			return false;
 		}
