@@ -40,7 +40,7 @@ public class GUIView extends JFrame
 
 	public GUIView(IGenerator generator)
 	{
-		super("Sepa Generator - Version 1.0");
+		super("Sepa Generator - Version 1.1");
 		this.generator = generator;
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		Dimension dim = Toolkit.getDefaultToolkit().getScreenSize();
