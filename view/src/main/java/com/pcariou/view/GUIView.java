@@ -44,11 +44,10 @@ public class GUIView extends JFrame
 		this.generator = generator;
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		Dimension dim = Toolkit.getDefaultToolkit().getScreenSize();
-		setSize(dim.width/2, dim.height/2);
-        setLocation(dim.width/2 - getWidth()/2, dim.height/2 - getHeight()/2);
+		setSize(dim.width / 2, (int)(dim.height / 1.7));
+        setLocation(dim.width / 2 - getWidth() / 2, dim.height / 2 - getHeight() / 2);
         setVisible(true);
 		initComponents();
-		//pack();
 		revalidate();
 		repaint();
 	}
@@ -71,8 +70,10 @@ public class GUIView extends JFrame
 		Object[][] data = new Object[1][columnNames.length];
 		for (int i = 0; i < columnNames.length; i++)
 			data[0][i] = resultList.get(i);
-		//tableResult = new JTable(data, columnNames);
+
 		tableResult.setModel(new DefaultTableModel(data, columnNames));
+		tableResult.getColumnModel().getColumn(1).setPreferredWidth(140);
+
 		// center the text in the table
 		DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
 		centerRenderer.setHorizontalAlignment( JLabel.CENTER );
@@ -80,6 +81,10 @@ public class GUIView extends JFrame
 		for (int i = 0; i < columnNames.length; i++)
 			tableResult.getColumnModel().getColumn(i).setCellRenderer(centerRenderer);
 		tableResult.setVisible(true);
+		tableResult.getTableHeader().setVisible(true);
+
+		revalidate();
+		repaint();
 	}
 
 	private void initComponents()
@@ -98,6 +103,15 @@ public class GUIView extends JFrame
 		gbc.gridwidth = GridBagConstraints.REMAINDER;
 		gbc.fill = GridBagConstraints.HORIZONTAL;
 
+		initSelectInputFile(gbc);
+		initSelectOutputFile(gbc);
+		initSelectExecutionDate(gbc);
+		initGenerateButton(gbc);
+		initMessageSuccess(gbc);
+		initLogo(gbc);
+	}
+
+	private void initSelectInputFile(GridBagConstraints gbc) {
 		JPanel panel = new JPanel();
 		panel.setLayout(new GridBagLayout());
 
@@ -125,8 +139,10 @@ public class GUIView extends JFrame
 		panel.add(buttonSelectInputFile, gbc);
 		
 		leftPanel.add(panel, gbc);
+	}
 
-
+	private void initSelectOutputFile(GridBagConstraints gbc)
+	{
 		JPanel panel1 = new JPanel();
 		panel1.setLayout(new GridBagLayout());
 
@@ -152,17 +168,16 @@ public class GUIView extends JFrame
 		buttonSelectOutputFile.setPreferredSize(new Dimension(100, 30));
 		panel1.add(buttonSelectOutputFile, gbc);
 
+		panel1.setBackground(new Color(248, 248, 248));
 		leftPanel.add(panel1, gbc);
 		panel1.setBorder(BorderFactory.createEmptyBorder(10, 0, 0, 0));
+	}
 
-
-		//select date for execution date of payments with JDatePicker
-
+	private void initSelectExecutionDate(GridBagConstraints gbc) {
 		JPanel panel2 = new JPanel();
 		panel2.setLayout(new GridBagLayout());	
 
 		JLabel labelExecutionDate = new JLabel("Execution Date:   ");
-		//labelExecutionDate.setFont(new Font("Arial", Font.BOLD, 14));
 		labelExecutionDate.setForeground(new Color(81, 81, 81));
 		panel2.add(labelExecutionDate);
 
@@ -170,29 +185,59 @@ public class GUIView extends JFrame
 		dateChooser.setDateFormatString("yyyy/MM/dd");
 		dateChooser.setPreferredSize(new Dimension(200, 30));
 		dateChooser.setBackground(new Color(95, 178, 254));
-		//dateChooser.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
-		//dateChooser.setOpaque(true);
 		dateChooser.setForeground(new Color(81, 81, 81));
+		
 		panel2.add(dateChooser);
 
+		panel2.setBackground(new Color(248, 248, 248));
 		leftPanel.add(panel2, gbc);
 		panel2.setBorder(BorderFactory.createEmptyBorder(10, 0, 0, 0));
 
+		gbc.insets = new Insets(40, 0, 0, 0);
+	}
+	
+	private void initMessageSuccess(GridBagConstraints gbc) {
+		// set success message and table
+		labelMessageSuccess = new JLabel();
+		labelMessageSuccess.setForeground(new Color(81, 81, 81));
+		labelMessageSuccess.setVisible(false);
+		leftPanel.add(labelMessageSuccess, gbc);
+		
+		tableResult = new JTable();
+		tableResult.setEnabled(false);
+		tableResult.getTableHeader().setBackground(new Color(81, 81, 81));
+		tableResult.getTableHeader().setForeground(Color.WHITE);
+		tableResult.getTableHeader().setOpaque(false);
+
+		tableResult.setShowGrid(false);
+		tableResult.setGridColor(new Color(81, 81, 81));
+		tableResult.setBackground(new Color(248, 248, 248));
+		tableResult.setForeground(new Color(81, 81, 81));
 
 		gbc.insets = new Insets(40, 0, 0, 0);
+		leftPanel.add(tableResult.getTableHeader(), gbc);
+		gbc.insets = new Insets(0, 0, 0, 0);
+		leftPanel.add(tableResult, gbc);
 
+		tableResult.setVisible(false);
+	}
+
+	private void initGenerateButton(GridBagConstraints gbc) {
 		buttonGenerate = new JButton("Generate");
 		designButton(buttonGenerate);
 		buttonGenerate.addActionListener(e -> {
 			labelMessageSuccess.setVisible(false);
 			tableResult.setVisible(false);
+			tableResult.getTableHeader().setVisible(false);
 			generator.generate(filenameInput, filenameOutput, dateChooser.getDate());
 		});
 
 		leftPanel.add(buttonGenerate, gbc);
 
 		gbc.insets = new Insets(10, 0, 0, 0);
+	}
 
+	private void initLogo(GridBagConstraints gbc) {
 		rightPanel = new JPanel();
 		rightPanel.setBackground(new Color(248, 248, 248));
 
@@ -206,20 +251,6 @@ public class GUIView extends JFrame
 
 		GUIPanel.add(leftPanel, gbc);
 		add(rightPanel, BorderLayout.PAGE_END);
-
-		labelMessageSuccess = new JLabel();
-		labelMessageSuccess.setForeground(new Color(81, 81, 81));
-		labelMessageSuccess.setVisible(false);
-		leftPanel.add(labelMessageSuccess, gbc);
-		
-		tableResult = new JTable();
-		tableResult.setEnabled(false);
-
-		leftPanel.add(tableResult.getTableHeader(), gbc);
-		gbc.insets = new Insets(0, 0, 0, 0);
-		leftPanel.add(tableResult, gbc);
-
-		tableResult.setVisible(false);
 	}
 
 	private void designButton(JButton button)
