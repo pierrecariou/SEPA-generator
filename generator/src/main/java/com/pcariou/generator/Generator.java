@@ -8,6 +8,9 @@ import org.apache.commons.io.FilenameUtils;
 
 import java.io.RandomAccessFile;
 import java.util.Arrays;
+import java.util.Date;
+
+import javax.swing.UIManager;
 
 import com.aspose.cells.*;
 
@@ -27,27 +30,29 @@ public class Generator implements IGenerator
         this.view = view;
     }
 
-    public void generate(String inputFile, String outputFile)
+    public void generate(String inputFile, String outputFile, Date date)
     {
-        if (!argumentsAreValid(inputFile, outputFile))
+        if (!argumentsAreValid(inputFile, outputFile, date))
             return;
         if (isExcelFile(inputFile))
             inputFile = convertToCsv(inputFile);
-        transformCsvToXml(inputFile, outputFile);
+        transformCsvToXml(inputFile, outputFile, date);
     }
 
-    private void transformCsvToXml(String inputFile, String outputFile)
+    private void transformCsvToXml(String inputFile, String outputFile, Date date)
     {
         try {
-            Document document = new CsvToBeans().read(inputFile);
+            CsvToBeans csvToBeans = new CsvToBeans(date);
+            Document document = csvToBeans.read(inputFile);
             new BeansToXml().write(document, outputFile);
             view.showSuccessMessage(outputFile + " generated successfully.");
+            view.showTableResult(csvToBeans.getTableResult());
         } catch (Exception e) {
             view.showErrorMessage(e.getMessage());
         }
     }
 
-    private boolean argumentsAreValid(String inputFile, String outputFile)
+    private boolean argumentsAreValid(String inputFile, String outputFile, Date date)
     {
         if (inputFile == null || inputFile.isEmpty())
         {
@@ -67,6 +72,11 @@ public class Generator implements IGenerator
         if (!FilenameUtils.getExtension(outputFile).equals("xml"))
         {
             view.showErrorMessage("Please select a valid output file.");
+            return false;
+        }
+        if (date == null)
+        {
+            view.showErrorMessage("Please select a valid date.");
             return false;
         }
         return true;
@@ -143,7 +153,7 @@ public class Generator implements IGenerator
         }
 
         try {
-            Document document = new CsvToBeans().read(inputFilename);
+            Document document = new CsvToBeans(null).read(inputFilename); // TODO: date from args[2] instead of null
             new BeansToXml().write(document, outputFilename);
             //System.out.println("" + outputFilename + " generated successfully.");
         } catch (Exception e) {
@@ -151,10 +161,20 @@ public class Generator implements IGenerator
         }
     }
 
+    private static void setGUINativeLookAndFeel()
+    {
+        try {
+            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+        
     public static void main( String[] args )
     {
         if (args.length == 0) {
             Generator generator = new Generator();
+            //setGUINativeLookAndFeel();
             GUIView view = new GUIView(generator);
             generator.setView(view);
         } else {

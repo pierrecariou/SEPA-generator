@@ -22,8 +22,13 @@ public class CsvToBeans
 	private Validator validator;
 	private StringBuilder errors;
 
-	public CsvToBeans()
+	private Date executionDate;
+	private List<String> tableResult;
+
+	public CsvToBeans(Date executionDate)
 	{
+		this.executionDate = executionDate;
+
 		java.util.logging.Logger.getLogger("org.hibernate").setLevel(Level.SEVERE);
 		this.validator = Validation.buildDefaultValidatorFactory().getValidator();
 	}
@@ -43,7 +48,7 @@ public class CsvToBeans
 	}
 
 	private Document createDocument(List<CreditTransferTransactionInformation> creditTransferTransactionInformations, String inputFile) throws Exception {
-		DebtorInformations debtorInformations = new DebtorInformations();
+		DebtorInformations debtorInformations = new DebtorInformations(executionDate);
 		if (!validate(debtorInformations)) {
 			throw new Exception("Validation failed: Please check and modify your JSON file\n" + this.errors.toString());
 		}
@@ -59,7 +64,7 @@ public class CsvToBeans
 		for (CreditTransferTransactionInformation creditTransferTransactionInformation : creditTransferTransactionInformations) {
 			totalAmount += Double.valueOf(creditTransferTransactionInformation.getAmount().getInstructedAmount().getInstructedAmount());
 		}
-		String controlSum = Double.toString(totalAmount);
+		String controlSum = String.format("%.2f", totalAmount);
 		
 		ProprietaryIdentification proprietaryIdentification = new ProprietaryIdentification(debtorInformations.initiatingPartySiret);
 		OrganisationIdentification organisationIdentification = new OrganisationIdentification(proprietaryIdentification);
@@ -81,7 +86,16 @@ public class CsvToBeans
 		Pain pain = new Pain(groupHeader, paymentInformations);
 		Document document = new Document(pain);
 
+		tableResult = new ArrayList<>();
+		tableResult.add(numberOfTransactions);
+		tableResult.add(controlSum);
+		tableResult.add(debtorInformations.requestedExecutionDate);
+
 		return document;
+	}
+
+	public List<String> getTableResult() {
+		return tableResult;
 	}
 
 	private boolean validate(Object object) {

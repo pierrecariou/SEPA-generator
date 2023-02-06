@@ -2,8 +2,11 @@ package com.pcariou.service;
 
 import org.json.simple.parser.*;
 import org.json.simple.*;
+import java.util.Date;
 
 import java.io.*;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 
 import javax.validation.constraints.*;
 
@@ -27,7 +30,7 @@ public class DebtorInformations {
 	@Pattern(regexp = "^(\\d{4})-(\\d{2})-(\\d{2})$", message = "Execution date is not valid")
 	public String requestedExecutionDate;
 
-	public DebtorInformations() throws IOException, ParseException, FileNotFoundException {
+	public DebtorInformations(Date requestedExecutionDate) throws IOException, ParseException, FileNotFoundException, IllegalArgumentException {
 		JSONParser parser = new JSONParser();
 		Object obj = parser.parse(new FileReader("DebtorInformations.json"));
 
@@ -41,7 +44,11 @@ public class DebtorInformations {
 		JSONObject initiatingParty = (JSONObject) jsonObject.get("initiatingParty");
 		this.initiatingPartyName = (String) initiatingParty.get("name");
 		this.initiatingPartySiret = (String) initiatingParty.get("siret");
-
-		this.requestedExecutionDate = (String) jsonObject.get("requestedExecutionDate");
+		
+		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+		this.requestedExecutionDate = requestedExecutionDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate().format(formatter);
+		if (requestedExecutionDate.before(new Date())) {
+			throw new IllegalArgumentException("Execution date must be in the future");
+		}
 	}
 }
