@@ -11,7 +11,7 @@ import java.util.List;
 
 import java.awt.*;
 import java.io.File;
-import java.nio.file.Path;
+import java.nio.file.Paths;
 
 /**
  * GUIView class
@@ -65,7 +65,7 @@ public class GUIView extends JFrame
 
 	public void showTableResult(List<String> resultList)
 	{
-		resultList.add(0, Path.of(filenameOutput).getFileName().toString());
+		resultList.add(0, Paths.get(filenameOutput).getFileName().toString());
 
 		Object[][] data = new Object[1][columnNames.length];
 		for (int i = 0; i < columnNames.length; i++)
@@ -197,7 +197,6 @@ public class GUIView extends JFrame
 	}
 	
 	private void initMessageSuccess(GridBagConstraints gbc) {
-		// set success message and table
 		labelMessageSuccess = new JLabel();
 		labelMessageSuccess.setForeground(new Color(81, 81, 81));
 		labelMessageSuccess.setVisible(false);

@@ -2,6 +2,7 @@ package com.pcariou.service;
 
 import com.pcariou.model.*;
 import java.io.FileReader;
+import java.nio.file.Paths;
 
 import com.opencsv.bean.*;
 
@@ -44,7 +45,7 @@ public class CsvToBeans
 					throw new Exception("Invalid CSV file\n" + this.errors.toString());
 				}
 			}
-			return createDocument(creditTransferTransactionInformations, inputFile);
+			return createDocument(creditTransferTransactionInformations, Paths.get(inputFile).getFileName().toString());
 	}
 
 	private Document createDocument(List<CreditTransferTransactionInformation> creditTransferTransactionInformations, String inputFile) throws Exception {
@@ -62,6 +63,8 @@ public class CsvToBeans
 
 		double totalAmount = 0;
 		for (CreditTransferTransactionInformation creditTransferTransactionInformation : creditTransferTransactionInformations) {
+			String amount = creditTransferTransactionInformation.getAmount().getInstructedAmount().getInstructedAmount();
+			creditTransferTransactionInformation.getAmount().getInstructedAmount().setInstructedAmount(String.format("%.2f", Double.parseDouble(amount)));
 			totalAmount += Double.valueOf(creditTransferTransactionInformation.getAmount().getInstructedAmount().getInstructedAmount());
 		}
 		String controlSum = String.format("%.2f", totalAmount);

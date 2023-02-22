@@ -33,6 +33,6 @@ public class InstructedAmount
 	}
 
 	public void setInstructedAmount(String instructedAmount) {
-		this.instructedAmount = instructedAmount;
+		this.instructedAmount = instructedAmount.replace(",", ".");
 	}
 }
