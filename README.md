@@ -1,5 +1,7 @@
 # SEPA-generator
 
+![image](https://img.shields.io/github/v/release/pierrecariou/SEPA-generator)
+
 A SEPA Generator following the ISO 20022 pain.001.001.02 XML Format
 
 ![image](https://user-images.githubusercontent.com/46349842/220659342-0b696b42-76ca-4d7a-971c-f3b694a7dad9.png)
