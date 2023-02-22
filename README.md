@@ -25,7 +25,7 @@ The input file should have detailed the Creditors infos under those colums names
 | Content Cell  | Content Cell  | Content Cell  | Content Cell  | Content Cell  | Content Cell  |
 | ...           | ...           | ...           | ...           | ...           | ...           |
 
-The column order does not matter.
+The column order does not mahttps://www.apache.org/licenses/LICENSE-2.0tter.
 Some error messages will be displayed if you're not respeccting the right formatting for the infos.
 
 3. Select the Execution Date for the operations.
@@ -39,4 +39,4 @@ Some error messages will be displayed if you're not respeccting the right format
 
 ## License
 
-This project is licensed under the MIT License
+This project is licensed under the Apache 2 License (https://www.apache.org/licenses/LICENSE-2.0)
