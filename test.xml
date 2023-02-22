@@ -2,8 +2,8 @@
 <Document xmlns="urn:iso:std:iso:20022:tech:xsd:pain.001.001.02">
     <pain.001.001.02>
         <GrpHdr>
-            <MsgId>/home/pcariou7/sepaGenerator/Payments-template-example.csv</MsgId>
-            <CreDtTm>2023-02-06T14:26:08</CreDtTm>
+            <MsgId>Payments-template-example.csv</MsgId>
+            <CreDtTm>2023-02-22T16:54:09</CreDtTm>
             <NbOfTxs>4</NbOfTxs>
             <CtrlSum>10132.50</CtrlSum>
             <Grpg>MIXD</Grpg>
@@ -19,14 +19,14 @@
             </InitgPty>
         </GrpHdr>
         <PmtInf>
-            <PmtInfId>/home/pcariou7/sepaGenerator/Payments-template-example.csv-1</PmtInfId>
+            <PmtInfId>Payments-template-example.csv-1</PmtInfId>
             <PmtMtd>TRF</PmtMtd>
             <PmtTpInf>
                 <SvcLvl>
                     <Cd>SEPA</Cd>
                 </SvcLvl>
             </PmtTpInf>
-            <ReqdExctnDt>2023-02-07</ReqdExctnDt>
+            <ReqdExctnDt>2023-02-23</ReqdExctnDt>
             <Dbtr>
                 <Nm>John Doe</Nm>
             </Dbtr>
