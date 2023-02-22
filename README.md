@@ -10,6 +10,7 @@ A SEPA Generator following the ISO 20022 pain.001.001.02 XML Format
 ### About the Software
 
 Simple tool that will generate a SEPA valid XML File from a CSV File (or directly from an Excel file - .xls or .xlsx)
+It will validate/transform the inputs based on the ISO 20022 restrictions, thus ensuring the validity of the generated XML sepa file.
 
 ## Usage
 
@@ -23,10 +24,12 @@ The input file should have detailed the Creditors infos under those colums names
 | Content Cell  | Content Cell  | Content Cell  | Content Cell  | Content Cell  | Content Cell  |
 | ...           | ...           | ...           | ...           | ...           | ...           |
 
-The order does not matter.
+The column order does not matter.
 Some error messages will be displayed if you're not respeccting the right formatting for the infos.
 
-3. The ouptut (XML) file will be created at the location of your choice. 
+3. Select the Execution Date for the operations.
+
+4. The ouptut (XML) file will be created at the location of your choice.
 
 ## Authors
 
