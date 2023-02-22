@@ -1,5 +1,6 @@
 # SEPA-generator
 
+![Hex.pm](https://img.shields.io/hexpm/l/plug)
 ![GitHub release (latest by date)](https://img.shields.io/github/v/release/pierrecariou/SEPA-generator)
 
 A SEPA Generator following the ISO 20022 pain.001.001.02 XML Format
