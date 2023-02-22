@@ -2,6 +2,9 @@
 
 A SEPA Generator following the ISO 20022 pain.001.001.02 XML Format
 
+![image](https://user-images.githubusercontent.com/46349842/220659342-0b696b42-76ca-4d7a-971c-f3b694a7dad9.png)
+
+
 ### About the Software
 
 Simple tool that will generate a SEPA valid XML File from a CSV File (or directly from an Excel file - .xls or .xlsx)
