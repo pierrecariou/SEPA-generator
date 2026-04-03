@@ -67,7 +67,7 @@ public class CsvToBeans
 			creditTransferTransactionInformation.getAmount().getInstructedAmount().setInstructedAmount(String.format("%.2f", Double.parseDouble(amount)));
 			totalAmount += Double.valueOf(creditTransferTransactionInformation.getAmount().getInstructedAmount().getInstructedAmount());
 		}
-		String controlSum = String.format("%.2f", totalAmount);
+		String controlSum = String.format(Locale.US,"%.2f", totalAmount);
 		
 		ProprietaryIdentification proprietaryIdentification = new ProprietaryIdentification(debtorInformations.initiatingPartySiret);
 		OrganisationIdentification organisationIdentification = new OrganisationIdentification(proprietaryIdentification);
