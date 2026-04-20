@@ -21,10 +21,10 @@ import java.time.format.DateTimeFormatter;
  */
 public class CsvToBeans
 {
-	private Validator validator;
+	private final Validator validator;
 	private StringBuilder errors;
 
-	private LocalDate executionDate;
+	private final LocalDate executionDate;
 	private List<String> tableResult;
 
 	public CsvToBeans(LocalDate executionDate)
