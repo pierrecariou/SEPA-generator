@@ -16,7 +16,7 @@ public class SettingsFrame extends JFrame {
     private final InitiatingPartyPanel initiatingPartyPanel = new InitiatingPartyPanel();
     private final PrefillPanel prefillPanel = new PrefillPanel();
 
-    private final File configFile = new File("config.json");
+    private final File configFile = new File(System.getProperty("user.home"), ".sepa-generator-config.json");
     private final Gson gson = new GsonBuilder().setPrettyPrinting().create();
 
     public SettingsFrame(JFrame parent) {
@@ -100,6 +100,11 @@ public class SettingsFrame extends JFrame {
         config.fileSettings = new FileSettings();
         config.fileSettings.defaultInputPath = prefillPanel.getInputPath();
         config.fileSettings.defaultOutputPath = prefillPanel.getOutputPath();
+
+        if (!isValid(config)) {
+            JOptionPane.showMessageDialog(this, "Please fill in all fields before saving.", "Validation Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
 
         try (FileWriter writer = new FileWriter(configFile)) {
             gson.toJson(config, writer);

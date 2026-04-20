@@ -1,9 +1,8 @@
 package com.pcariou.view.custom;
 
+import com.formdev.flatlaf.FlatClientProperties;
 import com.github.lgooddatepicker.components.DatePicker;
 import com.github.lgooddatepicker.components.DatePickerSettings;
-import com.formdev.flatlaf.FlatClientProperties;
-import com.pcariou.view.common.UI;
 
 import javax.swing.*;
 import java.awt.*;
@@ -18,11 +17,13 @@ public final class FlatDatePickerField extends JPanel {
 
     private final DateTimeFormatter formatter;
 
-    public FlatDatePickerField(DatePickerSettings settings, Dimension btnPreferredSize) {
+    public FlatDatePickerField(LocalDate firstAllowedDate, LocalDate lastAllowedDate, Dimension btnPreferredSize) {
         super(new BorderLayout());
 
         // Engine date picker (kept in hierarchy so popup works)
-        this.engine = new DatePicker(settings);
+        this.engine = new DatePicker(new DatePickerSettings());
+        engine.getSettings().setDateRangeLimits(firstAllowedDate, lastAllowedDate);
+
         engine.setOpaque(false);
         engine.setBorder(null);
 

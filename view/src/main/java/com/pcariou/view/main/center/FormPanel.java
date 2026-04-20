@@ -1,8 +1,7 @@
 package com.pcariou.view.main.center;
 
-import com.github.lgooddatepicker.components.DatePicker;
 import com.formdev.flatlaf.FlatClientProperties;
-import com.github.lgooddatepicker.components.DatePickerSettings;
+import com.github.lgooddatepicker.components.DatePicker;
 import com.pcariou.view.custom.FlatDatePickerField;
 import com.pcariou.view.main.MainFrame;
 import lombok.Getter;
@@ -66,7 +65,7 @@ public class FormPanel extends JPanel {
         if (border == null) border = UIManager.getColor("Separator.foreground");
         card.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(border),
-                BorderFactory.createEmptyBorder(24, 24, 24, 24)
+                BorderFactory.createEmptyBorder(16, 20, 16, 20)
         ));
 
         // Optional: FlatLaf per-component styling
@@ -104,6 +103,8 @@ public class FormPanel extends JPanel {
         p.add(new JLabel(), "growx, pushx");
         p.add(reset, "gapright 8");
         p.add(generate, "right");
+
+        owner.getRootPane().setDefaultButton(generate);
 
         // Make Enter trigger Generate
         SwingUtilities.invokeLater(() -> {
@@ -184,8 +185,9 @@ public class FormPanel extends JPanel {
 //        grid.add(browseOutput, "wrap");
 
         // Date
-        int h = inputField.getPreferredSize().height; // get consistent height from input field
-        flatDatePickerField = new FlatDatePickerField(new DatePickerSettings(), browseInput.getPreferredSize());
+        LocalDate tomorrow = LocalDate.now().plusDays(1);
+        flatDatePickerField = new FlatDatePickerField(tomorrow, LocalDate.now().plusYears(5), browseInput.getPreferredSize());
+        flatDatePickerField.setDate(tomorrow);
         JLabel dateLabel = new JLabel("Execution date");
         dateLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
         grid.add(dateLabel, "alignx right");

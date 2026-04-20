@@ -4,10 +4,8 @@ import com.formdev.flatlaf.FlatClientProperties;
 import com.pcariou.view.AppTheme;
 import com.pcariou.view.SettingsFrame;
 
-import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
-import java.io.File;
 
 public class HeaderPanel extends JPanel {
     private final JButton themeButton = new JButton("🌙");
@@ -48,8 +46,8 @@ public class HeaderPanel extends JPanel {
         });
         menu.add(debtor);
 
-        menu.add(new JMenuItem("Preferences...")); // Placeholder for future features
-        menu.add(new JMenuItem("About...")); // Placeholder for future features
+//        menu.add(new JMenuItem("Preferences...")); // Placeholder for future features
+//        menu.add(new JMenuItem("About...")); // Placeholder for future features
 
         profilesButton.addActionListener(e -> menu.show(profilesButton, 0, profilesButton.getHeight()));
 
