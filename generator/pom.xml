@@ -4,7 +4,7 @@
   <parent>
     <artifactId>sepa</artifactId>
     <groupId>com.pcariou.sepa</groupId>
-    <version>1.1</version>
+    <version>2</version>
   </parent>
 
   <groupId>com.pcariou.generator</groupId>

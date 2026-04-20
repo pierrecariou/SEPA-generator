@@ -1,0 +1,15 @@
+{
+  "debtor": {
+    "name": "TEST",
+    "iban": "okkok",
+    "bic": "Enter BIC"
+  },
+  "initiatingParty": {
+    "name": "Enter Name here!!!",
+    "siret": "Enter SIRET"
+  },
+  "fileSettings": {
+    "defaultInputPath": "Enter Default Input Path",
+    "defaultOutputPath": "Enter Default Output Path"
+  }
+}
