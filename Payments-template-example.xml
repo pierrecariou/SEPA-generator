@@ -3,16 +3,16 @@
     <pain.001.001.02>
         <GrpHdr>
             <MsgId>Payments-template-example.csv</MsgId>
-            <CreDtTm>2026-04-20T18:27:31</CreDtTm>
+            <CreDtTm>2026-06-05T19:53:38</CreDtTm>
             <NbOfTxs>4</NbOfTxs>
             <CtrlSum>10132.50</CtrlSum>
             <Grpg>MIXD</Grpg>
             <InitgPty>
-                <Nm>John Doe</Nm>
+                <Nm>fe</Nm>
                 <Id>
                     <OrgId>
                         <PrtryId>
-                            <Id>12345678901234</Id>
+                            <Id>55327987900672</Id>
                         </PrtryId>
                     </OrgId>
                 </Id>
@@ -26,13 +26,13 @@
                     <Cd>SEPA</Cd>
                 </SvcLvl>
             </PmtTpInf>
-            <ReqdExctnDt>2026-04-21</ReqdExctnDt>
+            <ReqdExctnDt>2026-06-06</ReqdExctnDt>
             <Dbtr>
-                <Nm>John Doe</Nm>
+                <Nm>TEST</Nm>
             </Dbtr>
             <DbtrAcct>
                 <Id>
-                    <IBAN>FR7612345678901234567890123</IBAN>
+                    <IBAN>GB29NWBK60161331926819</IBAN>
                 </Id>
             </DbtrAcct>
             <DbtrAgt>
@@ -57,7 +57,7 @@
                 </Cdtr>
                 <CdtrAcct>
                     <Id>
-                        <IBAN>DE60123456781234567891</IBAN>
+                        <IBAN>GB29NWBK60161331926819</IBAN>
                     </Id>
                 </CdtrAcct>
                 <RmtInf>
@@ -81,7 +81,7 @@
                 </Cdtr>
                 <CdtrAcct>
                     <Id>
-                        <IBAN>DE21414254636646543654</IBAN>
+                        <IBAN>GB29NWBK60161331926819</IBAN>
                     </Id>
                 </CdtrAcct>
                 <RmtInf>
@@ -105,7 +105,7 @@
                 </Cdtr>
                 <CdtrAcct>
                     <Id>
-                        <IBAN>DE25125364577587567876</IBAN>
+                        <IBAN>GB29NWBK60161331926819</IBAN>
                     </Id>
                 </CdtrAcct>
                 <RmtInf>
@@ -129,7 +129,7 @@
                 </Cdtr>
                 <CdtrAcct>
                     <Id>
-                        <IBAN>DE38768654343657687666</IBAN>
+                        <IBAN>GB29NWBK60161331926819</IBAN>
                     </Id>
                 </CdtrAcct>
                 <RmtInf>

@@ -3,6 +3,7 @@ package com.pcariou.view;
 import javax.swing.*;
 import java.awt.*;
 
+@Deprecated
 public class PrefillPanel extends JPanel {
 
     private JTextField inputPathField = new JTextField();

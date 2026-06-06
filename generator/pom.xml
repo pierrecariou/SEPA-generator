@@ -9,7 +9,7 @@
 
   <groupId>com.pcariou.generator</groupId>
   <artifactId>generator</artifactId>
-  <version>1.1</version>
+  <version>1.2</version>
 
   <name>generator</name>
   <!-- FIXME change it to the project's website -->
@@ -46,23 +46,29 @@
     <dependency>
       <groupId>com.pcariou.model</groupId>
       <artifactId>model</artifactId>
-      <version>1.1</version>
+      <version>1.2</version>
     </dependency>
 
     <dependency>
       <groupId>com.pcariou.service</groupId>
       <artifactId>service</artifactId>
-      <version>1.1</version>
+      <version>1.2</version>
     </dependency>
 
     <dependency>
       <groupId>com.pcariou.view</groupId>
       <artifactId>view</artifactId>
-      <version>1.1</version>
+      <version>1.2</version>
     </dependency>
   </dependencies>
 
   <build>
+    <resources>
+      <resource>
+        <directory>src/main/resources</directory>
+        <filtering>true</filtering>
+      </resource>
+    </resources>
     <pluginManagement><!-- lock down plugins versions to avoid using Maven defaults (may be moved to parent pom) -->
       <plugins>
         <!-- clean lifecycle, see https://maven.apache.org/ref/current/maven-core/lifecycles.html#clean_Lifecycle -->

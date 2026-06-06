@@ -1,11 +1,14 @@
 package com.pcariou.view.main;
 
+import com.google.gson.Gson;
 import com.pcariou.view.IGenerator;
+import com.pcariou.view.SettingsFrame;
 import com.pcariou.view.main.center.FormPanel;
-import lombok.Getter;
 
 import javax.swing.*;
 import java.awt.*;
+import java.io.File;
+import java.io.FileReader;
 import java.util.List;
 
 /**
@@ -16,9 +19,11 @@ import java.util.List;
  * Footer: generate button
  */
 public class MainFrame extends JFrame {
-	@Getter private final IGenerator generator;
+	private final IGenerator generator;
 	private final FormPanel formPanel;
+	private FooterPanel footerPanel;
 
+	public IGenerator getGenerator() { return generator; }
     public MainFrame(IGenerator generator, String version) {
         super("SEPA Generator v" + version);
         this.generator = generator;
@@ -26,12 +31,22 @@ public class MainFrame extends JFrame {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
 
+        try {
+            java.util.List<Image> icons = new java.util.ArrayList<>();
+            for (int s : new int[]{16, 32, 48, 64, 256}) {
+                java.net.URL u = getClass().getResource("/sepa-generator-icon-app-compact-" + s + ".png");
+                if (u != null) icons.add(new ImageIcon(u).getImage());
+            }
+            if (!icons.isEmpty()) setIconImages(icons);
+        } catch (Exception ignored) {}
+
         add(new HeaderPanel(this), BorderLayout.NORTH);
 
         formPanel = new FormPanel(this);
         add(formPanel, BorderLayout.CENTER);
 
-        add(new FooterPanel(this, formPanel), BorderLayout.SOUTH);
+        footerPanel = new FooterPanel(this, formPanel, version);
+        add(footerPanel, BorderLayout.SOUTH);
 
         // 1) Compute natural layout size first
         pack();
@@ -69,17 +84,73 @@ public class MainFrame extends JFrame {
         setResizable(true);
         setLocationRelativeTo(null);
         setVisible(true);
+
+        refreshStatus();
     }
 
 	public void showErrorMessage(String message) {
-		JOptionPane.showMessageDialog(this, message, "Error", JOptionPane.ERROR_MESSAGE);
+		SwingUtilities.invokeLater(() -> {
+			setStatus(AppStatus.GENERATION_FAILED);
+			JOptionPane.showMessageDialog(this, message, "Error", JOptionPane.ERROR_MESSAGE);
+		});
 	}
 
+	// Generator calls showSuccessMessage then showTableResult sequentially.
+	// We buffer the file path so showTableResult can combine both into one summary call.
+	private volatile String pendingOutputFilePath;
+
 	public void showSuccessMessage(String outputFilePath, String message) {
-//		formPanel.showSuccessMessage(outputFilePath, message);
+		pendingOutputFilePath = outputFilePath;
 	}
 
 	public void showTableResult(List<String> resultList) {
-//		formPanel.showTableResult(resultList);
+		final String outputFilePath = pendingOutputFilePath;
+		SwingUtilities.invokeLater(() -> {
+			setStatus(AppStatus.GENERATED);
+			formPanel.showGenerationSummary(outputFilePath, resultList);
+		});
+	}
+
+	/** Directly set a status (use for transient states like GENERATING). */
+	public void setStatus(AppStatus status) {
+		footerPanel.setStatus(status);
+	}
+
+	/**
+	 * Recomputes the appropriate status from current application state
+	 * (config validity, file selected, date selected) and applies it.
+	 * Call this whenever a relevant input changes.
+	 */
+	public void refreshStatus() {
+		AppStatus debtorStatus = isDebtorConfigured() ? null : AppStatus.DEBTOR_INFO_REQUIRED;
+		AppStatus fileStatus   = formPanel.hasInputFile() ? null : AppStatus.SELECT_FILE;
+		AppStatus dateStatus   = formPanel.hasExecutionDate() ? null : AppStatus.SELECT_DATE;
+
+		footerPanel.setStatus(AppStatus.highest(debtorStatus, fileStatus, dateStatus));
+	}
+
+	private static final File CONFIG_FILE =
+			new File(System.getProperty("user.home"), ".sepa-generator-config.json");
+
+	private boolean isDebtorConfigured() {
+		if (!CONFIG_FILE.exists()) return false;
+		try (FileReader r = new FileReader(CONFIG_FILE)) {
+			SettingsFrame.ConfigData cfg = new Gson().fromJson(r, SettingsFrame.ConfigData.class);
+			return cfg != null
+					&& cfg.debtor != null
+					&& notBlank(cfg.debtor.name)
+					&& notBlank(cfg.debtor.iban)
+					&& notBlank(cfg.debtor.bic)
+					&& cfg.initiatingParty != null
+					&& notBlank(cfg.initiatingParty.name)
+					&& notBlank(cfg.initiatingParty.siret);
+		} catch (Exception e) {
+			return false;
+		}
+	}
+
+	private static boolean notBlank(String s) {
+		return s != null && !s.trim().isEmpty();
 	}
 }
+

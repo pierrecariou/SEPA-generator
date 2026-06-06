@@ -70,6 +70,7 @@ public final class FlatDatePickerField extends JPanel {
         add(engine, BorderLayout.WEST);
     }
 
+    public DatePicker getEngine() { return engine; }
     public LocalDate getDate() { return engine.getDate(); }
     public void setDate(LocalDate date) { engine.setDate(date); }
     public JTextField getTextField() { return field; }

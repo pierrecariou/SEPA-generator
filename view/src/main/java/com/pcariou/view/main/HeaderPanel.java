@@ -6,23 +6,44 @@ import com.pcariou.view.SettingsFrame;
 
 import javax.swing.*;
 import java.awt.*;
+import java.net.URL;
 
 public class HeaderPanel extends JPanel {
-    private final JButton themeButton = new JButton("🌙");
+    private final JButton themeButton    = new JButton("🌙");
     private final JButton profilesButton = new JButton("👤");
-	public HeaderPanel(MainFrame owner) {
-		super(new BorderLayout());
-//		add(createSettingsBar(owner), BorderLayout.EAST);
+    private JLabel logoLabel;
+
+    public HeaderPanel(MainFrame owner) {
+        super(new BorderLayout());
         setOpaque(true);
-        setBackground(UIManager.getColor("App.cardBackground"));
-        setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, UIManager.getColor("App.borderColor")));
+        refreshColors();
 
-//        JLabel titleLabel = new JLabel("SEPA Generator");
-//        titleLabel.setFont(titleLabel.getFont().deriveFont(Font.BOLD, 16f));
-//        add(titleLabel, BorderLayout.WEST);
+        // ── Left: logo + app name ─────────────────────────────────────────
+        JPanel left = new JPanel();
+        left.setLayout(new BoxLayout(left, BoxLayout.X_AXIS));
+        left.setOpaque(false);
+        left.setBorder(BorderFactory.createEmptyBorder(0, 12, 0, 0));
 
-//        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
-//        rightPanel.setOpaque(false);
+        logoLabel = new JLabel();
+        logoLabel.setAlignmentY(Component.CENTER_ALIGNMENT);
+        logoLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 8));
+        refreshIcon();
+        left.add(logoLabel);
+
+        JLabel appName = new JLabel("SEPA Generator");
+        appName.setFont(appName.getFont().deriveFont(Font.BOLD, 13f));
+        appName.setAlignmentY(Component.CENTER_ALIGNMENT);
+
+        JLabel edition = new JLabel("  Community Edition");
+        edition.putClientProperty(FlatClientProperties.STYLE,
+                "foreground: $Label.disabledForeground;");
+        edition.setAlignmentY(Component.CENTER_ALIGNMENT);
+
+        left.add(appName);
+        left.add(edition);
+        add(left, BorderLayout.WEST);
+
+        // ── Right: toolbar buttons ────────────────────────────────────────
         JToolBar rightPanel = new JToolBar();
         rightPanel.setFloatable(false);
         rightPanel.setOpaque(false);
@@ -33,8 +54,6 @@ public class HeaderPanel extends JPanel {
         profilesButton.setFocusable(false);
         themeButton.setToolTipText("Toggle Theme");
         profilesButton.setToolTipText("Profiles / Settings");
-//        themeButton.setPreferredSize(new Dimension(36, 30));
-//        profilesButton.setPreferredSize(new Dimension(36, 30));
 
         themeButton.addActionListener(e -> AppTheme.switchMode());
 
@@ -46,42 +65,35 @@ public class HeaderPanel extends JPanel {
         });
         menu.add(debtor);
 
-//        menu.add(new JMenuItem("Preferences...")); // Placeholder for future features
-//        menu.add(new JMenuItem("About...")); // Placeholder for future features
-
         profilesButton.addActionListener(e -> menu.show(profilesButton, 0, profilesButton.getHeight()));
 
         rightPanel.add(themeButton);
         rightPanel.add(profilesButton);
         add(rightPanel, BorderLayout.EAST);
+    }
 
-//        add(new JSeparator(), BorderLayout.SOUTH);
-	}
+    @Override
+    public void updateUI() {
+        super.updateUI();
+        refreshColors();
+        refreshIcon();
+    }
 
-//	private JComponent createSettingsBar(MainFrame owner) {
-//		JButton settingsButton = new JButton();
-//		try {
-//			Image img = ImageIO.read(new File("view/resources/cogwheel.png"));
-//			Image newImg = img.getScaledInstance(20, 20, Image.SCALE_SMOOTH);
-//			settingsButton.setIcon(new ImageIcon(newImg));
-//		} catch (Exception e) {
-//			e.printStackTrace();
-//		}
-//
-//		settingsButton.setPreferredSize(new Dimension(60, 60));
-//		settingsButton.setBorderPainted(false);
-//		settingsButton.setFocusPainted(false);
-//		settingsButton.setBackground(owner.getBackground());
-//		settingsButton.setForeground(owner.getBackground());
-//		settingsButton.setToolTipText("Settings");
-//
-//		settingsButton.addActionListener(e -> {
-//			JFrame settingsFrame = new SettingsFrame(owner);
-//			settingsFrame.setVisible(true);
-//		});
-//
-//		JPanel settingsPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
-//		settingsPanel.add(settingsButton);
-//		return settingsPanel;
-//	}
+    private void refreshColors() {
+        Color bg  = UIManager.getColor("App.cardBackground");
+        if (bg != null) setBackground(bg);
+        Color sep = UIManager.getColor("App.borderColor");
+        if (sep != null) setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, sep));
+    }
+
+    private void refreshIcon() {
+        if (logoLabel == null) return;
+        boolean dark = AppTheme.getCurrentMode() == AppTheme.Mode.DARK;
+        String resource = dark ? "/sepa-generator-icon-dark-theme.png" : "/sepa-generator-icon-light-theme.png";
+        URL url = getClass().getResource(resource);
+        if (url != null) {
+            Image img = new ImageIcon(url).getImage().getScaledInstance(28, 28, Image.SCALE_SMOOTH);
+            logoLabel.setIcon(new ImageIcon(img));
+        }
+    }
 }

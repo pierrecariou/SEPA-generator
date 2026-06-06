@@ -9,7 +9,7 @@
 
   <groupId>com.pcariou.service</groupId>
   <artifactId>service</artifactId>
-  <version>1.1</version>
+  <version>1.2</version>
 
   <name>service</name>
   <!-- FIXME change it to the project's website -->
@@ -32,7 +32,7 @@
     <dependency>
       <groupId>com.pcariou.model</groupId>
       <artifactId>model</artifactId>
-      <version>1.1</version>
+      <version>1.2</version>
     </dependency>
   </dependencies>
 

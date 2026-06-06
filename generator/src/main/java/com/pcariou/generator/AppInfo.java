@@ -42,6 +42,8 @@ public class AppInfo {
     }
 
     public static String getVersion() {
-        return props.getProperty("version", "unknown");
+        String v = props.getProperty("version");
+        if (v != null && !v.startsWith("$")) return v;
+        return VERSION;
     }
 }

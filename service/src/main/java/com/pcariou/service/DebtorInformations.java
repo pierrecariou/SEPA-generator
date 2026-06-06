@@ -4,42 +4,50 @@ import org.json.simple.parser.*;
 import org.json.simple.*;
 
 import java.time.LocalDate;
-import java.util.Date;
 
 import java.io.*;
-import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 
 import javax.validation.constraints.*;
+
+import com.pcariou.model.ValidIban;
 
 
 public class DebtorInformations {
 	@NotBlank(message = "The debtor's name is mandatory")
 	public String name;
 
-	@NotBlank(message = "The iban for the debtor is mandatory")
-	@Pattern(regexp = "^[A-Z]{2}[0-9]{2}[A-Z0-9]{4}[0-9]{7}([A-Z0-9]?){0,16}$", message = "IBAN for debtor is not valid")
+	@NotBlank(message = "The IBAN for the debtor is mandatory")
+	@ValidIban
 	public String iban;
 
-	@NotBlank(message = "The bic for the debtor is mandatory")
+	@NotBlank(message = "The BIC for the debtor is mandatory")
+	@Pattern(regexp = "^[A-Z]{4}[A-Z]{2}[A-Z0-9]{2}([A-Z0-9]{3})?$",
+	         message = "BIC for debtor is not valid (expected format: AAAABBCC or AAAABBCCDDD)")
 	public String bic;
 
+	@NotBlank(message = "The initiating party name is mandatory")
 	public String initiatingPartyName;
 
+	@NotBlank(message = "The initiating party SIRET is mandatory")
+	@Pattern(regexp = "^[0-9]{14}$", message = "SIRET for initiating party is not valid (expected: 14 digits)")
 	public String initiatingPartySiret;
 	
 	@NotBlank(message = "The execution date is mandatory")
 	@Pattern(regexp = "^(\\d{4})-(\\d{2})-(\\d{2})$", message = "Execution date is not valid")
 	public String requestedExecutionDate;
 
+	private static final File CONFIG_FILE =
+			new File(System.getProperty("user.home"), ".sepa-generator-config.json");
+
 	public DebtorInformations(LocalDate requestedExecutionDate) throws IOException, ParseException, FileNotFoundException, IllegalArgumentException {
 		JSONParser parser = new JSONParser();
-		Object obj = parser.parse(new FileReader("DebtorInformations.json"));
+		Object obj = parser.parse(new FileReader(CONFIG_FILE));
 
 		JSONObject jsonObject = (JSONObject) obj;
 
 		JSONObject debtor = (JSONObject) jsonObject.get("debtor");
-		this.name = (String)debtor.get("name");
+		this.name = (String) debtor.get("name");
 		this.iban = (String) debtor.get("iban");
 		this.bic = (String) debtor.get("bic");
 
