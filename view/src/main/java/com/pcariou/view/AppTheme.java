@@ -3,14 +3,13 @@ package com.pcariou.view;
 import com.formdev.flatlaf.FlatDarkLaf;
 import com.formdev.flatlaf.FlatLaf;
 import com.formdev.flatlaf.FlatLightLaf;
-import lombok.Getter;
 
 import javax.swing.*;
 import javax.swing.plaf.ColorUIResource;
 import java.awt.*;
 
 public final class AppTheme {
-    @Getter private static Mode currentMode = Mode.LIGHT;
+    private static Mode currentMode = Mode.LIGHT;
 
     public enum Mode { LIGHT, DARK }
 

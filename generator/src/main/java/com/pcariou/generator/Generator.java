@@ -11,8 +11,6 @@ import java.io.RandomAccessFile;
 import java.time.LocalDate;
 import java.util.Arrays;
 
-import javax.swing.UIManager;
-
 import com.aspose.cells.*;
 
 public class Generator implements IGenerator
@@ -154,37 +152,18 @@ public class Generator implements IGenerator
         }
 
         try {
-            Document document = new CsvToBeans(null).read(inputFilename); // TODO: date from args[2] instead of null
+            Document document = new CsvToBeans(null).read(inputFilename);
             new BeansToXml().write(document, outputFilename);
-            //System.out.println("" + outputFilename + " generated successfully.");
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    private static void setGUINativeLookAndFeel()
-    {
-        try {
-            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-        
     public static void main( String[] args )
     {
-        AppTheme.apply(AppTheme.Mode.LIGHT);
-//        FlatLaf.setup(new FlatIntelliJLaf());
-//        applyAccent();
-//        UIManager.put("defaultFont", new Font("Segoe UI", Font.PLAIN, 14));
-        // light grey background for panels and text components
-//        UIManager.put("Panel.background", new Color(45, 45, 45));
-
-//        UIManager.put("TextField.background", StyleUtils.TEXT_FIELD_COLOR);
-
         if (args.length == 0) {
+            AppTheme.apply(AppTheme.Mode.LIGHT);
             Generator generator = new Generator();
-            //setGUINativeLookAndFeel();
             MainFrame view = new MainFrame(generator, AppInfo.getVersion());
             generator.setView(view);
         } else {

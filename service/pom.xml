@@ -12,8 +12,7 @@
   <version>1.2</version>
 
   <name>service</name>
-  <!-- FIXME change it to the project's website -->
-  <url>http://www.example.com</url>
+  <url>https://github.com/pierrecariou/SEPA-generator</url>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

@@ -1,6 +1,7 @@
 package com.pcariou.view.main;
 
 import com.formdev.flatlaf.FlatClientProperties;
+import com.pcariou.view.AppLinks;
 import com.pcariou.view.main.center.FormPanel;
 import net.miginfocom.swing.MigLayout;
 
@@ -34,9 +35,9 @@ public class FooterPanel extends JPanel {
         JLabel edition = new JLabel("Community Edition  •  v" + version);
         edition.putClientProperty(FlatClientProperties.STYLE, "font: -1; foreground: $Label.disabledForeground;");
 
-        JButton github = linkButton("GitHub",       "https://github.com/pierrecariou/SEPA-generator");
-        JButton docs   = linkButton("Docs",          "https://github.com/pierrecariou/SEPA-generator/blob/main/docs/usage.md");
-        JButton issue  = linkButton("Report issue",  "https://github.com/pierrecariou/SEPA-generator/issues/new");
+        JButton github = linkButton("GitHub",       AppLinks.GITHUB);
+        JButton docs   = linkButton("Docs",          AppLinks.DOCS);
+        JButton issue  = linkButton("Report issue",  AppLinks.ISSUES);
 
         setOpaque(false);
         add(status,   "growx");

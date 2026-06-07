@@ -1,14 +1,12 @@
 package com.pcariou.view.main;
 
-import com.google.gson.Gson;
+import com.pcariou.view.AppResources;
 import com.pcariou.view.IGenerator;
-import com.pcariou.view.SettingsFrame;
+import com.pcariou.view.config.ConfigStore;
 import com.pcariou.view.main.center.FormPanel;
 
 import javax.swing.*;
 import java.awt.*;
-import java.io.File;
-import java.io.FileReader;
 import java.util.List;
 
 /**
@@ -21,6 +19,7 @@ import java.util.List;
 public class MainFrame extends JFrame {
 	private final IGenerator generator;
 	private final FormPanel formPanel;
+	private final ConfigStore configStore = new ConfigStore();
 	private FooterPanel footerPanel;
 
 	public IGenerator getGenerator() { return generator; }
@@ -33,8 +32,8 @@ public class MainFrame extends JFrame {
 
         try {
             java.util.List<Image> icons = new java.util.ArrayList<>();
-            for (int s : new int[]{16, 32, 48, 64, 256}) {
-                java.net.URL u = getClass().getResource("/sepa-generator-icon-app-compact-" + s + ".png");
+            for (int s : AppResources.APP_ICON_SIZES) {
+                java.net.URL u = getClass().getResource(AppResources.appIcon(s));
                 if (u != null) icons.add(new ImageIcon(u).getImage());
             }
             if (!icons.isEmpty()) setIconImages(icons);
@@ -122,35 +121,11 @@ public class MainFrame extends JFrame {
 	 * Call this whenever a relevant input changes.
 	 */
 	public void refreshStatus() {
-		AppStatus debtorStatus = isDebtorConfigured() ? null : AppStatus.DEBTOR_INFO_REQUIRED;
+		AppStatus debtorStatus = configStore.isDebtorConfigured() ? null : AppStatus.DEBTOR_INFO_REQUIRED;
 		AppStatus fileStatus   = formPanel.hasInputFile() ? null : AppStatus.SELECT_FILE;
 		AppStatus dateStatus   = formPanel.hasExecutionDate() ? null : AppStatus.SELECT_DATE;
 
 		footerPanel.setStatus(AppStatus.highest(debtorStatus, fileStatus, dateStatus));
-	}
-
-	private static final File CONFIG_FILE =
-			new File(System.getProperty("user.home"), ".sepa-generator-config.json");
-
-	private boolean isDebtorConfigured() {
-		if (!CONFIG_FILE.exists()) return false;
-		try (FileReader r = new FileReader(CONFIG_FILE)) {
-			SettingsFrame.ConfigData cfg = new Gson().fromJson(r, SettingsFrame.ConfigData.class);
-			return cfg != null
-					&& cfg.debtor != null
-					&& notBlank(cfg.debtor.name)
-					&& notBlank(cfg.debtor.iban)
-					&& notBlank(cfg.debtor.bic)
-					&& cfg.initiatingParty != null
-					&& notBlank(cfg.initiatingParty.name)
-					&& notBlank(cfg.initiatingParty.siret);
-		} catch (Exception e) {
-			return false;
-		}
-	}
-
-	private static boolean notBlank(String s) {
-		return s != null && !s.trim().isEmpty();
 	}
 }
 

@@ -1,6 +1,7 @@
 package com.pcariou.view.main;
 
 import com.formdev.flatlaf.FlatClientProperties;
+import com.pcariou.view.AppResources;
 import com.pcariou.view.AppTheme;
 import com.pcariou.view.SettingsFrame;
 
@@ -89,7 +90,7 @@ public class HeaderPanel extends JPanel {
     private void refreshIcon() {
         if (logoLabel == null) return;
         boolean dark = AppTheme.getCurrentMode() == AppTheme.Mode.DARK;
-        String resource = dark ? "/sepa-generator-icon-dark-theme.png" : "/sepa-generator-icon-light-theme.png";
+        String resource = AppResources.headerIcon(dark);
         URL url = getClass().getResource(resource);
         if (url != null) {
             Image img = new ImageIcon(url).getImage().getScaledInstance(28, 28, Image.SCALE_SMOOTH);

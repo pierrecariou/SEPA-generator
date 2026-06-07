@@ -1,28 +1,18 @@
 package com.pcariou.view;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-
 import javax.swing.*;
 import java.awt.*;
-import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
+import com.pcariou.view.config.AppConfig;
+import com.pcariou.view.config.ConfigStore;
 import com.pcariou.view.main.MainFrame;
 
 public class SettingsFrame extends JFrame {
 
-    private static final Logger LOGGER = Logger.getLogger(SettingsFrame.class.getName());
-
     private final DebtorPanel debtorPanel = new DebtorPanel();
     private final InitiatingPartyPanel initiatingPartyPanel = new InitiatingPartyPanel();
 
-    private final File configFile = new File(System.getProperty("user.home"), ".sepa-generator-config.json");
-    private final Gson gson = new GsonBuilder().setPrettyPrinting().create();
+    private final ConfigStore configStore = new ConfigStore();
     private final MainFrame owner;
 
     public SettingsFrame(MainFrame parent) {
@@ -55,27 +45,13 @@ public class SettingsFrame extends JFrame {
     }
 
     private void loadConfig() {
-        ConfigData config = readConfig();
+        AppConfig config = configStore.read();
         if (config != null) {
             populateForm(config);
         }
     }
 
-    private ConfigData readConfig() {
-        if (!configFile.exists()) {
-            return null;
-        }
-
-        try (FileReader reader = new FileReader(configFile)) {
-            return gson.fromJson(reader, ConfigData.class);
-        } catch (IOException e) {
-            LOGGER.log(Level.WARNING, "Failed to load config from " + configFile.getAbsolutePath(), e);
-            JOptionPane.showMessageDialog(this, "Failed to load config: " + e.getMessage());
-            return null;
-        }
-    }
-
-    private void populateForm(ConfigData config) {
+    private void populateForm(AppConfig config) {
         boolean hasManagedSettings = false;
 
         if (config.debtor != null) {
@@ -93,19 +69,20 @@ public class SettingsFrame extends JFrame {
 
         if (!hasManagedSettings) {
             JOptionPane.showMessageDialog(this,
-                    "Config file does not contain settings managed by this panel: " + configFile.getAbsolutePath(),
+                    "Config file does not contain settings managed by this panel: "
+                            + configStore.file().getAbsolutePath(),
                     "Invalid Config", JOptionPane.WARNING_MESSAGE);
         }
     }
 
-    private ConfigData collectFormData() {
-        ConfigData config = new ConfigData();
-        config.debtor = new Debtor();
+    private AppConfig collectFormData() {
+        AppConfig config = new AppConfig();
+        config.debtor = new AppConfig.Debtor();
         config.debtor.name = debtorPanel.getName();
         config.debtor.iban = debtorPanel.getIban();
         config.debtor.bic = debtorPanel.getBic();
 
-        config.initiatingParty = new InitiatingParty();
+        config.initiatingParty = new AppConfig.InitiatingParty();
         config.initiatingParty.name = initiatingPartyPanel.getName();
         config.initiatingParty.siret = initiatingPartyPanel.getSiret();
         return config;
@@ -120,8 +97,8 @@ public class SettingsFrame extends JFrame {
     private static final String SIRET_PATTERN       = "^[0-9]{14}$";
 
     private void saveConfig() {
-        ConfigData existingConfig = readConfig();
-        ConfigData updatedSettings = collectFormData();
+        AppConfig existingConfig = configStore.read();
+        AppConfig updatedSettings = collectFormData();
 
         if (!validateAndMarkFields(updatedSettings)) {
             return;
@@ -130,15 +107,12 @@ public class SettingsFrame extends JFrame {
         debtorPanel.clearAllErrors();
         initiatingPartyPanel.clearAllErrors();
 
-        ConfigData configToSave = existingConfig != null ? existingConfig : new ConfigData();
+        AppConfig configToSave = existingConfig != null ? existingConfig : new AppConfig();
         configToSave.debtor = updatedSettings.debtor;
         configToSave.initiatingParty = updatedSettings.initiatingParty;
 
-        try (FileWriter writer = new FileWriter(configFile)) {
-            gson.toJson(configToSave, writer);
-        } catch (IOException e) {
-            LOGGER.log(Level.WARNING, "Failed to save config to " + configFile.getAbsolutePath(), e);
-            JOptionPane.showMessageDialog(this, "Failed to save config: " + e.getMessage());
+        if (!configStore.write(configToSave)) {
+            JOptionPane.showMessageDialog(this, "Failed to save config.");
             return;
         }
 
@@ -146,7 +120,7 @@ public class SettingsFrame extends JFrame {
         JOptionPane.showMessageDialog(this, "Settings saved successfully!");
     }
 
-    private boolean validateAndMarkFields(ConfigData config) {
+    private boolean validateAndMarkFields(AppConfig config) {
         boolean valid = true;
 
         // Debtor name
@@ -221,28 +195,5 @@ public class SettingsFrame extends JFrame {
 
     private boolean isBlank(String value) {
         return value == null || value.trim().isEmpty();
-    }
-
-    // --- Data Models ---
-    public static class ConfigData {
-        public Debtor debtor;
-        public InitiatingParty initiatingParty;
-        public FileSettings fileSettings;
-    }
-
-    public static class Debtor {
-        public String name;
-        public String iban;
-        public String bic;
-    }
-
-    public static class InitiatingParty {
-        public String name;
-        public String siret;
-    }
-
-    public static class FileSettings {
-        public String defaultInputPath;
-        public String defaultOutputPath;
     }
 }

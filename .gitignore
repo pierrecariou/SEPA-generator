@@ -58,8 +58,16 @@ desktop.ini
 # Lock files from your project (I saw one in your repo)
 .~lock.*
 
-# User-specific config (important for your tool!)
+# User-specific / private config (important for your tool!)
 config.json
+DebtorInformations.json
+
+# Ad-hoc generated SEPA outputs (keep Payments-template-example.* as references)
+/payments-*.xml
+/test.xml
+
+# Design source assets (SVGs / working icons) — not shipped in the build
+view/resources/
 
 # Build outputs
 *.jar
