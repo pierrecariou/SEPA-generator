@@ -1,7 +1,7 @@
 package com.pcariou.view;
 
-import java.util.Date;
+import java.time.LocalDate;
 
 public interface IGenerator {
-	void generate(String inputFile, String outputFile, Date date);
+    void generate(String inputFile, String outputFile, LocalDate date);
 }

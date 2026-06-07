@@ -4,13 +4,12 @@ import com.pcariou.model.*;
 import com.pcariou.service.*;
 import com.pcariou.view.*;
 
+import com.pcariou.view.main.MainFrame;
 import org.apache.commons.io.FilenameUtils;
 
 import java.io.RandomAccessFile;
+import java.time.LocalDate;
 import java.util.Arrays;
-import java.util.Date;
-
-import javax.swing.UIManager;
 
 import com.aspose.cells.*;
 
@@ -19,18 +18,18 @@ public class Generator implements IGenerator
     private static final String[] VALID_EXTENSIONS = {"xls", "xlsx", "csv"};
     private static final String[] EXCEL_EXTENSIONS = {"xls", "xlsx"};
 
-    private GUIView view;
+    private MainFrame view;
 
     public Generator()
     {
     }
 
-    public void setView(GUIView view)
+    public void setView(MainFrame view)
     {
         this.view = view;
     }
 
-    public void generate(String inputFile, String outputFile, Date date)
+    public void generate(String inputFile, String outputFile, LocalDate date)
     {
         if (!argumentsAreValid(inputFile, outputFile, date))
             return;
@@ -39,20 +38,20 @@ public class Generator implements IGenerator
         transformCsvToXml(inputFile, outputFile, date);
     }
 
-    private void transformCsvToXml(String inputFile, String outputFile, Date date)
+    private void transformCsvToXml(String inputFile, String outputFile, LocalDate date)
     {
         try {
             CsvToBeans csvToBeans = new CsvToBeans(date);
             Document document = csvToBeans.read(inputFile);
             new BeansToXml().write(document, outputFile);
-            view.showSuccessMessage(outputFile + " generated successfully.");
+            view.showSuccessMessage(outputFile, " generated successfully.");
             view.showTableResult(csvToBeans.getTableResult());
         } catch (Exception e) {
             view.showErrorMessage(e.getMessage());
         }
     }
 
-    private boolean argumentsAreValid(String inputFile, String outputFile, Date date)
+    private boolean argumentsAreValid(String inputFile, String outputFile, LocalDate date)
     {
         if (inputFile == null || inputFile.isEmpty())
         {
@@ -120,7 +119,7 @@ public class Generator implements IGenerator
         }
     }
 
-    public static void fromCommanLine(String[] args)
+    public static void fromCommandLine(String[] args)
     {
     if (args.length != 4) {
             System.out.println("Usage: java -jar generator.jar <input file> <output file>");
@@ -153,32 +152,22 @@ public class Generator implements IGenerator
         }
 
         try {
-            Document document = new CsvToBeans(null).read(inputFilename); // TODO: date from args[2] instead of null
+            Document document = new CsvToBeans(null).read(inputFilename);
             new BeansToXml().write(document, outputFilename);
-            //System.out.println("" + outputFilename + " generated successfully.");
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    private static void setGUINativeLookAndFeel()
-    {
-        try {
-            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-        
     public static void main( String[] args )
     {
         if (args.length == 0) {
+            AppTheme.apply(AppTheme.Mode.LIGHT);
             Generator generator = new Generator();
-            //setGUINativeLookAndFeel();
-            GUIView view = new GUIView(generator);
+            MainFrame view = new MainFrame(generator, AppInfo.getVersion());
             generator.setView(view);
         } else {
-            fromCommanLine(args);
+            fromCommandLine(args);
         }
     }
 }

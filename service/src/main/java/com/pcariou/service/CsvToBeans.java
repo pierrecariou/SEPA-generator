@@ -6,6 +6,7 @@ import java.nio.file.Paths;
 
 import com.opencsv.bean.*;
 
+import java.time.LocalDate;
 import java.util.*;
 import java.util.logging.Level;
 
@@ -20,13 +21,13 @@ import java.time.format.DateTimeFormatter;
  */
 public class CsvToBeans
 {
-	private Validator validator;
+	private final Validator validator;
 	private StringBuilder errors;
 
-	private Date executionDate;
+	private final LocalDate executionDate;
 	private List<String> tableResult;
 
-	public CsvToBeans(Date executionDate)
+	public CsvToBeans(LocalDate executionDate)
 	{
 		this.executionDate = executionDate;
 
