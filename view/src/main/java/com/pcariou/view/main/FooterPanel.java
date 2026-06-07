@@ -6,6 +6,9 @@ import net.miginfocom.swing.MigLayout;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.Desktop;
+import java.net.URI;
+import java.util.logging.Logger;
 
 public class FooterPanel extends JPanel {
 
@@ -25,14 +28,15 @@ public class FooterPanel extends JPanel {
         JProgressBar progress = new JProgressBar();
         progress.setIndeterminate(true);
         progress.setVisible(false);
-        progress.putClientProperty(FlatClientProperties.STYLE, "height: 6; arc: 999;");
+        progress.putClientProperty(FlatClientProperties.STYLE, "arc: 999;");
+        progress.setPreferredSize(new Dimension(120, 6));
 
         JLabel edition = new JLabel("Community Edition  •  v" + version);
         edition.putClientProperty(FlatClientProperties.STYLE, "font: -1; foreground: $Label.disabledForeground;");
 
-        JButton github = linkButton("GitHub");
-        JButton docs   = linkButton("Docs");
-        JButton issue  = linkButton("Report issue");
+        JButton github = linkButton("GitHub",       "https://github.com/pierrecariou/SEPA-generator");
+        JButton docs   = linkButton("Docs",          "https://github.com/pierrecariou/SEPA-generator/blob/main/docs/usage.md");
+        JButton issue  = linkButton("Report issue",  "https://github.com/pierrecariou/SEPA-generator/issues/new");
 
         setOpaque(false);
         add(status,   "growx");
@@ -64,7 +68,9 @@ public class FooterPanel extends JPanel {
         repaint();
     }
 
-    private JButton linkButton(String text) {
+    private static final Logger LOG = Logger.getLogger(FooterPanel.class.getName());
+
+    private JButton linkButton(String text, String url) {
         JButton b = new JButton(text);
         b.setBorderPainted(false);
         b.setContentAreaFilled(false);
@@ -73,7 +79,15 @@ public class FooterPanel extends JPanel {
         b.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         b.putClientProperty(FlatClientProperties.STYLE,
                 "foreground: $Component.accentColor; font: -1;");
+        b.addActionListener(e -> openUrl(url));
         return b;
     }
-}
 
+    private void openUrl(String url) {
+        try {
+            Desktop.getDesktop().browse(new URI(url));
+        } catch (Exception ex) {
+            LOG.warning("Could not open URL: " + url + " — " + ex.getMessage());
+        }
+    }
+}

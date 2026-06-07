@@ -40,9 +40,23 @@ public class DebtorInformations {
 	private static final File CONFIG_FILE =
 			new File(System.getProperty("user.home"), ".sepa-generator-config.json");
 
+	/**
+	 * Resolves the config file location. Defaults to the user-home config file,
+	 * but can be overridden via the {@code sepa.config.file} system property
+	 * (used by tests to avoid depending on user-local paths). Production
+	 * behaviour is unchanged when the property is not set.
+	 */
+	private static File resolveConfigFile() {
+		String override = System.getProperty("sepa.config.file");
+		if (override != null && !override.isEmpty()) {
+			return new File(override);
+		}
+		return CONFIG_FILE;
+	}
+
 	public DebtorInformations(LocalDate requestedExecutionDate) throws IOException, ParseException, FileNotFoundException, IllegalArgumentException {
 		JSONParser parser = new JSONParser();
-		Object obj = parser.parse(new FileReader(CONFIG_FILE));
+		Object obj = parser.parse(new FileReader(resolveConfigFile()));
 
 		JSONObject jsonObject = (JSONObject) obj;
 

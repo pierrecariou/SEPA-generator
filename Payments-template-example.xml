@@ -3,7 +3,7 @@
     <pain.001.001.02>
         <GrpHdr>
             <MsgId>Payments-template-example.csv</MsgId>
-            <CreDtTm>2026-06-05T19:53:38</CreDtTm>
+            <CreDtTm>2026-06-07T16:15:31</CreDtTm>
             <NbOfTxs>4</NbOfTxs>
             <CtrlSum>10132.50</CtrlSum>
             <Grpg>MIXD</Grpg>
@@ -26,7 +26,7 @@
                     <Cd>SEPA</Cd>
                 </SvcLvl>
             </PmtTpInf>
-            <ReqdExctnDt>2026-06-06</ReqdExctnDt>
+            <ReqdExctnDt>2026-06-08</ReqdExctnDt>
             <Dbtr>
                 <Nm>TEST</Nm>
             </Dbtr>

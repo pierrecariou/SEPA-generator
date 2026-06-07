@@ -351,7 +351,8 @@ public class FormPanel extends JPanel {
     }
 
     private void chooseInputFile() {
-        JFileChooser fc = new JFileChooser();
+        File startDir = loadLastInputDirectory();
+        JFileChooser fc = new JFileChooser(startDir);
         fc.setDialogTitle("Select credit transfer file");
         fc.setFileFilter(new FileNameExtensionFilter("CSV / Excel", "csv", "xls", "xlsx"));
 
@@ -361,10 +362,62 @@ public class FormPanel extends JPanel {
             inputField.setText(f.getName());
             inputField.setToolTipText(filenameInput);
 
+            saveLastInputDirectory(f.getParentFile());
+
             summaryCard.setVisible(false);
             updateGenerateButtonState();
             owner.refreshStatus();
         }
+    }
+
+    private static final File CONFIG_FILE =
+            new File(System.getProperty("user.home"), ".sepa-generator-config.json");
+
+    private File loadLastInputDirectory() {
+        if (!CONFIG_FILE.exists()) return defaultDir();
+        try (java.io.FileReader r = new java.io.FileReader(CONFIG_FILE)) {
+            com.pcariou.view.SettingsFrame.ConfigData cfg =
+                    new com.google.gson.Gson().fromJson(r, com.pcariou.view.SettingsFrame.ConfigData.class);
+            if (cfg != null && cfg.fileSettings != null) {
+                String path = cfg.fileSettings.defaultInputPath;
+                if (path != null && !path.isEmpty()) {
+                    File dir = new File(path);
+                    if (dir.isDirectory()) return dir;
+                }
+            }
+        } catch (Exception e) {
+            java.util.logging.Logger.getLogger(FormPanel.class.getName())
+                    .warning("Could not read last input directory: " + e.getMessage());
+        }
+        return defaultDir();
+    }
+
+    private void saveLastInputDirectory(File dir) {
+        if (dir == null || !dir.isDirectory()) return;
+        com.google.gson.Gson gson = new com.google.gson.GsonBuilder().setPrettyPrinting().create();
+        com.pcariou.view.SettingsFrame.ConfigData cfg = null;
+        if (CONFIG_FILE.exists()) {
+            try (java.io.FileReader r = new java.io.FileReader(CONFIG_FILE)) {
+                cfg = gson.fromJson(r, com.pcariou.view.SettingsFrame.ConfigData.class);
+            } catch (Exception e) {
+                java.util.logging.Logger.getLogger(FormPanel.class.getName())
+                        .warning("Could not read config for save: " + e.getMessage());
+            }
+        }
+        if (cfg == null) cfg = new com.pcariou.view.SettingsFrame.ConfigData();
+        if (cfg.fileSettings == null)
+            cfg.fileSettings = new com.pcariou.view.SettingsFrame.FileSettings();
+        cfg.fileSettings.defaultInputPath = dir.getAbsolutePath();
+        try (java.io.FileWriter w = new java.io.FileWriter(CONFIG_FILE)) {
+            gson.toJson(cfg, w);
+        } catch (Exception e) {
+            java.util.logging.Logger.getLogger(FormPanel.class.getName())
+                    .warning("Could not save last input directory: " + e.getMessage());
+        }
+    }
+
+    private static File defaultDir() {
+        return new File(System.getProperty("user.home"));
     }
 
     private void updateGenerateButtonState() {
