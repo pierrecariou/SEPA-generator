@@ -49,7 +49,7 @@ A summary card shows the number of transactions, total amount, and execution dat
 
 ## Output Format
 
-The generated file is a **SEPA Credit Transfer Initiation** XML (`pain.001.001.03`) compliant with the ISO 20022 standard, accepted by most European banks.
+The generated file is a **SEPA Credit Transfer Initiation** XML (`pain.001.001.02`) compliant with the ISO 20022 standard, accepted by most European banks.
 
 ## Settings File
 
