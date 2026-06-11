@@ -14,6 +14,12 @@
   <img src="https://img.shields.io/badge/format-pain.001.001.02-lightgrey" alt="pain.001.001.02" />
 </p>
 
+<p align="center">
+  <a href="https://sepa-xml-generator.com"><strong>Official website</strong></a>
+  ·
+  <a href="https://github.com/pierrecariou/SEPA-generator/releases/latest"><strong>Download latest release</strong></a>
+</p>
+
 ---
 
 ## Overview
