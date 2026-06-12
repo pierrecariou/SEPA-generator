@@ -115,4 +115,32 @@ public final class ConfigStore {
     private static boolean notBlank(String s) {
         return s != null && !s.trim().isEmpty();
     }
+
+    /** Returns the persisted theme name (e.g. {@code "LIGHT"} / {@code "DARK"}), or {@code null} if unset. */
+    public String readTheme() {
+        AppConfig cfg = read();
+        if (cfg != null && cfg.appearance != null) {
+            return cfg.appearance.theme;
+        }
+        return null;
+    }
+
+    /**
+     * Persists {@code theme} as the last-used appearance theme, preserving all
+     * other config fields. No-op if {@code theme} is blank.
+     */
+    public void saveTheme(String theme) {
+        if (theme == null || theme.trim().isEmpty()) {
+            return;
+        }
+        AppConfig cfg = read();
+        if (cfg == null) {
+            cfg = new AppConfig();
+        }
+        if (cfg.appearance == null) {
+            cfg.appearance = new AppConfig.Appearance();
+        }
+        cfg.appearance.theme = theme;
+        write(cfg);
+    }
 }

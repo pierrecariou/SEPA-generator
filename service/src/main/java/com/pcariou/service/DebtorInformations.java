@@ -10,6 +10,7 @@ import java.time.format.DateTimeFormatter;
 
 import javax.validation.constraints.*;
 
+import com.pcariou.model.ValidBic;
 import com.pcariou.model.ValidIban;
 
 
@@ -22,8 +23,7 @@ public class DebtorInformations {
 	public String iban;
 
 	@NotBlank(message = "The BIC for the debtor is mandatory")
-	@Pattern(regexp = "^[A-Z]{4}[A-Z]{2}[A-Z0-9]{2}([A-Z0-9]{3})?$",
-	         message = "BIC for debtor is not valid (expected format: AAAABBCC or AAAABBCCDDD)")
+	@ValidBic
 	public String bic;
 
 	@NotBlank(message = "The initiating party name is mandatory")

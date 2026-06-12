@@ -11,6 +11,7 @@ public class AppConfig {
     public Debtor debtor;
     public InitiatingParty initiatingParty;
     public FileSettings fileSettings;
+    public Appearance appearance;
 
     public static class Debtor {
         public String name;
@@ -26,5 +27,9 @@ public class AppConfig {
     public static class FileSettings {
         public String defaultInputPath;
         public String defaultOutputPath;
+    }
+
+    public static class Appearance {
+        public String theme;
     }
 }

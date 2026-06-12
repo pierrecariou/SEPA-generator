@@ -54,7 +54,7 @@
         </plugin>
         <plugin>
           <artifactId>maven-surefire-plugin</artifactId>
-          <version>2.22.1</version>
+          <version>3.2.5</version>
         </plugin>
         <plugin>
           <artifactId>maven-jar-plugin</artifactId>
@@ -79,5 +79,20 @@
         </plugin>
       </plugins>
     </pluginManagement>
+    <plugins>
+      <!-- This project has no module-info, so tests must run on the classpath.
+           On a modern JDK, older Surefire infers a module path from dependency
+           JARs that are named modules (e.g. com.miglayout.core) and wrongly
+           attaches our unnamed classes to one of them, causing
+           IllegalAccessError when service code uses java.util.logging.
+           Surefire 3.x honours useModulePath=false to keep tests on the
+           classpath, matching how the application actually runs. -->
+      <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <useModulePath>false</useModulePath>
+        </configuration>
+      </plugin>
+    </plugins>
   </build>
 </project>

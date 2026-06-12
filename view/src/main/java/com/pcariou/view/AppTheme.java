@@ -3,12 +3,14 @@ package com.pcariou.view;
 import com.formdev.flatlaf.FlatDarkLaf;
 import com.formdev.flatlaf.FlatLaf;
 import com.formdev.flatlaf.FlatLightLaf;
+import com.pcariou.view.config.ConfigStore;
 
 import javax.swing.*;
 import javax.swing.plaf.ColorUIResource;
 import java.awt.*;
 
 public final class AppTheme {
+    private static final ConfigStore CONFIG = new ConfigStore();
     private static Mode currentMode = Mode.LIGHT;
 
     public enum Mode { LIGHT, DARK }
@@ -16,6 +18,19 @@ public final class AppTheme {
     public static Mode getCurrentMode() { return currentMode; }
 
     private AppTheme() {}
+
+    /** Resolves the persisted theme, falling back to {@link Mode#LIGHT}. */
+    public static Mode loadPersistedMode() {
+        String stored = CONFIG.readTheme();
+        if (stored != null) {
+            try {
+                return Mode.valueOf(stored.trim().toUpperCase());
+            } catch (IllegalArgumentException ignored) {
+                // unknown value — fall through to default
+            }
+        }
+        return Mode.LIGHT;
+    }
 
     public static void apply(Mode mode) {
         try {
@@ -38,6 +53,7 @@ public final class AppTheme {
 
     public static void switchMode() {
         apply(currentMode == Mode.LIGHT ? Mode.DARK : Mode.LIGHT);
+        CONFIG.saveTheme(currentMode.name());
     }
 
     private static void applyDefaults(Mode mode) {

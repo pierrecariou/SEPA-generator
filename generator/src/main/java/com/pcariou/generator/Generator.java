@@ -162,7 +162,7 @@ public class Generator implements IGenerator
     public static void main( String[] args )
     {
         if (args.length == 0) {
-            AppTheme.apply(AppTheme.Mode.LIGHT);
+            AppTheme.apply(AppTheme.loadPersistedMode());
             Generator generator = new Generator();
             MainFrame view = new MainFrame(generator, AppInfo.getVersion());
             generator.setView(view);

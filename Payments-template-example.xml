@@ -3,12 +3,12 @@
     <pain.001.001.02>
         <GrpHdr>
             <MsgId>Payments-template-example.csv</MsgId>
-            <CreDtTm>2026-06-07T17:39:26</CreDtTm>
+            <CreDtTm>2026-06-12T13:29:22</CreDtTm>
             <NbOfTxs>4</NbOfTxs>
             <CtrlSum>10132.50</CtrlSum>
             <Grpg>MIXD</Grpg>
             <InitgPty>
-                <Nm>fe</Nm>
+                <Nm>ACME Demo Company</Nm>
                 <Id>
                     <OrgId>
                         <PrtryId>
@@ -26,13 +26,13 @@
                     <Cd>SEPA</Cd>
                 </SvcLvl>
             </PmtTpInf>
-            <ReqdExctnDt>2029-07-19</ReqdExctnDt>
+            <ReqdExctnDt>2026-06-13</ReqdExctnDt>
             <Dbtr>
-                <Nm>TEST</Nm>
+                <Nm>ACME Demo Company</Nm>
             </Dbtr>
             <DbtrAcct>
                 <Id>
-                    <IBAN>GB29NWBK60161331926819</IBAN>
+                    <IBAN>FR1420041010050500013M02606</IBAN>
                 </Id>
             </DbtrAcct>
             <DbtrAgt>
