@@ -106,6 +106,7 @@ public class SettingsFrame extends JDialog {
             debtorPanel.setName(defaultValue(config.debtor.name));
             debtorPanel.setIban(defaultValue(config.debtor.iban));
             debtorPanel.setBic(defaultValue(config.debtor.bic));
+            populateAddress(config.debtor.address);
         }
 
         if (config.initiatingParty != null) {
@@ -115,17 +116,51 @@ public class SettingsFrame extends JDialog {
         // A config without these sections simply shows empty fields.
     }
 
+    private void populateAddress(AppConfig.Address address) {
+        if (address == null) {
+            return;
+        }
+        debtorPanel.setStreet(defaultValue(address.street));
+        debtorPanel.setBuildingNumber(defaultValue(address.buildingNumber));
+        debtorPanel.setPostcode(defaultValue(address.postcode));
+        debtorPanel.setTown(defaultValue(address.town));
+        debtorPanel.setCountry(defaultValue(address.country));
+    }
+
     private AppConfig collectFormData() {
         AppConfig config = new AppConfig();
         config.debtor = new AppConfig.Debtor();
         config.debtor.name = debtorPanel.getName();
         config.debtor.iban = debtorPanel.getIban();
         config.debtor.bic = debtorPanel.getBic();
+        config.debtor.address = collectAddress();
 
         config.initiatingParty = new AppConfig.InitiatingParty();
         config.initiatingParty.name = initiatingPartyPanel.getName();
         config.initiatingParty.siret = initiatingPartyPanel.getSiret();
         return config;
+    }
+
+    /** Returns the entered address, or null when every address field is blank. */
+    private AppConfig.Address collectAddress() {
+        AppConfig.Address address = new AppConfig.Address();
+        address.street         = trimToNull(debtorPanel.getStreet());
+        address.buildingNumber = trimToNull(debtorPanel.getBuildingNumber());
+        address.postcode       = trimToNull(debtorPanel.getPostcode());
+        address.town           = trimToNull(debtorPanel.getTown());
+        address.country        = trimToNull(debtorPanel.getCountry());
+
+        boolean empty = address.street == null && address.buildingNumber == null
+                && address.postcode == null && address.town == null && address.country == null;
+        return empty ? null : address;
+    }
+
+    private String trimToNull(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 
     private String defaultValue(String value) {
@@ -135,6 +170,7 @@ public class SettingsFrame extends JDialog {
     private static final String IBAN_FORMAT_PATTERN = "^[A-Z]{2}[0-9]{2}[A-Z0-9]{11,30}$";
     private static final String BIC_PATTERN         = "^[A-Z]{4}[A-Z]{2}[A-Z0-9]{2}([A-Z0-9]{3})?$";
     private static final String SIRET_PATTERN       = "^[0-9]{14}$";
+    private static final String COUNTRY_PATTERN     = "^[A-Z]{2}$";
 
     private void saveConfig() {
         AppConfig existingConfig = configStore.read();
@@ -199,6 +235,25 @@ public class SettingsFrame extends JDialog {
             valid = false;
         } else {
             debtorPanel.clearBicError();
+        }
+
+        // Optional postal address: if any field is filled, town and country are required
+        debtorPanel.clearAddressError();
+        if (config.debtor.address != null) {
+            AppConfig.Address address = config.debtor.address;
+            boolean townMissing = isBlank(address.town);
+            boolean countryMissing = isBlank(address.country);
+            if (townMissing || countryMissing) {
+                debtorPanel.setAddressError(
+                        "Town/City and country are required when an address is provided",
+                        townMissing, countryMissing);
+                valid = false;
+            } else if (!address.country.trim().toUpperCase().matches(COUNTRY_PATTERN)) {
+                debtorPanel.setAddressError(
+                        "Country must be a 2-letter ISO code (e.g. FR, DE, NL)",
+                        false, true);
+                valid = false;
+            }
         }
 
         // Initiating party name

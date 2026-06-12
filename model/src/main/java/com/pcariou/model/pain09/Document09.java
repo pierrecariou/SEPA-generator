@@ -103,6 +103,9 @@ public class Document09
 		@XmlElement(name = "Nm")
 		private String name;
 
+		@XmlElement(name = "PstlAdr")
+		private PostalAddress postalAddress;
+
 		@XmlElement(name = "Id")
 		private PartyIdentification identification;
 
@@ -115,10 +118,53 @@ public class Document09
 			this.name = name;
 		}
 
+		public Party(String name, PostalAddress postalAddress)
+		{
+			this.name = name;
+			this.postalAddress = postalAddress;
+		}
+
 		public Party(String name, PartyIdentification identification)
 		{
 			this.name = name;
 			this.identification = identification;
+		}
+	}
+
+	/**
+	 * Structured postal address ({@code <PstlAdr>}); element order follows
+	 * the pain.001.001.09 schema sequence.
+	 */
+	@XmlAccessorType(XmlAccessType.FIELD)
+	public static class PostalAddress
+	{
+		@XmlElement(name = "StrtNm")
+		private String streetName;
+
+		@XmlElement(name = "BldgNb")
+		private String buildingNumber;
+
+		@XmlElement(name = "PstCd")
+		private String postCode;
+
+		@XmlElement(name = "TwnNm")
+		private String townName;
+
+		@XmlElement(name = "Ctry")
+		private String country;
+
+		public PostalAddress()
+		{
+		}
+
+		public PostalAddress(String streetName, String buildingNumber, String postCode,
+				String townName, String country)
+		{
+			this.streetName = streetName;
+			this.buildingNumber = buildingNumber;
+			this.postCode = postCode;
+			this.townName = townName;
+			this.country = country;
 		}
 	}
 

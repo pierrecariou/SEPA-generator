@@ -1,0 +1,3 @@
+name,IBAN,BIC,amount,end_to_end_id,information,street,building_number,postcode,town,country
+Karlson GmbH,DE89370400440532013000,DEUTDEFF,1500.00,INV-2026-001,Street given but no town or country,Hauptstrasse,12,,,
+Juan Pablo Services,FR1420041010050500013M02606,BNPAFRPPXXX,980.25,INV-2026-002,Country is not a 2-letter ISO code,Rue de la Paix,4,75002,Paris,France

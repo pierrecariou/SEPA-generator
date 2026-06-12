@@ -11,6 +11,13 @@ All files use the column layout expected by the application:
 name,IBAN,BIC,amount,end_to_end_id,information
 ```
 
+Optional creditor address columns (used in pain.001.001.09 output only) may be
+appended:
+
+```
+street,building_number,postcode,town,country
+```
+
 ## valid/
 
 | File | Purpose |
@@ -18,6 +25,7 @@ name,IBAN,BIC,amount,end_to_end_id,information
 | `sepa-valid-sample.csv`  | 5 realistic transactions; generates a SEPA XML successfully (total 5305.34 EUR). |
 | `sepa-valid-sample.xlsx` | Same 5 transactions in Excel (xlsx) format. |
 | `sepa-valid-sample.xls`  | Same 5 transactions in legacy Excel (xls) format. |
+| `sepa-valid-sample-with-addresses.csv` | Same 5 transactions with optional creditor address columns (full, partial and no address). Addresses appear as `<PstlAdr>` in pain.001.001.09 output and are ignored in pain.001.001.02. |
 
 The Excel files were produced with the project's Aspose Cells dependency in
 evaluation mode, so they contain an extra "Evaluation Warning" sheet/line.
@@ -35,6 +43,7 @@ clear error message instead of an XML file.
 | `sepa-invalid-amount.csv`        | One row per amount error: zero, negative, more than 2 decimals, not a number. |
 | `sepa-invalid-missing-field.csv` | Mandatory creditor IBAN left empty. |
 | `sepa-invalid-mixed-errors.csv`  | One valid row plus rows combining BIC, amount and missing-field errors. |
+| `sepa-invalid-address.csv`       | Incomplete creditor address (street without town/country) and a country that is not a 2-letter ISO code. |
 
 ## How to use
 

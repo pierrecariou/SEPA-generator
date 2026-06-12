@@ -17,6 +17,17 @@ public class AppConfig {
         public String name;
         public String iban;
         public String bic;
+        /** Optional postal address, used in pain.001.001.09 output only. */
+        public Address address;
+    }
+
+    /** Optional postal address; all fields optional, see model validation rules. */
+    public static class Address {
+        public String street;
+        public String buildingNumber;
+        public String postcode;
+        public String town;
+        public String country;
     }
 
     public static class InitiatingParty {

@@ -80,6 +80,7 @@ public class CsvToBeans
 		// Payment Information
 		PaymentTypeInformation paymentTypeInformation = new PaymentTypeInformation(new ServiceLevel());
 		Debtor debtor = new Debtor(debtorInformations.name);
+		debtor.setPostalAddress(debtorInformations.address);
 		DebtorAccount debtorAccount = new DebtorAccount( new AccountIdentification(debtorInformations.iban));
 		DebtorAgent debtorAgent = new DebtorAgent(new FinancialInstitutionIdentification(debtorInformations.bic));
 		PaymentInformation paymentInformation = new PaymentInformation(inputFile + "-1", paymentTypeInformation, debtorInformations.requestedExecutionDate, debtor, debtorAccount, debtorAgent, creditTransferTransactionInformations);

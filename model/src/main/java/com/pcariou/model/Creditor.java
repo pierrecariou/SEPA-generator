@@ -17,6 +17,11 @@ public class Creditor
 	@CsvBindByName()
 	private String name;
 
+	@XmlTransient
+	@ValidPostalAddress(label = "creditor")
+	@CsvRecurse()
+	private PostalAddress postalAddress;
+
 	@XmlElement(name = "Id")
 	private PartyIdentification creditorIdentification;
 
@@ -47,5 +52,19 @@ public class Creditor
 	public void setCreditorIdentification(PartyIdentification creditorIdentification)
 	{
 		this.creditorIdentification = creditorIdentification;
+	}
+
+	/**
+	 * Optional postal address (pain.001.001.09 only — excluded from the
+	 * pain.001.001.02 message, hence {@code @XmlTransient}).
+	 */
+	public PostalAddress getPostalAddress()
+	{
+		return postalAddress;
+	}
+
+	public void setPostalAddress(PostalAddress postalAddress)
+	{
+		this.postalAddress = postalAddress;
 	}
 }

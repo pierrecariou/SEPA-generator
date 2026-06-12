@@ -14,6 +14,9 @@ public class Debtor
 	@NotBlank(message = "Name for Debtor is mandatory")
 	private String name;
 
+	@XmlTransient
+	private PostalAddress postalAddress;
+
 	public Debtor()
 	{
 	}
@@ -31,5 +34,20 @@ public class Debtor
 	public void setName(String name)
 	{
 		this.name = name;
+	}
+
+	/**
+	 * Optional postal address (pain.001.001.09 only — excluded from the
+	 * pain.001.001.02 message, hence {@code @XmlTransient}). Validated
+	 * upstream where the settings file is read.
+	 */
+	public PostalAddress getPostalAddress()
+	{
+		return postalAddress;
+	}
+
+	public void setPostalAddress(PostalAddress postalAddress)
+	{
+		this.postalAddress = postalAddress;
 	}
 }

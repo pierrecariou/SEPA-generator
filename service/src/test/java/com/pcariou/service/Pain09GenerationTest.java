@@ -3,6 +3,7 @@ package com.pcariou.service;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import com.pcariou.model.Document;
 import com.pcariou.model.PainVersion;
@@ -27,6 +28,8 @@ import java.time.LocalDate;
 public class Pain09GenerationTest {
 
     private static final String CSV_HEADER = "name,IBAN,BIC,amount,end_to_end_id,information";
+    private static final String ADDRESS_CSV_HEADER =
+            CSV_HEADER + ",street,building_number,postcode,town,country";
     private static final String DEBTOR_IBAN = "GB29NWBK60161331926819";
 
     @Rule
@@ -83,6 +86,8 @@ public class Pain09GenerationTest {
                 content.contains("<pain.001.001.02>"));
         assertFalse("The .02-only Grpg element must not appear",
                 content.contains("<Grpg>"));
+        assertFalse("No PstlAdr expected when no address fields are provided",
+                content.contains("<PstlAdr>"));
 
         // BICFI replaces BIC
         assertTrue("Expected debtor BICFI", content.contains("<BICFI>BNPAFRPP</BICFI>"));
@@ -164,6 +169,93 @@ public class Pain09GenerationTest {
         assertEquals(null, PainVersion.fromCode(null));
     }
 
+    // ── Postal address support (pain.001.001.09 only) ───────────────────────
+
+    // 4. A configured debtor address is emitted as Dbtr/PstlAdr in .09 output.
+    @Test
+    public void pain09EmitsDebtorPostalAddress() throws Exception {
+        writeConfigWithDebtorAddress();
+        File csv = writeCsv(
+                "Karlson GmbH,DE89370400440532013000,DEUTDEFF,1500.00,INV-2026-001,Invoice 2026-001 furniture");
+        File xml = tmp.newFile("pain09-debtor-addr.xml");
+
+        generate(csv, xml, LocalDate.now().plusDays(7), PainVersion.PAIN_001_001_09);
+        String compact = read(xml).replaceAll("\\s+", "");
+
+        assertTrue("Expected debtor PstlAdr after debtor name",
+                compact.contains("<Dbtr><Nm>TestDebtor</Nm><PstlAdr>"
+                        + "<StrtNm>RuedelaPaix</StrtNm><BldgNb>10</BldgNb>"
+                        + "<PstCd>75002</PstCd><TwnNm>Paris</TwnNm><Ctry>FR</Ctry>"
+                        + "</PstlAdr></Dbtr>"));
+        assertFalse("No creditor PstlAdr expected", compact.contains("<Cdtr><Nm>KarlsonGmbH</Nm><PstlAdr>"));
+    }
+
+    // 5. Creditor address columns in the CSV are emitted as Cdtr/PstlAdr in .09 output.
+    @Test
+    public void pain09EmitsCreditorPostalAddressFromCsv() throws Exception {
+        File csv = writeCsvWithHeader(ADDRESS_CSV_HEADER,
+                "Karlson GmbH,DE89370400440532013000,DEUTDEFF,1500.00,INV-2026-001,Invoice,Hauptstrasse,5,10115,Berlin,de",
+                "Acme Supplies Ltd," + DEBTOR_IBAN + ",BANKNL2A,75.10,INV-2026-003,Supplies,,,,,");
+        File xml = tmp.newFile("pain09-creditor-addr.xml");
+
+        generate(csv, xml, LocalDate.now().plusDays(7), PainVersion.PAIN_001_001_09);
+        String compact = read(xml).replaceAll("\\s+", "");
+
+        assertTrue("Expected creditor PstlAdr with country upper-cased",
+                compact.contains("<Cdtr><Nm>KarlsonGmbH</Nm><PstlAdr>"
+                        + "<StrtNm>Hauptstrasse</StrtNm><BldgNb>5</BldgNb>"
+                        + "<PstCd>10115</PstCd><TwnNm>Berlin</TwnNm><Ctry>DE</Ctry>"
+                        + "</PstlAdr></Cdtr>"));
+        assertFalse("Creditor without address columns must have no PstlAdr",
+                compact.contains("<Cdtr><Nm>AcmeSuppliesLtd</Nm><PstlAdr>"));
+        assertFalse("No debtor PstlAdr expected", compact.contains("<Dbtr><Nm>TestDebtor</Nm><PstlAdr>"));
+    }
+
+    // 6. Partial creditor address (missing town/country) fails validation clearly.
+    @Test
+    public void partialCreditorAddressFailsValidation() throws Exception {
+        File csv = writeCsvWithHeader(ADDRESS_CSV_HEADER,
+                "Karlson GmbH,DE89370400440532013000,DEUTDEFF,1500.00,INV-2026-001,Invoice,Hauptstrasse,5,,,");
+        try {
+            generate(csv, tmp.newFile("out1.xml"), LocalDate.now().plusDays(7), PainVersion.PAIN_001_001_09);
+            fail("Expected validation failure for incomplete creditor address");
+        } catch (Exception e) {
+            assertTrue("Expected town/city error: " + e.getMessage(),
+                    e.getMessage().contains("town/city is mandatory"));
+            assertTrue("Expected country error: " + e.getMessage(),
+                    e.getMessage().contains("country is mandatory"));
+        }
+    }
+
+    // 7. An invalid creditor country code fails validation clearly.
+    @Test
+    public void invalidCreditorCountryFailsValidation() throws Exception {
+        File csv = writeCsvWithHeader(ADDRESS_CSV_HEADER,
+                "Karlson GmbH,DE89370400440532013000,DEUTDEFF,1500.00,INV-2026-001,Invoice,Hauptstrasse,5,10115,Berlin,Germany");
+        try {
+            generate(csv, tmp.newFile("out2.xml"), LocalDate.now().plusDays(7), PainVersion.PAIN_001_001_09);
+            fail("Expected validation failure for invalid country code");
+        } catch (Exception e) {
+            assertTrue("Expected ISO country error: " + e.getMessage(),
+                    e.getMessage().contains("2-letter ISO country code"));
+        }
+    }
+
+    // 8. Address data must never leak into pain.001.001.02 output.
+    @Test
+    public void pain02NeverEmitsPostalAddress() throws Exception {
+        writeConfigWithDebtorAddress();
+        File csv = writeCsvWithHeader(ADDRESS_CSV_HEADER,
+                "Karlson GmbH,DE89370400440532013000,DEUTDEFF,1500.00,INV-2026-001,Invoice,Hauptstrasse,5,10115,Berlin,DE");
+        File xml = tmp.newFile("pain02-addr.xml");
+
+        generate(csv, xml, LocalDate.now().plusDays(7), PainVersion.PAIN_001_001_02);
+        String content = read(xml);
+
+        assertTrue(content.contains("<pain.001.001.02>"));
+        assertFalse("PstlAdr must not appear in .02 output", content.contains("<PstlAdr>"));
+    }
+
     // ── Helpers ──────────────────────────────────────────────────────────────
 
     private void generate(File csv, File xml, LocalDate date, PainVersion version) throws Exception {
@@ -173,13 +265,42 @@ public class Pain09GenerationTest {
     }
 
     private File writeCsv(String... rows) throws Exception {
-        StringBuilder sb = new StringBuilder(CSV_HEADER).append('\n');
+        return writeCsvWithHeader(CSV_HEADER, rows);
+    }
+
+    private File writeCsvWithHeader(String header, String... rows) throws Exception {
+        StringBuilder sb = new StringBuilder(header).append('\n');
         for (String row : rows) {
             sb.append(row).append('\n');
         }
         File f = tmp.newFile("input-" + System.nanoTime() + ".csv");
         Files.write(f.toPath(), sb.toString().getBytes(StandardCharsets.UTF_8));
         return f;
+    }
+
+    /** Replaces the redirected config with one that includes a debtor postal address. */
+    private void writeConfigWithDebtorAddress() throws Exception {
+        String json = "{\n"
+                + "  \"debtor\": {\n"
+                + "    \"name\": \"Test Debtor\",\n"
+                + "    \"iban\": \"" + DEBTOR_IBAN + "\",\n"
+                + "    \"bic\": \"BNPAFRPP\",\n"
+                + "    \"address\": {\n"
+                + "      \"street\": \"Rue de la Paix\",\n"
+                + "      \"buildingNumber\": \"10\",\n"
+                + "      \"postcode\": \"75002\",\n"
+                + "      \"town\": \"Paris\",\n"
+                + "      \"country\": \"fr\"\n"
+                + "    }\n"
+                + "  },\n"
+                + "  \"initiatingParty\": {\n"
+                + "    \"name\": \"Test Party\",\n"
+                + "    \"siret\": \"12345678901234\"\n"
+                + "  }\n"
+                + "}\n";
+        File config = tmp.newFile("config-addr-" + System.nanoTime() + ".json");
+        Files.write(config.toPath(), json.getBytes(StandardCharsets.UTF_8));
+        System.setProperty("sepa.config.file", config.getAbsolutePath());
     }
 
     private String read(File f) throws Exception {
