@@ -2,10 +2,10 @@
 <Document xmlns="urn:iso:std:iso:20022:tech:xsd:pain.001.001.02">
     <pain.001.001.02>
         <GrpHdr>
-            <MsgId>Payments-template-example.csv</MsgId>
-            <CreDtTm>2026-06-12T13:37:35</CreDtTm>
-            <NbOfTxs>4</NbOfTxs>
-            <CtrlSum>10132.50</CtrlSum>
+            <MsgId>sepa-valid-sample.csv</MsgId>
+            <CreDtTm>2026-06-12T13:51:42</CreDtTm>
+            <NbOfTxs>5</NbOfTxs>
+            <CtrlSum>5305.34</CtrlSum>
             <Grpg>MIXD</Grpg>
             <InitgPty>
                 <Nm>ACME Demo Company</Nm>
@@ -19,7 +19,7 @@
             </InitgPty>
         </GrpHdr>
         <PmtInf>
-            <PmtInfId>Payments-template-example.csv-1</PmtInfId>
+            <PmtInfId>sepa-valid-sample.csv-1</PmtInfId>
             <PmtMtd>TRF</PmtMtd>
             <PmtTpInf>
                 <SvcLvl>
@@ -42,14 +42,14 @@
             </DbtrAgt>
             <CdtTrfTxInf>
                 <PmtId>
-                    <EndToEndId>127A</EndToEndId>
+                    <EndToEndId>INV-2026-001</EndToEndId>
                 </PmtId>
                 <Amt>
-                    <InstdAmt Ccy="EUR">3000.00</InstdAmt>
+                    <InstdAmt Ccy="EUR">1500.00</InstdAmt>
                 </Amt>
                 <CdtrAgt>
                     <FinInstnId>
-                        <BIC>BANKNL2A</BIC>
+                        <BIC>DEUTDEFF</BIC>
                     </FinInstnId>
                 </CdtrAgt>
                 <Cdtr>
@@ -57,27 +57,51 @@
                 </Cdtr>
                 <CdtrAcct>
                     <Id>
-                        <IBAN>GB29NWBK60161331926819</IBAN>
+                        <IBAN>DE89370400440532013000</IBAN>
                     </Id>
                 </CdtrAcct>
                 <RmtInf>
-                    <Ustrd>furnitures</Ustrd>
+                    <Ustrd>Invoice 2026-001 furniture</Ustrd>
                 </RmtInf>
             </CdtTrfTxInf>
             <CdtTrfTxInf>
                 <PmtId>
-                    <EndToEndId>128A</EndToEndId>
+                    <EndToEndId>INV-2026-002</EndToEndId>
                 </PmtId>
                 <Amt>
-                    <InstdAmt Ccy="EUR">1276.00</InstdAmt>
+                    <InstdAmt Ccy="EUR">980.25</InstdAmt>
                 </Amt>
                 <CdtrAgt>
                     <FinInstnId>
-                        <BIC>BANKNL2B</BIC>
+                        <BIC>BNPAFRPPXXX</BIC>
                     </FinInstnId>
                 </CdtrAgt>
                 <Cdtr>
-                    <Nm>Juan Pablo</Nm>
+                    <Nm>Juan Pablo Services</Nm>
+                </Cdtr>
+                <CdtrAcct>
+                    <Id>
+                        <IBAN>FR1420041010050500013M02606</IBAN>
+                    </Id>
+                </CdtrAcct>
+                <RmtInf>
+                    <Ustrd>Consulting January</Ustrd>
+                </RmtInf>
+            </CdtTrfTxInf>
+            <CdtTrfTxInf>
+                <PmtId>
+                    <EndToEndId>INV-2026-003</EndToEndId>
+                </PmtId>
+                <Amt>
+                    <InstdAmt Ccy="EUR">75.10</InstdAmt>
+                </Amt>
+                <CdtrAgt>
+                    <FinInstnId>
+                        <BIC>BANKNL2A</BIC>
+                    </FinInstnId>
+                </CdtrAgt>
+                <Cdtr>
+                    <Nm>Acme Supplies Ltd</Nm>
                 </Cdtr>
                 <CdtrAcct>
                     <Id>
@@ -85,55 +109,55 @@
                     </Id>
                 </CdtrAcct>
                 <RmtInf>
-                    <Ustrd>salary1</Ustrd>
+                    <Ustrd>Office supplies order 4711</Ustrd>
                 </RmtInf>
             </CdtTrfTxInf>
             <CdtTrfTxInf>
                 <PmtId>
-                    <EndToEndId>129A</EndToEndId>
+                    <EndToEndId>INV-2026-004</EndToEndId>
                 </PmtId>
                 <Amt>
-                    <InstdAmt Ccy="EUR">2856.47</InstdAmt>
+                    <InstdAmt Ccy="EUR">2300.00</InstdAmt>
                 </Amt>
                 <CdtrAgt>
                     <FinInstnId>
-                        <BIC>BANKNL2C</BIC>
+                        <BIC>ABNANL2A</BIC>
                     </FinInstnId>
                 </CdtrAgt>
                 <Cdtr>
-                    <Nm>Mickael Mickael</Nm>
+                    <Nm>Tulip Logistics BV</Nm>
                 </Cdtr>
                 <CdtrAcct>
                     <Id>
-                        <IBAN>GB29NWBK60161331926819</IBAN>
+                        <IBAN>NL91ABNA0417164300</IBAN>
                     </Id>
                 </CdtrAcct>
                 <RmtInf>
-                    <Ustrd>salary2</Ustrd>
+                    <Ustrd>Freight services week 02</Ustrd>
                 </RmtInf>
             </CdtTrfTxInf>
             <CdtTrfTxInf>
                 <PmtId>
-                    <EndToEndId>130A</EndToEndId>
+                    <EndToEndId>INV-2026-005</EndToEndId>
                 </PmtId>
                 <Amt>
-                    <InstdAmt Ccy="EUR">3000.03</InstdAmt>
+                    <InstdAmt Ccy="EUR">449.99</InstdAmt>
                 </Amt>
                 <CdtrAgt>
                     <FinInstnId>
-                        <BIC>BANKNL2D</BIC>
+                        <BIC>CAIXESBBXXX</BIC>
                     </FinInstnId>
                 </CdtrAgt>
                 <Cdtr>
-                    <Nm>Peter Mc. Nugget</Nm>
+                    <Nm>Sol y Mar SL</Nm>
                 </Cdtr>
                 <CdtrAcct>
                     <Id>
-                        <IBAN>GB29NWBK60161331926819</IBAN>
+                        <IBAN>ES9121000418450200051332</IBAN>
                     </Id>
                 </CdtrAcct>
                 <RmtInf>
-                    <Ustrd>salary3</Ustrd>
+                    <Ustrd>Maintenance contract Q1</Ustrd>
                 </RmtInf>
             </CdtTrfTxInf>
         </PmtInf>

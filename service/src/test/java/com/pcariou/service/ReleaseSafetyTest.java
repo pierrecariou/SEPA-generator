@@ -96,6 +96,61 @@ public class ReleaseSafetyTest {
                 content.contains("<CtrlSum>350.50</CtrlSum>"));
     }
 
+    // 3b. Realistic payment run: several distinct creditors (different IBANs/BICs,
+    //     amounts and remittance information). The generated XML must contain the
+    //     expected core SEPA fields for the debtor and every transaction.
+    @Test
+    public void realisticCsvGeneratesExpectedCoreFields() throws Exception {
+        LocalDate executionDate = LocalDate.now().plusDays(7);
+
+        String csvContent = CSV_HEADER + "\n"
+                + "Karlson GmbH,DE89370400440532013000,DEUTDEFF,1500.00,INV-2026-001,Invoice 2026-001 furniture\n"
+                + "Juan Pablo Services,FR1420041010050500013M02606,BNPAFRPPXXX,980.25,INV-2026-002,Consulting January\n"
+                + "Acme Supplies Ltd,GB29NWBK60161331926819,BANKNL2A,75.10,INV-2026-003,Office supplies order 4711\n";
+        File csv = tmp.newFile("realistic-" + System.nanoTime() + ".csv");
+        Files.write(csv.toPath(), csvContent.getBytes(StandardCharsets.UTF_8));
+        File xml = tmp.newFile("realistic.xml");
+
+        generate(csv, xml, executionDate);
+
+        String content = read(xml);
+
+        // Group header
+        assertTrue("Expected 3 transactions", content.contains("<NbOfTxs>3</NbOfTxs>"));
+        assertTrue("Expected control sum 2555.35", content.contains("<CtrlSum>2555.35</CtrlSum>"));
+        assertTrue("Expected initiating party name", content.contains("<Nm>Test Party</Nm>"));
+
+        // Debtor side (from config)
+        assertTrue("Expected debtor name", content.contains("<Nm>Test Debtor</Nm>"));
+        assertTrue("Expected debtor IBAN", content.contains("<IBAN>" + VALID_IBAN + "</IBAN>"));
+        assertTrue("Expected debtor BIC", content.contains("<BIC>BNPAFRPP</BIC>"));
+        assertTrue("Expected requested execution date",
+                content.contains("<ReqdExctnDt>" + executionDate + "</ReqdExctnDt>"));
+
+        // Creditor side, per transaction
+        assertTrue(content.contains("<Nm>Karlson GmbH</Nm>"));
+        assertTrue(content.contains("<IBAN>DE89370400440532013000</IBAN>"));
+        assertTrue(content.contains("<BIC>DEUTDEFF</BIC>"));
+        assertTrue(content.contains("<Nm>Juan Pablo Services</Nm>"));
+        assertTrue(content.contains("<IBAN>FR1420041010050500013M02606</IBAN>"));
+        assertTrue(content.contains("<BIC>BNPAFRPPXXX</BIC>"));
+        assertTrue(content.contains("<Nm>Acme Supplies Ltd</Nm>"));
+        assertTrue(content.contains("<BIC>BANKNL2A</BIC>"));
+
+        // Amounts (normalized to 2 decimals, dot separator)
+        assertTrue(content.contains(">1500.00</InstdAmt>"));
+        assertTrue(content.contains(">980.25</InstdAmt>"));
+        assertTrue(content.contains(">75.10</InstdAmt>"));
+
+        // End-to-end ids and remittance information
+        assertTrue(content.contains("<EndToEndId>INV-2026-001</EndToEndId>"));
+        assertTrue(content.contains("<EndToEndId>INV-2026-002</EndToEndId>"));
+        assertTrue(content.contains("<EndToEndId>INV-2026-003</EndToEndId>"));
+        assertTrue(content.contains("<Ustrd>Invoice 2026-001 furniture</Ustrd>"));
+        assertTrue(content.contains("<Ustrd>Consulting January</Ustrd>"));
+        assertTrue(content.contains("<Ustrd>Office supplies order 4711</Ustrd>"));
+    }
+
     // 4. Invalid debtor/IBAN configuration fails with a clear validation error.
     @Test
     public void invalidDebtorIbanFailsWithClearError() throws Exception {
@@ -134,6 +189,11 @@ public class ReleaseSafetyTest {
         String content = read(xml);
         assertTrue("Large output should contain all transactions",
                 content.contains("<NbOfTxs>" + rows + "</NbOfTxs>"));
+        assertEquals("Large output should contain one block per transaction",
+                rows, countOccurrences(content, "<CdtTrfTxInf>"));
+        // 1,000 rows x 100.00 = deterministic control sum
+        assertTrue("Large output should contain the expected control sum",
+                content.contains("<CtrlSum>100000.00</CtrlSum>"));
 
         assertTrue("Large generation took too long: " + elapsedMs + " ms",
                 elapsedMs < 30_000);
