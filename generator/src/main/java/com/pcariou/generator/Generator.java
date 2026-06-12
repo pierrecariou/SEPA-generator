@@ -119,10 +119,25 @@ public class Generator implements IGenerator
         }
     }
 
+    private static final String CLI_USAGE =
+            "Usage: java -jar generator.jar <input file> <output file> <execution date YYYY-MM-DD> [--format=02|09]";
+
     public static void fromCommandLine(String[] args)
     {
-        // Optional --format=02|09 argument (anywhere); remaining args keep the
-        // historical 4-argument contract and default to pain.001.001.02.
+        int exitCode = runCommandLine(args);
+        if (exitCode != 0) {
+            System.exit(exitCode);
+        }
+    }
+
+    /**
+     * Runs the CLI generation flow and returns an exit code (0 on success).
+     * Separated from {@link #fromCommandLine} so it can be tested without
+     * killing the JVM.
+     */
+    static int runCommandLine(String[] args)
+    {
+        // Optional --format=02|09 argument (anywhere); defaults to pain.001.001.02.
         PainVersion version = PainVersion.PAIN_001_001_02;
         java.util.List<String> positional = new java.util.ArrayList<>();
         for (String arg : args) {
@@ -130,50 +145,78 @@ public class Generator implements IGenerator
                 PainVersion parsed = PainVersion.fromCode(arg.substring("--format=".length()));
                 if (parsed == null) {
                     System.out.println("Unknown format. Supported values: --format=02 (pain.001.001.02), --format=09 (pain.001.001.09)");
-                    System.exit(1);
+                    return 1;
                 }
                 version = parsed;
             } else {
                 positional.add(arg);
             }
         }
-        args = positional.toArray(new String[0]);
 
-        if (args.length != 4) {
-            System.out.println("Usage: java -jar generator.jar <input file> <output file> [--format=02|09]");
-            System.exit(1);
+        // 3 positional arguments expected; a legacy unused 4th argument is
+        // still tolerated for backward compatibility with old invocations.
+        if (positional.size() < 3 || positional.size() > 4) {
+            System.out.println(CLI_USAGE);
+            return 1;
         }
-        if (args[0].equals(args[1])) {
+
+        String inputFilename = positional.get(0);
+        String outputFilename = positional.get(1);
+        String rawDate = positional.get(2);
+
+        if (inputFilename.equals(outputFilename)) {
             System.out.println("Input and output files must be different");
-            System.exit(1);
+            return 1;
         }
-        if (!args[1].endsWith(".xml")) {
+        if (!outputFilename.endsWith(".xml")) {
             System.out.println("Output file must be an XML file");
-            System.exit(1);
+            return 1;
         }
 
-        String inputFilename = args[0];
-        String outputFilename = args[1];
+        LocalDate executionDate = parseExecutionDate(rawDate);
+        if (executionDate == null) {
+            return 1;
+        }
 
         if (inputFilename.endsWith(".xls") || inputFilename.endsWith(".xlsx")) {
             try {
-                Workbook workbook = new Workbook(args[0]);
+                Workbook workbook = new Workbook(inputFilename);
                 inputFilename = FilenameUtils.getBaseName(inputFilename) + ".csv";
                 workbook.save(FilenameUtils.getBaseName(inputFilename) + ".csv");
                 eraseNoLicenseMessage(inputFilename);
             } catch (Exception e) {
-                e.printStackTrace();
+                System.out.println("Could not convert the Excel input file: " + e.getMessage());
+                return 1;
             }
         } else if (!inputFilename.endsWith(".csv")) {
             System.out.println("Input file must be a CSV or XLS/XLSX file");
-            System.exit(1);
+            return 1;
         }
 
         try {
-            Document document = new CsvToBeans(null).read(inputFilename);
+            Document document = new CsvToBeans(executionDate).read(inputFilename);
             PainWriter.forVersion(version).write(document, outputFilename);
+            System.out.println(outputFilename + " generated successfully.");
+            return 0;
         } catch (Exception e) {
-            e.printStackTrace();
+            System.out.println("Generation failed: " + e.getMessage());
+            return 1;
+        }
+    }
+
+    /** Parses and validates the CLI execution date; prints an error and returns null when invalid. */
+    private static LocalDate parseExecutionDate(String rawDate)
+    {
+        if (rawDate == null || rawDate.trim().isEmpty()) {
+            System.out.println("The execution date is mandatory (expected format: YYYY-MM-DD, e.g. 2026-07-01)");
+            return null;
+        }
+        try {
+            return LocalDate.parse(rawDate.trim());
+        } catch (java.time.format.DateTimeParseException e) {
+            System.out.println("The execution date \"" + rawDate
+                    + "\" is not valid. Please use the YYYY-MM-DD format (e.g. 2026-07-01).");
+            return null;
         }
     }
 

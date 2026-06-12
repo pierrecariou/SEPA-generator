@@ -48,7 +48,7 @@
         </plugin>
         <plugin>
           <artifactId>maven-surefire-plugin</artifactId>
-          <version>2.22.1</version>
+          <version>3.2.5</version>
         </plugin>
         <plugin>
           <artifactId>maven-jar-plugin</artifactId>
@@ -73,5 +73,16 @@
         </plugin>
       </plugins>
     </pluginManagement>
+    <plugins>
+      <!-- Same JPMS workaround as the service/generator modules: keep tests on
+           the classpath (matching how the application actually runs) so
+           reflection-based validation works against test classes. -->
+      <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <useModulePath>false</useModulePath>
+        </configuration>
+      </plugin>
+    </plugins>
   </build>
 </project>
