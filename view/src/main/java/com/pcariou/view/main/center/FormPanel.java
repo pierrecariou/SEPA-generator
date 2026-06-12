@@ -1,6 +1,7 @@
 package com.pcariou.view.main.center;
 
 import com.formdev.flatlaf.FlatClientProperties;
+import com.pcariou.model.PainVersion;
 import com.pcariou.view.ExternalLinks;
 import com.pcariou.view.config.ConfigStore;
 import com.pcariou.view.custom.Cards;
@@ -29,6 +30,7 @@ public class FormPanel extends JPanel {
 
     private JTextField inputField;
     private FlatDatePickerField flatDatePickerField;
+    private JComboBox<PainVersion> formatCombo;
     private JButton generateButton;
 
     // Summary card fields
@@ -115,7 +117,52 @@ public class FormPanel extends JPanel {
         grid.add(dateLabel, "alignx right");
         grid.add(flatDatePickerField, "growx, wrap");
 
+        formatCombo = createFormatCombo();
+        JLabel formatLabel = new JLabel("Format");
+        formatLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
+        grid.add(formatLabel, "alignx right");
+        grid.add(formatCombo, "growx, wrap");
+
         return grid;
+    }
+
+    private JComboBox<PainVersion> createFormatCombo() {
+        JComboBox<PainVersion> combo = new JComboBox<>(PainVersion.values());
+        combo.setToolTipText("ISO 20022 message version of the generated XML");
+        combo.setRenderer(new DefaultListCellRenderer() {
+            @Override public Component getListCellRendererComponent(JList<?> list, Object value,
+                    int index, boolean isSelected, boolean cellHasFocus) {
+                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                if (value instanceof PainVersion) {
+                    setText(formatLabelFor((PainVersion) value));
+                }
+                return this;
+            }
+        });
+
+        PainVersion persisted = PainVersion.fromCode(configStore.readPainFormat());
+        combo.setSelectedItem(persisted != null ? persisted : PainVersion.PAIN_001_001_02);
+        combo.addActionListener(e -> {
+            PainVersion selected = (PainVersion) combo.getSelectedItem();
+            if (selected != null) {
+                configStore.savePainFormat(selected.getCode());
+            }
+        });
+        return combo;
+    }
+
+    private static String formatLabelFor(PainVersion version) {
+        switch (version) {
+            case PAIN_001_001_09: return "pain.001.001.09 (modern ISO 20022)";
+            case PAIN_001_001_02:
+            default:              return "pain.001.001.02 (classic)";
+        }
+    }
+
+    /** Currently selected pain.001 version (never {@code null}). */
+    public PainVersion getSelectedPainVersion() {
+        PainVersion selected = (PainVersion) formatCombo.getSelectedItem();
+        return selected != null ? selected : PainVersion.PAIN_001_001_02;
     }
 
     private JComponent createActionsRow() {
@@ -304,10 +351,11 @@ public class FormPanel extends JPanel {
         final String inputPath  = filenameInput;
         final String outputPath = filenameOutput;
         final LocalDate date    = flatDatePickerField.getDate();
+        final PainVersion version = getSelectedPainVersion();
 
         new javax.swing.SwingWorker<Void, Void>() {
             @Override protected Void doInBackground() {
-                owner.getGenerator().generate(inputPath, outputPath, date);
+                owner.getGenerator().generate(inputPath, outputPath, date, version);
                 return null;
             }
             @Override protected void done() {

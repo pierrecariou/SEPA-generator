@@ -29,21 +29,21 @@ public class Generator implements IGenerator
         this.view = view;
     }
 
-    public void generate(String inputFile, String outputFile, LocalDate date)
+    public void generate(String inputFile, String outputFile, LocalDate date, PainVersion version)
     {
         if (!argumentsAreValid(inputFile, outputFile, date))
             return;
         if (isExcelFile(inputFile))
             inputFile = convertToCsv(inputFile);
-        transformCsvToXml(inputFile, outputFile, date);
+        transformCsvToXml(inputFile, outputFile, date, version);
     }
 
-    private void transformCsvToXml(String inputFile, String outputFile, LocalDate date)
+    private void transformCsvToXml(String inputFile, String outputFile, LocalDate date, PainVersion version)
     {
         try {
             CsvToBeans csvToBeans = new CsvToBeans(date);
             Document document = csvToBeans.read(inputFile);
-            new BeansToXml().write(document, outputFile);
+            PainWriter.forVersion(version).write(document, outputFile);
             view.showSuccessMessage(outputFile, " generated successfully.");
             view.showTableResult(csvToBeans.getTableResult());
         } catch (Exception e) {
@@ -121,8 +121,26 @@ public class Generator implements IGenerator
 
     public static void fromCommandLine(String[] args)
     {
-    if (args.length != 4) {
-            System.out.println("Usage: java -jar generator.jar <input file> <output file>");
+        // Optional --format=02|09 argument (anywhere); remaining args keep the
+        // historical 4-argument contract and default to pain.001.001.02.
+        PainVersion version = PainVersion.PAIN_001_001_02;
+        java.util.List<String> positional = new java.util.ArrayList<>();
+        for (String arg : args) {
+            if (arg != null && arg.startsWith("--format=")) {
+                PainVersion parsed = PainVersion.fromCode(arg.substring("--format=".length()));
+                if (parsed == null) {
+                    System.out.println("Unknown format. Supported values: --format=02 (pain.001.001.02), --format=09 (pain.001.001.09)");
+                    System.exit(1);
+                }
+                version = parsed;
+            } else {
+                positional.add(arg);
+            }
+        }
+        args = positional.toArray(new String[0]);
+
+        if (args.length != 4) {
+            System.out.println("Usage: java -jar generator.jar <input file> <output file> [--format=02|09]");
             System.exit(1);
         }
         if (args[0].equals(args[1])) {
@@ -153,7 +171,7 @@ public class Generator implements IGenerator
 
         try {
             Document document = new CsvToBeans(null).read(inputFilename);
-            new BeansToXml().write(document, outputFilename);
+            PainWriter.forVersion(version).write(document, outputFilename);
         } catch (Exception e) {
             e.printStackTrace();
         }

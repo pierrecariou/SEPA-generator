@@ -27,6 +27,8 @@ public class AppConfig {
     public static class FileSettings {
         public String defaultInputPath;
         public String defaultOutputPath;
+        /** Persisted pain.001 version code ("02" / "09"); null means default (02). */
+        public String painFormat;
     }
 
     public static class Appearance {

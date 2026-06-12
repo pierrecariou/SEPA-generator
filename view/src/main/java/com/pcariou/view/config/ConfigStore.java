@@ -116,6 +116,34 @@ public final class ConfigStore {
         return s != null && !s.trim().isEmpty();
     }
 
+    /** Returns the persisted pain.001 version code (e.g. {@code "02"} / {@code "09"}), or {@code null} if unset. */
+    public String readPainFormat() {
+        AppConfig cfg = read();
+        if (cfg != null && cfg.fileSettings != null) {
+            return cfg.fileSettings.painFormat;
+        }
+        return null;
+    }
+
+    /**
+     * Persists {@code formatCode} as the last-used pain.001 version, preserving
+     * all other config fields. No-op if {@code formatCode} is blank.
+     */
+    public void savePainFormat(String formatCode) {
+        if (formatCode == null || formatCode.trim().isEmpty()) {
+            return;
+        }
+        AppConfig cfg = read();
+        if (cfg == null) {
+            cfg = new AppConfig();
+        }
+        if (cfg.fileSettings == null) {
+            cfg.fileSettings = new AppConfig.FileSettings();
+        }
+        cfg.fileSettings.painFormat = formatCode;
+        write(cfg);
+    }
+
     /** Returns the persisted theme name (e.g. {@code "LIGHT"} / {@code "DARK"}), or {@code null} if unset. */
     public String readTheme() {
         AppConfig cfg = read();

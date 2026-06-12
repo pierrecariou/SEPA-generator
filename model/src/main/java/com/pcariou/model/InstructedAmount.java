@@ -32,6 +32,10 @@ public class InstructedAmount
 		return instructedAmount;
 	}
 
+	public String getCurrency() {
+		return currency;
+	}
+
 	public void setInstructedAmount(String instructedAmount) {
 		this.instructedAmount = instructedAmount.replace(",", ".");
 	}
