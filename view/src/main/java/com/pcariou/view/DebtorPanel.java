@@ -14,7 +14,7 @@ public class DebtorPanel extends AbstractSettingsPanel {
     private JLabel bicErrorLabel = new JLabel();
 
     public DebtorPanel() {
-        setBorder(BorderFactory.createTitledBorder("Debtor Information"));
+        setOpaque(false);
         setLayout(new GridBagLayout());
 
         configureErrorLabel(nameErrorLabel);

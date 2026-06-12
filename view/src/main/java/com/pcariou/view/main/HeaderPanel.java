@@ -10,8 +10,8 @@ import java.awt.*;
 import java.net.URL;
 
 public class HeaderPanel extends JPanel {
-    private final JButton themeButton    = new JButton("🌙");
-    private final JButton profilesButton = new JButton("👤");
+    private final JButton themeButton    = new JButton();
+    private final JButton settingsButton = new JButton("👤");
     private JLabel logoLabel;
 
     public HeaderPanel(MainFrame owner) {
@@ -50,26 +50,24 @@ public class HeaderPanel extends JPanel {
         rightPanel.setOpaque(false);
 
         themeButton.putClientProperty(FlatClientProperties.BUTTON_TYPE, FlatClientProperties.BUTTON_TYPE_TOOLBAR_BUTTON);
-        profilesButton.putClientProperty(FlatClientProperties.BUTTON_TYPE, FlatClientProperties.BUTTON_TYPE_TOOLBAR_BUTTON);
+        settingsButton.putClientProperty(FlatClientProperties.BUTTON_TYPE, FlatClientProperties.BUTTON_TYPE_TOOLBAR_BUTTON);
         themeButton.setFocusable(false);
-        profilesButton.setFocusable(false);
-        themeButton.setToolTipText("Toggle Theme");
-        profilesButton.setToolTipText("Profiles / Settings");
+        settingsButton.setFocusable(false);
+        refreshThemeButton();
+        settingsButton.setToolTipText("Settings");
 
-        themeButton.addActionListener(e -> AppTheme.switchMode());
-
-        JPopupMenu menu = new JPopupMenu();
-        JMenuItem debtor = new JMenuItem("Debtor profile...");
-        debtor.addActionListener(e -> {
-            JFrame settingsFrame = new SettingsFrame(owner);
-            settingsFrame.setVisible(true);
+        themeButton.addActionListener(e -> {
+            AppTheme.switchMode();
+            refreshThemeButton();
         });
-        menu.add(debtor);
 
-        profilesButton.addActionListener(e -> menu.show(profilesButton, 0, profilesButton.getHeight()));
+        settingsButton.addActionListener(e -> {
+            SettingsFrame settings = new SettingsFrame(owner);
+            settings.setVisible(true);
+        });
 
         rightPanel.add(themeButton);
-        rightPanel.add(profilesButton);
+        rightPanel.add(settingsButton);
         add(rightPanel, BorderLayout.EAST);
     }
 
@@ -78,6 +76,15 @@ public class HeaderPanel extends JPanel {
         super.updateUI();
         refreshColors();
         refreshIcon();
+        refreshThemeButton();
+    }
+
+    /** Shows the mode the button will switch to, with a matching tooltip. */
+    private void refreshThemeButton() {
+        if (themeButton == null) return;
+        boolean dark = AppTheme.getCurrentMode() == AppTheme.Mode.DARK;
+        themeButton.setText(dark ? "☀" : "🌙");
+        themeButton.setToolTipText(dark ? "Switch to light theme" : "Switch to dark theme");
     }
 
     private void refreshColors() {

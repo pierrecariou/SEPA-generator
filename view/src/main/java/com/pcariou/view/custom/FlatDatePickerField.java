@@ -8,6 +8,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.time.format.FormatStyle;
 
 public final class FlatDatePickerField extends JPanel {
 
@@ -29,7 +30,6 @@ public final class FlatDatePickerField extends JPanel {
 
         // Hide engine UI so it cannot affect visuals/layout
         engine.getComponentDateTextField().setVisible(false);
-//        engine.getComponentToggleCalendarButton().setVisible(false);
 
         // Make it take effectively zero space in layout
         Dimension zero = new Dimension(0, 0);
@@ -37,27 +37,19 @@ public final class FlatDatePickerField extends JPanel {
         engine.setMinimumSize(zero);
         engine.setMaximumSize(zero);
 
-        // Visible field (your controlled UI)
+        // Visible field (controlled UI)
         this.field = new JTextField();
         field.setEditable(false);
         field.setFocusable(false);
-
-        // Force consistent height (this kills clipping permanently)
-//        field.putClientProperty(FlatClientProperties.STYLE, "minimumHeight: " + minHeightPx + ";");
 
         // Trailing button inside field
         this.btn = engine.getComponentToggleCalendarButton();
         btn.putClientProperty(FlatClientProperties.BUTTON_TYPE, FlatClientProperties.BUTTON_TYPE_TOOLBAR_BUTTON);
         field.putClientProperty(FlatClientProperties.TEXT_FIELD_TRAILING_COMPONENT, btn);
-
-//        btn.size
         btn.setPreferredSize(btnPreferredSize);
-//        btn.addActionListener(e -> {
-//            engine.openPopup();
-//        });
 
-        // Format
-        this.formatter = DateTimeFormatter.ofPattern("MMMM d, uuuu"); // or use your locale/format
+        // Locale-aware long date format (e.g. "9 June 2026" / "June 9, 2026")
+        this.formatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.LONG);
 
         // Sync engine -> visible field
         engine.addDateChangeListener(event -> {

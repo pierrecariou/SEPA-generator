@@ -141,6 +141,10 @@ public final class AppTheme {
         UIManager.put("CheckBox.icon.focusedSelectedBackground", accent2);
         UIManager.put("Hyperlink.linkColor",                    accent);
 
+        // ── Status colors (footer) — tuned per theme for contrast ──────────
+        UIManager.put("App.successColor", dark ? c(102, 187, 106) : c(46, 125, 50));
+        UIManager.put("App.errorColor",   dark ? c(239, 83,  80)  : c(211, 47, 47));
+
         // ── Buttons — neutral defaults, accent only for primary ────────────
         UIManager.put("Button.background",          panelBg);
         UIManager.put("Button.foreground",          text);

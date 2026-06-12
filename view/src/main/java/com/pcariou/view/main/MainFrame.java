@@ -90,7 +90,9 @@ public class MainFrame extends JFrame {
 	public void showErrorMessage(String message) {
 		SwingUtilities.invokeLater(() -> {
 			setStatus(AppStatus.GENERATION_FAILED);
-			JOptionPane.showMessageDialog(this, message, "Error", JOptionPane.ERROR_MESSAGE);
+			JOptionPane.showMessageDialog(this,
+					"The SEPA file could not be generated:\n\n" + message,
+					"Generation failed", JOptionPane.ERROR_MESSAGE);
 		});
 	}
 

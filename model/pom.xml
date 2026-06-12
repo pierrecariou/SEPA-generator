@@ -9,7 +9,7 @@
 
   <groupId>com.pcariou.model</groupId>
   <artifactId>model</artifactId>
-  <version>1.2</version>
+  <version>1.3</version>
 
   <name>model</name>
   <url>https://github.com/pierrecariou/SEPA-generator</url>

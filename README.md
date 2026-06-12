@@ -10,7 +10,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/license-Apache--2.0-blue" alt="License: Apache 2.0" />
-  <img src="https://img.shields.io/badge/release-v1.2-teal" alt="Release v1.2" />
+  <img src="https://img.shields.io/badge/release-v1.3-teal" alt="Release v1.3" />
   <img src="https://img.shields.io/badge/format-pain.001.001.02-lightgrey" alt="pain.001.001.02" />
 </p>
 

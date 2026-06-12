@@ -9,7 +9,7 @@
 
   <groupId>com.pcariou.service</groupId>
   <artifactId>service</artifactId>
-  <version>1.2</version>
+  <version>1.3</version>
 
   <name>service</name>
   <url>https://github.com/pierrecariou/SEPA-generator</url>
@@ -31,7 +31,7 @@
     <dependency>
       <groupId>com.pcariou.model</groupId>
       <artifactId>model</artifactId>
-      <version>1.2</version>
+      <version>1.3</version>
     </dependency>
   </dependencies>
 

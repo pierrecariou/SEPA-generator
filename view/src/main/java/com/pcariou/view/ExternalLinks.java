@@ -62,6 +62,42 @@ public final class ExternalLinks {
         }
     }
 
+    /**
+     * Reveals {@code file} in the platform file manager, selecting it when the
+     * platform supports it. Falls back to opening the containing folder, and
+     * shows a clear error dialog when nothing works.
+     */
+    public static void showInFolder(java.io.File file, Component parent) {
+        if (file == null) {
+            return;
+        }
+        try {
+            // Windows: Explorer can select the file directly.
+            String os = System.getProperty("os.name", "").toLowerCase();
+            if (os.contains("win") && file.exists()) {
+                new ProcessBuilder("explorer.exe", "/select,", file.getAbsolutePath()).start();
+                return;
+            }
+            java.io.File folder = file.getParentFile();
+            Desktop desktop = Desktop.isDesktopSupported() ? Desktop.getDesktop() : null;
+            if (folder != null && desktop != null && desktop.isSupported(Desktop.Action.OPEN)) {
+                desktop.open(folder);
+                return;
+            }
+            showFolderError(parent, file);
+        } catch (Exception ex) {
+            Logger.getLogger(ExternalLinks.class.getName())
+                    .log(Level.WARNING, "Could not show file in folder: " + file, ex);
+            showFolderError(parent, file);
+        }
+    }
+
+    private static void showFolderError(Component parent, java.io.File file) {
+        JOptionPane.showMessageDialog(parent,
+                "Could not open the containing folder.\nThe file is located at:\n" + file.getAbsolutePath(),
+                "Unable to open folder", JOptionPane.WARNING_MESSAGE);
+    }
+
     static String stripMailto(String target) {
         if (target != null && target.regionMatches(true, 0, MAILTO_PREFIX, 0, MAILTO_PREFIX.length())) {
             return target.substring(MAILTO_PREFIX.length());

@@ -1,7 +1,9 @@
 package com.pcariou.view.main.center;
 
 import com.formdev.flatlaf.FlatClientProperties;
+import com.pcariou.view.ExternalLinks;
 import com.pcariou.view.config.ConfigStore;
+import com.pcariou.view.custom.Cards;
 import com.pcariou.view.custom.FlatDatePickerField;
 import com.pcariou.view.main.AppStatus;
 import com.pcariou.view.main.MainFrame;
@@ -10,7 +12,6 @@ import net.miginfocom.swing.MigLayout;
 import org.apache.commons.io.FilenameUtils;
 
 import javax.swing.*;
-import javax.swing.border.AbstractBorder;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
@@ -89,9 +90,10 @@ public class FormPanel extends JPanel {
         ));
         grid.setOpaque(false);
 
-        inputField = createFileField("No input selected");
+        inputField = createFileField("Select a CSV or Excel file…");
         JButton browseInput = new JButton("...");
         browseInput.putClientProperty(FlatClientProperties.BUTTON_TYPE, FlatClientProperties.BUTTON_TYPE_TOOLBAR_BUTTON);
+        browseInput.setToolTipText("Browse...");
         inputField.putClientProperty(FlatClientProperties.TEXT_FIELD_TRAILING_COMPONENT, browseInput);
         browseInput.addActionListener(e -> chooseInputFile());
 
@@ -129,6 +131,7 @@ public class FormPanel extends JPanel {
         generate.putClientProperty("FlatLaf.style", "minimumWidth:140; minimumHeight:36;");
         generate.addActionListener(e -> onGenerate());
         generate.setEnabled(false);
+        generate.setToolTipText("Select an input file and an execution date first");
         this.generateButton = generate;
 
         p.add(new JLabel(), "growx, pushx");
@@ -167,12 +170,21 @@ public class FormPanel extends JPanel {
         summaryFileName.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         summaryFileName.putClientProperty(FlatClientProperties.STYLE,
                 "foreground: $Component.accentColor;");
+        summaryFileName.setToolTipText("Open the generated file");
         summaryFileName.addMouseListener(new MouseAdapter() {
             @Override public void mouseClicked(MouseEvent e) {
                 if (filenameOutput != null) {
                     try { Desktop.getDesktop().open(new File(filenameOutput)); }
-                    catch (Exception ex) { owner.showErrorMessage("Could not open the file: " + ex.getMessage()); }
+                    catch (Exception ex) { showLocalError("Could not open the file:\n" + ex.getMessage()); }
                 }
+            }
+            @Override public void mouseEntered(MouseEvent e) {
+                summaryFileName.putClientProperty(FlatClientProperties.STYLE,
+                        "foreground: $Component.accentColor; font: bold;");
+            }
+            @Override public void mouseExited(MouseEvent e) {
+                summaryFileName.putClientProperty(FlatClientProperties.STYLE,
+                        "foreground: $Component.accentColor;");
             }
         });
 
@@ -183,8 +195,7 @@ public class FormPanel extends JPanel {
         openFolder.addMouseListener(new MouseAdapter() {
             @Override public void mouseClicked(MouseEvent e) {
                 if (filenameOutput != null) {
-                    try { Desktop.getDesktop().open(new File(filenameOutput).getParentFile()); }
-                    catch (Exception ex) { owner.showErrorMessage("Could not open folder: " + ex.getMessage()); }
+                    ExternalLinks.showInFolder(new File(filenameOutput), FormPanel.this);
                 }
             }
             @Override public void mouseEntered(MouseEvent e) {
@@ -248,50 +259,15 @@ public class FormPanel extends JPanel {
         if (bg != null) tile.setBackground(bg);
         Color border = UIManager.getColor("App.cardBorderColor");
         if (border == null) border = UIManager.getColor("Component.borderColor");
-        if (border != null) tile.setBorder(roundedBorder(border, 10));
+        if (border != null) tile.setBorder(Cards.roundedBorder(border, 10));
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // Shared card styling
+    // Shared card styling (see com.pcariou.view.custom.Cards)
     // ─────────────────────────────────────────────────────────────────────────
 
-    /** Returns a new JPanel that refreshes its background and border on every L&F change. */
     private static JPanel createCard(LayoutManager layout) {
-        JPanel card = new JPanel(layout) {
-            @Override public void updateUI() {
-                super.updateUI();
-                refreshCardAppearance(this);
-            }
-        };
-        card.putClientProperty(FlatClientProperties.STYLE, "arc:16");
-        refreshCardAppearance(card);
-        return card;
-    }
-
-    private static void refreshCardAppearance(JPanel card) {
-        card.setOpaque(true);
-        Color bg = UIManager.getColor("App.cardBackground");
-        if (bg != null) card.setBackground(bg);
-        Color border = UIManager.getColor("App.cardBorderColor");
-        if (border == null) border = UIManager.getColor("Separator.foreground");
-        if (border != null) card.setBorder(roundedBorder(border, 16));
-    }
-
-    /** Anti-aliased rounded-rect border — matches FlatLaf arc radius. */
-    private static AbstractBorder roundedBorder(Color color, int arc) {
-        return new AbstractBorder() {
-            @Override
-            public void paintBorder(Component c, Graphics g, int x, int y, int w, int h) {
-                Graphics2D g2 = (Graphics2D) g.create();
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(color);
-                g2.setStroke(new BasicStroke(1f));
-                g2.drawRoundRect(x, y, w - 1, h - 1, arc, arc);
-                g2.dispose();
-            }
-            @Override public Insets getBorderInsets(Component c) { return new Insets(1, 1, 1, 1); }
-            @Override public Insets getBorderInsets(Component c, Insets i) { i.set(1, 1, 1, 1); return i; }
-        };
+        return Cards.createCard(layout);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -310,7 +286,16 @@ public class FormPanel extends JPanel {
         if (fc.showSaveDialog(parentWindow()) != JFileChooser.APPROVE_OPTION)
             return;
 
-        filenameOutput = fc.getSelectedFile().getAbsolutePath();
+        File selected = fc.getSelectedFile();
+        if (selected.exists()) {
+            int choice = JOptionPane.showConfirmDialog(parentWindow(),
+                    "\"" + selected.getName() + "\" already exists.\nDo you want to replace it?",
+                    "Replace file?", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+            if (choice != JOptionPane.YES_OPTION)
+                return;
+        }
+
+        filenameOutput = selected.getAbsolutePath();
 
         owner.setStatus(AppStatus.GENERATING);
         generateButton.setEnabled(false);
@@ -367,9 +352,17 @@ public class FormPanel extends JPanel {
     }
 
     private void updateGenerateButtonState() {
-        generateButton.setEnabled(
-                filenameInput != null && !filenameInput.isEmpty()
-                && flatDatePickerField.getDate() != null);
+        boolean ready = filenameInput != null && !filenameInput.isEmpty()
+                && flatDatePickerField.getDate() != null;
+        generateButton.setEnabled(ready);
+        generateButton.setToolTipText(ready ? null
+                : "Select an input file and an execution date first");
+    }
+
+    /** Error dialog for minor, non-generation failures (does not change the footer status). */
+    private void showLocalError(String message) {
+        JOptionPane.showMessageDialog(parentWindow(), message,
+                "SEPA Generator", JOptionPane.WARNING_MESSAGE);
     }
 
     private JTextField createFileField(String placeholder) {

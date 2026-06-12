@@ -43,7 +43,7 @@ public class CsvToBeans
 			List<CreditTransferTransactionInformation> creditTransferTransactionInformations = CsvToBeanBuilder.build().parse();
 			for (CreditTransferTransactionInformation creditTransferTransactionInformation : creditTransferTransactionInformations) {
 				if (!validate(creditTransferTransactionInformation)) {
-					throw new Exception("Invalid CSV file\n" + this.errors.toString());
+					throw new Exception("Invalid input file\n" + this.errors.toString());
 				}
 			}
 			return createDocument(creditTransferTransactionInformations, Paths.get(inputFile).getFileName().toString());

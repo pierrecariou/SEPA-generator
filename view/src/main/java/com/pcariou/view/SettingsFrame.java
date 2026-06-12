@@ -2,12 +2,21 @@ package com.pcariou.view;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.KeyEvent;
 
 import com.pcariou.view.config.AppConfig;
 import com.pcariou.view.config.ConfigStore;
+import com.pcariou.view.custom.Cards;
 import com.pcariou.view.main.MainFrame;
 
-public class SettingsFrame extends JFrame {
+import net.miginfocom.swing.MigLayout;
+
+/**
+ * Modal settings dialog: debtor information and initiating party.
+ * Uses the same card styling as the main window so both themes match.
+ */
+public class SettingsFrame extends JDialog {
 
     private final DebtorPanel debtorPanel = new DebtorPanel();
     private final InitiatingPartyPanel initiatingPartyPanel = new InitiatingPartyPanel();
@@ -16,32 +25,73 @@ public class SettingsFrame extends JFrame {
     private final MainFrame owner;
 
     public SettingsFrame(MainFrame parent) {
-        super("Settings");
+        super(parent, "Settings", true);
         this.owner = parent;
-        setSize(450, 500);
-        setLocationRelativeTo(parent);
-        setLayout(new BoxLayout(getContentPane(), BoxLayout.Y_AXIS));
+        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
 
-        // --- Save Button ---
-        JButton saveButton = new JButton("Save");
-        saveButton.addActionListener(e -> saveConfig());
-        saveButton.setAlignmentX(Component.CENTER_ALIGNMENT);
-        JPanel saveButtonPanel = new JPanel();
-        saveButtonPanel.setLayout(new FlowLayout(FlowLayout.CENTER));
-        saveButtonPanel.add(saveButton);
+        JPanel content = new JPanel(new MigLayout(
+                "insets 20, fillx, wrap 1, gapy 14",
+                "[grow,fill]",
+                "[]"));
 
-        // -- Main Panel ---
-        JPanel mainPanel = new JPanel();
-        mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
-        mainPanel.add(debtorPanel);
-        mainPanel.add(initiatingPartyPanel);
+        content.add(createSectionCard("Debtor information",
+                "Account that the payments are taken from.", debtorPanel), "growx");
+        content.add(createSectionCard("Initiating party",
+                "Organisation submitting the payment file.", initiatingPartyPanel), "growx");
+        content.add(createButtonsRow(), "growx");
 
-        add(mainPanel, BorderLayout.CENTER);
-        add(saveButtonPanel, BorderLayout.SOUTH);
+        setContentPane(content);
+
+        // Esc closes the dialog without saving
+        getRootPane().registerKeyboardAction(
+                e -> dispose(),
+                KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0),
+                JComponent.WHEN_IN_FOCUSED_WINDOW);
 
         loadConfig();
 
-        setVisible(true);
+        pack();
+        Dimension packed = getSize();
+        setMinimumSize(new Dimension(Math.max(packed.width, 480), packed.height));
+        setSize(Math.max(packed.width, 480), packed.height);
+        setResizable(false);
+        setLocationRelativeTo(parent);
+    }
+
+    private JComponent createSectionCard(String title, String subtitle, JComponent fields) {
+        JPanel card = Cards.createCard(new MigLayout(
+                "fillx, insets 16, wrap 1",
+                "[grow,fill]",
+                "[]2[]10[]"));
+
+        JLabel titleLabel = new JLabel(title);
+        titleLabel.setFont(titleLabel.getFont().deriveFont(Font.BOLD, 14f));
+
+        JLabel subtitleLabel = new JLabel(subtitle);
+        subtitleLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
+
+        card.add(titleLabel);
+        card.add(subtitleLabel);
+        card.add(fields, "growx");
+        return card;
+    }
+
+    private JComponent createButtonsRow() {
+        JPanel row = new JPanel(new MigLayout("insets 0", "[grow][][]", "[]"));
+        row.setOpaque(false);
+
+        JButton cancel = new JButton("Cancel");
+        cancel.addActionListener((ActionEvent e) -> dispose());
+
+        JButton save = new JButton("Save");
+        save.addActionListener(e -> saveConfig());
+
+        row.add(new JLabel(), "growx, pushx");
+        row.add(cancel, "gapright 8");
+        row.add(save);
+
+        getRootPane().setDefaultButton(save);
+        return row;
     }
 
     private void loadConfig() {
@@ -52,27 +102,17 @@ public class SettingsFrame extends JFrame {
     }
 
     private void populateForm(AppConfig config) {
-        boolean hasManagedSettings = false;
-
         if (config.debtor != null) {
             debtorPanel.setName(defaultValue(config.debtor.name));
             debtorPanel.setIban(defaultValue(config.debtor.iban));
             debtorPanel.setBic(defaultValue(config.debtor.bic));
-            hasManagedSettings = true;
         }
 
         if (config.initiatingParty != null) {
             initiatingPartyPanel.setName(defaultValue(config.initiatingParty.name));
             initiatingPartyPanel.setSiret(defaultValue(config.initiatingParty.siret));
-            hasManagedSettings = true;
         }
-
-        if (!hasManagedSettings) {
-            JOptionPane.showMessageDialog(this,
-                    "Config file does not contain settings managed by this panel: "
-                            + configStore.file().getAbsolutePath(),
-                    "Invalid Config", JOptionPane.WARNING_MESSAGE);
-        }
+        // A config without these sections simply shows empty fields.
     }
 
     private AppConfig collectFormData() {
@@ -112,12 +152,15 @@ public class SettingsFrame extends JFrame {
         configToSave.initiatingParty = updatedSettings.initiatingParty;
 
         if (!configStore.write(configToSave)) {
-            JOptionPane.showMessageDialog(this, "Failed to save config.");
+            JOptionPane.showMessageDialog(this,
+                    "Could not save settings.\nPlease check that this file is writable:\n"
+                            + configStore.file().getAbsolutePath(),
+                    "Save failed", JOptionPane.ERROR_MESSAGE);
             return;
         }
 
         owner.refreshStatus();
-        JOptionPane.showMessageDialog(this, "Settings saved successfully!");
+        dispose();
     }
 
     private boolean validateAndMarkFields(AppConfig config) {
@@ -152,7 +195,7 @@ public class SettingsFrame extends JFrame {
             debtorPanel.setBicError("The BIC for the debtor is mandatory");
             valid = false;
         } else if (!bic.matches(BIC_PATTERN)) {
-            debtorPanel.setBicError("BIC format is invalid (e.g. BNPAFRPP or BNPAFRPPPARIS)");
+            debtorPanel.setBicError("BIC format is invalid (e.g. BNPAFRPP or BNPAFRPPXXX)");
             valid = false;
         } else {
             debtorPanel.clearBicError();
