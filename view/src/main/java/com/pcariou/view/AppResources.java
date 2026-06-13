@@ -8,7 +8,7 @@ public final class AppResources {
     /** Window/taskbar icon sizes shipped on the classpath. */
     public static final int[] APP_ICON_SIZES = {16, 32, 48, 64, 256};
 
-    private static final String APP_ICON_PREFIX = "/sepa-generator-icon-app-compact-";
+    private static final String APP_ICON_PREFIX = "/sepa-generator-icon-app-bg-";
     private static final String HEADER_ICON_LIGHT = "/sepa-generator-icon-light-theme.png";
     private static final String HEADER_ICON_DARK  = "/sepa-generator-icon-dark-theme.png";
 

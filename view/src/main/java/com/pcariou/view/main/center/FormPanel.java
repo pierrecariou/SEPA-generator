@@ -73,10 +73,10 @@ public class FormPanel extends JPanel {
         JPanel p = new JPanel(new MigLayout("insets 0", "[grow,fill]", "[]2[]"));
         p.setOpaque(false);
 
-        JLabel title = new JLabel("Generate SEPA XML");
+        JLabel title = new JLabel("Create SEPA payment file");
         title.setFont(title.getFont().deriveFont(Font.BOLD, 16f));
 
-        JLabel subtitle = new JLabel("Select input and execution date.");
+        JLabel subtitle = new JLabel("Select an input file, execution date, and output format.");
         subtitle.setForeground(UIManager.getColor("Label.disabledForeground"));
 
         p.add(title, "wrap");
@@ -99,7 +99,7 @@ public class FormPanel extends JPanel {
         inputField.putClientProperty(FlatClientProperties.TEXT_FIELD_TRAILING_COMPONENT, browseInput);
         browseInput.addActionListener(e -> chooseInputFile());
 
-        JLabel inputLabel = new JLabel("Credit transfer");
+        JLabel inputLabel = new JLabel("Input file");
         inputLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
         grid.add(inputLabel, "alignx right");
         grid.add(inputField, "growx, wrap");
@@ -118,7 +118,7 @@ public class FormPanel extends JPanel {
         grid.add(flatDatePickerField, "growx, wrap");
 
         formatCombo = createFormatCombo();
-        JLabel formatLabel = new JLabel("Format");
+        JLabel formatLabel = new JLabel("SEPA format");
         formatLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
         grid.add(formatLabel, "alignx right");
         grid.add(formatCombo, "growx, wrap");

@@ -15,7 +15,7 @@ public enum AppStatus {
 
     // ── Blocking / input-required states ─────────────────────────────────
     DEBTOR_INFO_REQUIRED ("Debtor information required", "$Component.accentColor",     false),
-    SELECT_FILE          ("Select a credit transfer file","$Label.disabledForeground", false),
+    SELECT_FILE          ("Select a CSV or Excel input file","$Label.disabledForeground", false),
     SELECT_DATE          ("Select an execution date",     "$Label.disabledForeground", false),
 
     // ── Default ───────────────────────────────────────────────────────────

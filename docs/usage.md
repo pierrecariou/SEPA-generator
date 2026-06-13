@@ -2,9 +2,9 @@
 
 ## Prerequisites
 
-- Java 11 or later
+- Java 8 or later
 - A valid SEPA creditor account (IBAN + BIC)
-- A CSV file following the payment template format
+- A CSV or Excel file following the payment template format
 
 ## Getting Started
 
@@ -22,34 +22,58 @@ Open **Settings** (gear icon in the header) and fill in:
 
 Click **Save**. The status bar will confirm configuration is complete.
 
-### 2. Prepare your CSV file
+### 2. Prepare your input file
 
-Use the provided template (`Payments-template-example.csv`) as a reference. Each row represents one credit transfer.
+Use the provided sample (`samples/valid/sepa-valid-sample.csv`) as a reference. The input may be a `.csv`, `.xls`, or `.xlsx` file. Each row represents one credit transfer.
 
 Required columns:
 
 | Column | Format | Example |
 |---|---|---|
-| Creditor name | Text | `ACME Corp` |
-| Creditor IBAN | IBAN | `DE89370400440532013000` |
-| Creditor BIC | BIC | `COBADEFFXXX` |
-| Amount | Decimal | `1500.00` |
-| Currency | ISO 4217 | `EUR` |
-| Reference | Text (max 35 chars) | `INV-2024-001` |
-| End-to-end ID | Text (max 35 chars) | `E2E-20240101-001` |
+| `name` | Text | `ACME Corp` |
+| `IBAN` | IBAN | `DE89370400440532013000` |
+| `BIC` | BIC | `COBADEFFXXX` |
+| `amount` | Decimal, > 0, max 2 decimals | `1500.00` |
+| `end_to_end_id` | Text (max 35 chars) | `E2E-20240101-001` |
+| `information` | Text (remittance information) | `INV-2024-001` |
+
+The column order does not matter.
+
+For `pain.001.001.09`, you may optionally add structured creditor postal address columns (`street`, `building_number`, `postcode`, `town`, `country`). When any address field is provided, `town` and a 2-letter ISO `country` code are required. Files without address columns remain fully supported.
 
 ### 3. Generate the SEPA XML
 
-1. Click **Browse** and select your CSV file.
-2. Choose the **execution date** (must be a future business day).
-3. Click **Generate XML**.
-4. The output XML file will be saved in the same directory as your CSV, or in the configured output directory.
+1. Click **Browse** and select your input file.
+2. Choose the **execution date** (must be a future date).
+3. Choose the **SEPA format** (`pain.001.001.02` or `pain.001.001.09`).
+4. Click **Generate**.
+5. The output XML file will be saved in the same directory as your input file, or in the configured output directory.
 
 A summary card shows the number of transactions, total amount, and execution date after successful generation.
 
 ## Output Format
 
-The generated file is a **SEPA Credit Transfer Initiation** XML (`pain.001.001.02`) compliant with the ISO 20022 standard, accepted by most European banks.
+SEPA Generator produces SEPA Credit Transfer Initiation XML in two ISO 20022 formats:
+
+- `pain.001.001.02` (classic)
+- `pain.001.001.09` (modern ISO 20022, with optional structured postal addresses)
+
+The files are designed to follow the ISO 20022 standard. Final bank acceptance can depend on your bank, upload channel, account configuration, the required `pain.001` version, and bank-specific rules.
+
+## Command Line
+
+SEPA Generator can also be run from the command line:
+
+```bash
+java -jar generator.jar <input.csv|.xls|.xlsx> <output.xml> <YYYY-MM-DD> [--format=02|09]
+```
+
+- `<input>` — payment input file (`.csv`, `.xls`, or `.xlsx`)
+- `<output>` — destination file, must end with `.xml`
+- `<YYYY-MM-DD>` — execution date (must be a future date)
+- `--format=02|09` — optional SEPA format; defaults to `02`
+
+Debtor and initiating party information is read from the local configuration file.
 
 ## Settings File
 

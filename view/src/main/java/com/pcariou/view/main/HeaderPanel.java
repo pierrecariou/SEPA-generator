@@ -4,6 +4,7 @@ import com.formdev.flatlaf.FlatClientProperties;
 import com.pcariou.view.AppResources;
 import com.pcariou.view.AppTheme;
 import com.pcariou.view.SettingsFrame;
+import com.pcariou.view.SvgIcons;
 
 import javax.swing.*;
 import java.awt.*;
@@ -11,7 +12,7 @@ import java.net.URL;
 
 public class HeaderPanel extends JPanel {
     private final JButton themeButton    = new JButton();
-    private final JButton settingsButton = new JButton("👤");
+    private final JButton settingsButton = new JButton();
     private JLabel logoLabel;
 
     public HeaderPanel(MainFrame owner) {
@@ -54,6 +55,7 @@ public class HeaderPanel extends JPanel {
         themeButton.setFocusable(false);
         settingsButton.setFocusable(false);
         refreshThemeButton();
+        settingsButton.setIcon(SvgIcons.toolbarIcon(SvgIcons.SETTINGS));
         settingsButton.setToolTipText("Settings");
 
         themeButton.addActionListener(e -> {
@@ -77,13 +79,16 @@ public class HeaderPanel extends JPanel {
         refreshColors();
         refreshIcon();
         refreshThemeButton();
+        if (settingsButton != null) {
+            settingsButton.setIcon(SvgIcons.toolbarIcon(SvgIcons.SETTINGS));
+        }
     }
 
     /** Shows the mode the button will switch to, with a matching tooltip. */
     private void refreshThemeButton() {
         if (themeButton == null) return;
         boolean dark = AppTheme.getCurrentMode() == AppTheme.Mode.DARK;
-        themeButton.setText(dark ? "☀" : "🌙");
+        themeButton.setIcon(SvgIcons.toolbarIcon(dark ? SvgIcons.SUN : SvgIcons.MOON));
         themeButton.setToolTipText(dark ? "Switch to light theme" : "Switch to dark theme");
     }
 
