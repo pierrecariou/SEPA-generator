@@ -52,10 +52,32 @@ public class SettingsFrame extends JDialog {
 
         pack();
         Dimension packed = getSize();
-        setMinimumSize(new Dimension(Math.max(packed.width, 480), packed.height));
-        setSize(Math.max(packed.width, 480), packed.height);
+        int minWidth = Math.max(packed.width, 480);
+        // Baseline height with no validation errors visible; the dialog may grow
+        // taller than this when error labels appear, but never narrower.
+        setMinimumSize(new Dimension(minWidth, packed.height));
+        setSize(minWidth, packed.height);
         setResizable(false);
         setLocationRelativeTo(parent);
+    }
+
+    /**
+     * Re-sizes the dialog to fit its current content. Error labels are hidden
+     * (zero height) when the dialog is first packed, so showing them would
+     * otherwise overflow the fixed window and clip the Save button. Packing
+     * again grows the dialog to fit, and shrinks it back once errors clear,
+     * while the minimum size keeps the width stable.
+     */
+    private void resizeToFitContent() {
+        int currentWidth = getWidth();
+        pack();
+        // Keep height from pack() (grows for new errors, shrinks when cleared),
+        // but never let the dialog become narrower than it already was so the
+        // layout doesn't jitter horizontally.
+        int width = Math.max(getWidth(), currentWidth);
+        if (width != getWidth()) {
+            setSize(width, getHeight());
+        }
     }
 
     private JComponent createSectionCard(String title, String subtitle, JComponent fields) {
@@ -177,6 +199,9 @@ public class SettingsFrame extends JDialog {
         AppConfig updatedSettings = collectFormData();
 
         if (!validateAndMarkFields(updatedSettings)) {
+            // Newly shown error labels add height; grow the dialog so the
+            // cards and Save button stay fully visible.
+            resizeToFitContent();
             return;
         }
 
