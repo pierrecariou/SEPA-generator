@@ -50,13 +50,8 @@
 
   <build>
     <resources>
-      <!-- Design assets / icons live under resources/ (git-ignored working copy). -->
-      <resource>
-        <directory>resources</directory>
-        <filtering>true</filtering>
-      </resource>
-      <!-- Committed runtime resources (e.g. input templates) live under the
-           conventional src/main/resources so they are tracked and shipped. -->
+      <!-- Single, conventional resources directory: tracked in git and shipped
+           in the jar. Runtime assets (icons, SVGs, input templates) live here. -->
       <resource>
         <directory>src/main/resources</directory>
         <filtering>true</filtering>
