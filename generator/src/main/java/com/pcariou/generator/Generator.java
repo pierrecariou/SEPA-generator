@@ -8,6 +8,9 @@ import com.pcariou.view.main.MainFrame;
 import org.apache.commons.io.FilenameUtils;
 
 import java.io.RandomAccessFile;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.util.Arrays;
 
@@ -33,9 +36,24 @@ public class Generator implements IGenerator
     {
         if (!argumentsAreValid(inputFile, outputFile, date))
             return;
-        if (isExcelFile(inputFile))
-            inputFile = convertToCsv(inputFile);
-        transformCsvToXml(inputFile, outputFile, date, version);
+        String csvInput = inputFile;
+        boolean csvIsTemporary = false;
+        if (isExcelFile(inputFile)) {
+            try {
+                csvInput = convertExcelToTempCsv(inputFile);
+                csvIsTemporary = true;
+            } catch (Exception e) {
+                view.showErrorMessage(e.getMessage());
+                return;
+            }
+        }
+        try {
+            transformCsvToXml(csvInput, outputFile, date, version);
+        } finally {
+            if (csvIsTemporary) {
+                deleteQuietly(csvInput);
+            }
+        }
     }
 
     private void transformCsvToXml(String inputFile, String outputFile, LocalDate date, PainVersion version)
@@ -86,17 +104,32 @@ public class Generator implements IGenerator
         return Arrays.asList(EXCEL_EXTENSIONS).contains(FilenameUtils.getExtension(inputFile));
     }
 
-    private String convertToCsv(String inputFile)
+    /**
+     * Converts an Excel workbook (.xls/.xlsx) to CSV at an absolute temporary
+     * path, independent of the process working directory. This is what makes
+     * Excel generation work when the app is launched from the installed Windows
+     * shortcut (whose working directory is not the input file's folder and may
+     * not be writable). The caller owns the returned file and must delete it
+     * once generation completes (see {@link #deleteQuietly(String)}).
+     */
+    static String convertExcelToTempCsv(String inputFile) throws Exception
+    {
+        Workbook workbook = new Workbook(inputFile);
+        Path tempCsv = Files.createTempFile("sepa-generator-", ".csv");
+        String csvPath = tempCsv.toAbsolutePath().toString();
+        workbook.save(csvPath);
+        eraseNoLicenseMessage(csvPath);
+        return csvPath;
+    }
+
+    /** Best-effort cleanup of a temporary converted CSV file. */
+    private static void deleteQuietly(String path)
     {
         try {
-            Workbook workbook = new Workbook(inputFile);
-            inputFile = FilenameUtils.getBaseName(inputFile) + ".csv";
-            workbook.save(FilenameUtils.getBaseName(inputFile) + ".csv");
-            eraseNoLicenseMessage(inputFile);
-        } catch (Exception e) {
-            view.showErrorMessage(e.getMessage());
+            Files.deleteIfExists(Paths.get(path));
+        } catch (Exception ignored) {
+            // Temp file cleanup is best-effort; the OS temp dir is reclaimed anyway.
         }
-        return inputFile;
     }
 
     private static void eraseNoLicenseMessage(String inputFile) 
@@ -178,12 +211,11 @@ public class Generator implements IGenerator
             return 1;
         }
 
+        boolean csvIsTemporary = false;
         if (inputFilename.endsWith(".xls") || inputFilename.endsWith(".xlsx")) {
             try {
-                Workbook workbook = new Workbook(inputFilename);
-                inputFilename = FilenameUtils.getBaseName(inputFilename) + ".csv";
-                workbook.save(FilenameUtils.getBaseName(inputFilename) + ".csv");
-                eraseNoLicenseMessage(inputFilename);
+                inputFilename = convertExcelToTempCsv(inputFilename);
+                csvIsTemporary = true;
             } catch (Exception e) {
                 System.out.println("Could not convert the Excel input file: " + e.getMessage());
                 return 1;
@@ -201,6 +233,10 @@ public class Generator implements IGenerator
         } catch (Exception e) {
             System.out.println("Generation failed: " + e.getMessage());
             return 1;
+        } finally {
+            if (csvIsTemporary) {
+                deleteQuietly(inputFilename);
+            }
         }
     }
 

@@ -4,6 +4,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import com.aspose.cells.Workbook;
+import com.aspose.cells.Worksheet;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -194,7 +197,66 @@ public class CommandLineGenerationTest {
         assertFalse(xml.exists());
     }
 
+    // ── XLS/XLSX input (installed-app path handling) ─────────────────────────
+
+    /**
+     * Regression test for the installed-app XLSX bug: Excel input was converted
+     * to a CSV named after the input base name and written into the process
+     * working directory. Launched from the Windows MSI shortcut, the working
+     * directory differs from the input folder (and is often not writable), so
+     * the converted CSV could not be found ("... .csv (The system cannot find
+     * the file specified)").
+     *
+     * The conversion now uses an absolute temporary CSV path. This test runs the
+     * real CLI conversion with an XLSX whose folder is NOT the working directory
+     * and asserts that:
+     *   - generation succeeds and produces XML, and
+     *   - no CSV named after the input is left in the current working directory.
+     */
+    @Test
+    public void xlsxInputGeneratesXmlWithoutWritingCsvToWorkingDirectory() throws Exception {
+        String baseName = "installed-app-input-" + System.nanoTime();
+        File xlsx = writeXlsx(baseName + ".xlsx");
+        File xml = outputFile("from-xlsx.xml");
+
+        File strayInWorkingDir = new File(System.getProperty("user.dir"), baseName + ".csv");
+        assertFalse("Precondition: no stray CSV should exist yet", strayInWorkingDir.exists());
+
+        int exit = Generator.runCommandLine(
+                new String[]{xlsx.getAbsolutePath(), xml.getAbsolutePath(), futureDate()});
+
+        assertEquals("Expected success, output was:\n" + output(), 0, exit);
+        assertTrue("XML output must be produced from XLSX input", xml.exists());
+        String content = read(xml);
+        assertTrue(content.contains("urn:iso:std:iso:20022:tech:xsd:pain.001.001.02"));
+        assertTrue("Expected one transaction from the single XLSX row",
+                content.contains("<NbOfTxs>1</NbOfTxs>"));
+        assertTrue(content.contains("<IBAN>DE89370400440532013000</IBAN>"));
+
+        assertFalse("Conversion must not write a CSV into the working directory: "
+                        + strayInWorkingDir.getAbsolutePath(),
+                strayInWorkingDir.exists());
+    }
+
     // ── Helpers ──────────────────────────────────────────────────────────────
+
+    /** Builds a minimal one-row XLSX workbook matching the CSV header layout. */
+    private File writeXlsx(String name) throws Exception {
+        String[] header = {"name", "IBAN", "BIC", "amount", "end_to_end_id", "information"};
+        String[] row = {"Karlson GmbH", "DE89370400440532013000", "DEUTDEFF",
+                "1500.00", "INV-2026-001", "Invoice 2026-001 furniture"};
+        Workbook workbook = new Workbook();
+        Worksheet sheet = workbook.getWorksheets().get(0);
+        for (int col = 0; col < header.length; col++) {
+            sheet.getCells().get(0, col).putValue(header[col]);
+        }
+        for (int col = 0; col < row.length; col++) {
+            sheet.getCells().get(1, col).putValue(row[col]);
+        }
+        File f = new File(tmp.getRoot(), name);
+        workbook.save(f.getAbsolutePath());
+        return f;
+    }
 
     private File writeCsv() throws Exception {
         File f = tmp.newFile("input-" + System.nanoTime() + ".csv");
