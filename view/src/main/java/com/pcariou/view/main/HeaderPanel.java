@@ -97,6 +97,7 @@ public class HeaderPanel extends JPanel {
                 "arc: 999;"
                         + " font: -1;"
                         + " margin: 3,12,3,12;"
+                        + " toolbar.margin: 3,12,3,12;"
                         + " focusWidth: 0;"
                         + " innerFocusWidth: 0;"
                         + " borderWidth: 1;"
