@@ -155,6 +155,8 @@ Default config location:
 
 The input file can be a CSV or Excel spreadsheet.
 
+> **Tip:** You don't have to start from scratch. In the main window, use **"Get input template..."** directly under the *Input file* field to save a ready-to-edit template. A small menu offers a *Basic CSV template*, *Basic Excel template*, or a *CSV / Excel + optional addresses (.09)* template. The address columns are optional and are only used for `pain.001.001.09` output (they are ignored for `pain.001.001.02`). Each template contains the expected header row and one example row you can replace with your own payments.
+
 Supported formats:
 
 ```text

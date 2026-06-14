@@ -49,6 +49,19 @@
   </dependencies>
 
   <build>
+    <resources>
+      <!-- Design assets / icons live under resources/ (git-ignored working copy). -->
+      <resource>
+        <directory>resources</directory>
+        <filtering>true</filtering>
+      </resource>
+      <!-- Committed runtime resources (e.g. input templates) live under the
+           conventional src/main/resources so they are tracked and shipped. -->
+      <resource>
+        <directory>src/main/resources</directory>
+        <filtering>true</filtering>
+      </resource>
+    </resources>
     <pluginManagement><!-- lock down plugins versions to avoid using Maven defaults (may be moved to parent pom) -->
       <plugins>
         <!-- clean lifecycle, see https://maven.apache.org/ref/current/maven-core/lifecycles.html#clean_Lifecycle -->
