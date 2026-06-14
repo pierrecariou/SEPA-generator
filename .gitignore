@@ -66,8 +66,12 @@ DebtorInformations.json
 /payments-*.xml
 /test.xml
 
-# Design source assets (SVGs / working icons) — not shipped in the build
-view/resources/
+# Generated artifacts in samples/ — only the curated input files + README are tracked
+samples/**/*.xml
+samples/**/*.html
+
+# Design source assets (SVG / icon masters) — not shipped in the build
+view/design/
 
 # Build outputs
 *.jar

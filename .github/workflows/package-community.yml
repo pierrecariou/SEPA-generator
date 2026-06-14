@@ -1,0 +1,70 @@
+name: Package Community
+
+# Manual-only for now. This first version just builds and uploads the installers
+# as workflow artifacts; it intentionally does NOT create GitHub releases.
+#
+# All packaging logic (jpackage invocation, icon generation, WiX checks) lives in
+# the scripts under packaging/community/. This workflow only calls those scripts
+# so the logic is never duplicated in YAML.
+on:
+  workflow_dispatch:
+
+jobs:
+  windows:
+    name: Windows MSI
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 23 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '23'
+          cache: maven
+
+      - name: Install WiX Toolset (v3, required by jpackage for MSI)
+        shell: pwsh
+        run: |
+          choco install wixtoolset --no-progress -y
+          $wixBin = Get-ChildItem 'C:\Program Files (x86)\WiX Toolset*\bin\candle.exe' -ErrorAction SilentlyContinue |
+            Select-Object -First 1 -ExpandProperty DirectoryName
+          if (-not $wixBin) { throw 'WiX Toolset bin directory not found after install.' }
+          # Expose candle.exe/light.exe to subsequent steps so jpackage can find them.
+          Add-Content -Path $env:GITHUB_PATH -Value $wixBin
+
+      - name: Build Windows MSI
+        shell: pwsh
+        run: ./packaging/community/package-windows.ps1
+
+      - name: Upload MSI artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sepa-generator-community-windows-msi
+          path: dist/SEPA-Generator-Community-*-windows.msi
+          if-no-files-found: error
+
+  macos:
+    name: macOS DMG
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 23 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '23'
+          cache: maven
+
+      - name: Build macOS DMG
+        run: ./packaging/community/package-macos.sh
+
+      - name: Upload DMG artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sepa-generator-community-macos-dmg
+          path: dist/SEPA-Generator-Community-*-macos.dmg
+          if-no-files-found: error

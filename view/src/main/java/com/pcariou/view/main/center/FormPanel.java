@@ -1,7 +1,11 @@
 package com.pcariou.view.main.center;
 
 import com.formdev.flatlaf.FlatClientProperties;
+import com.pcariou.model.PainVersion;
+import com.pcariou.view.ExternalLinks;
+import com.pcariou.view.InputTemplates;
 import com.pcariou.view.config.ConfigStore;
+import com.pcariou.view.custom.Cards;
 import com.pcariou.view.custom.FlatDatePickerField;
 import com.pcariou.view.main.AppStatus;
 import com.pcariou.view.main.MainFrame;
@@ -10,12 +14,12 @@ import net.miginfocom.swing.MigLayout;
 import org.apache.commons.io.FilenameUtils;
 
 import javax.swing.*;
-import javax.swing.border.AbstractBorder;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
@@ -28,6 +32,7 @@ public class FormPanel extends JPanel {
 
     private JTextField inputField;
     private FlatDatePickerField flatDatePickerField;
+    private JComboBox<PainVersion> formatCombo;
     private JButton generateButton;
 
     // Summary card fields
@@ -70,10 +75,10 @@ public class FormPanel extends JPanel {
         JPanel p = new JPanel(new MigLayout("insets 0", "[grow,fill]", "[]2[]"));
         p.setOpaque(false);
 
-        JLabel title = new JLabel("Generate SEPA XML");
+        JLabel title = new JLabel("Create SEPA payment file");
         title.setFont(title.getFont().deriveFont(Font.BOLD, 16f));
 
-        JLabel subtitle = new JLabel("Select input and execution date.");
+        JLabel subtitle = new JLabel("Select an input file, execution date, and output format.");
         subtitle.setForeground(UIManager.getColor("Label.disabledForeground"));
 
         p.add(title, "wrap");
@@ -89,16 +94,23 @@ public class FormPanel extends JPanel {
         ));
         grid.setOpaque(false);
 
-        inputField = createFileField("No input selected");
+        inputField = createFileField("Select a CSV or Excel file…");
         JButton browseInput = new JButton("...");
         browseInput.putClientProperty(FlatClientProperties.BUTTON_TYPE, FlatClientProperties.BUTTON_TYPE_TOOLBAR_BUTTON);
+        browseInput.setToolTipText("Browse...");
         inputField.putClientProperty(FlatClientProperties.TEXT_FIELD_TRAILING_COMPONENT, browseInput);
         browseInput.addActionListener(e -> chooseInputFile());
 
-        JLabel inputLabel = new JLabel("Credit transfer");
+        JLabel inputLabel = new JLabel("Input file");
         inputLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
-        grid.add(inputLabel, "alignx right");
-        grid.add(inputField, "growx, wrap");
+
+        JPanel inputColumn = new JPanel(new MigLayout("insets 0, fillx, gapy 2", "[grow,fill]", "[][]"));
+        inputColumn.setOpaque(false);
+        inputColumn.add(inputField, "growx, wrap");
+        inputColumn.add(createTemplateLink(), "alignx left, gapleft 0");
+
+        grid.add(inputLabel, "alignx right, aligny top, gaptop 6");
+        grid.add(inputColumn, "growx, wrap");
 
         LocalDate tomorrow = LocalDate.now().plusDays(1);
         flatDatePickerField = new FlatDatePickerField(tomorrow, LocalDate.now().plusYears(5), browseInput.getPreferredSize());
@@ -113,7 +125,52 @@ public class FormPanel extends JPanel {
         grid.add(dateLabel, "alignx right");
         grid.add(flatDatePickerField, "growx, wrap");
 
+        formatCombo = createFormatCombo();
+        JLabel formatLabel = new JLabel("SEPA format");
+        formatLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
+        grid.add(formatLabel, "alignx right");
+        grid.add(formatCombo, "growx, wrap");
+
         return grid;
+    }
+
+    private JComboBox<PainVersion> createFormatCombo() {
+        JComboBox<PainVersion> combo = new JComboBox<>(PainVersion.values());
+        combo.setToolTipText("ISO 20022 message version of the generated XML");
+        combo.setRenderer(new DefaultListCellRenderer() {
+            @Override public Component getListCellRendererComponent(JList<?> list, Object value,
+                    int index, boolean isSelected, boolean cellHasFocus) {
+                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                if (value instanceof PainVersion) {
+                    setText(formatLabelFor((PainVersion) value));
+                }
+                return this;
+            }
+        });
+
+        PainVersion persisted = PainVersion.fromCode(configStore.readPainFormat());
+        combo.setSelectedItem(persisted != null ? persisted : PainVersion.PAIN_001_001_02);
+        combo.addActionListener(e -> {
+            PainVersion selected = (PainVersion) combo.getSelectedItem();
+            if (selected != null) {
+                configStore.savePainFormat(selected.getCode());
+            }
+        });
+        return combo;
+    }
+
+    private static String formatLabelFor(PainVersion version) {
+        switch (version) {
+            case PAIN_001_001_09: return "pain.001.001.09 (modern ISO 20022)";
+            case PAIN_001_001_02:
+            default:              return "pain.001.001.02 (classic)";
+        }
+    }
+
+    /** Currently selected pain.001 version (never {@code null}). */
+    public PainVersion getSelectedPainVersion() {
+        PainVersion selected = (PainVersion) formatCombo.getSelectedItem();
+        return selected != null ? selected : PainVersion.PAIN_001_001_02;
     }
 
     private JComponent createActionsRow() {
@@ -129,6 +186,7 @@ public class FormPanel extends JPanel {
         generate.putClientProperty("FlatLaf.style", "minimumWidth:140; minimumHeight:36;");
         generate.addActionListener(e -> onGenerate());
         generate.setEnabled(false);
+        generate.setToolTipText("Select an input file and an execution date first");
         this.generateButton = generate;
 
         p.add(new JLabel(), "growx, pushx");
@@ -167,12 +225,21 @@ public class FormPanel extends JPanel {
         summaryFileName.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         summaryFileName.putClientProperty(FlatClientProperties.STYLE,
                 "foreground: $Component.accentColor;");
+        summaryFileName.setToolTipText("Open the generated file");
         summaryFileName.addMouseListener(new MouseAdapter() {
             @Override public void mouseClicked(MouseEvent e) {
                 if (filenameOutput != null) {
                     try { Desktop.getDesktop().open(new File(filenameOutput)); }
-                    catch (Exception ex) { owner.showErrorMessage("Could not open the file: " + ex.getMessage()); }
+                    catch (Exception ex) { showLocalError("Could not open the file:\n" + ex.getMessage()); }
                 }
+            }
+            @Override public void mouseEntered(MouseEvent e) {
+                summaryFileName.putClientProperty(FlatClientProperties.STYLE,
+                        "foreground: $Component.accentColor; font: bold;");
+            }
+            @Override public void mouseExited(MouseEvent e) {
+                summaryFileName.putClientProperty(FlatClientProperties.STYLE,
+                        "foreground: $Component.accentColor;");
             }
         });
 
@@ -183,8 +250,7 @@ public class FormPanel extends JPanel {
         openFolder.addMouseListener(new MouseAdapter() {
             @Override public void mouseClicked(MouseEvent e) {
                 if (filenameOutput != null) {
-                    try { Desktop.getDesktop().open(new File(filenameOutput).getParentFile()); }
-                    catch (Exception ex) { owner.showErrorMessage("Could not open folder: " + ex.getMessage()); }
+                    ExternalLinks.showInFolder(new File(filenameOutput), FormPanel.this);
                 }
             }
             @Override public void mouseEntered(MouseEvent e) {
@@ -248,50 +314,15 @@ public class FormPanel extends JPanel {
         if (bg != null) tile.setBackground(bg);
         Color border = UIManager.getColor("App.cardBorderColor");
         if (border == null) border = UIManager.getColor("Component.borderColor");
-        if (border != null) tile.setBorder(roundedBorder(border, 10));
+        if (border != null) tile.setBorder(Cards.roundedBorder(border, 10));
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // Shared card styling
+    // Shared card styling (see com.pcariou.view.custom.Cards)
     // ─────────────────────────────────────────────────────────────────────────
 
-    /** Returns a new JPanel that refreshes its background and border on every L&F change. */
     private static JPanel createCard(LayoutManager layout) {
-        JPanel card = new JPanel(layout) {
-            @Override public void updateUI() {
-                super.updateUI();
-                refreshCardAppearance(this);
-            }
-        };
-        card.putClientProperty(FlatClientProperties.STYLE, "arc:16");
-        refreshCardAppearance(card);
-        return card;
-    }
-
-    private static void refreshCardAppearance(JPanel card) {
-        card.setOpaque(true);
-        Color bg = UIManager.getColor("App.cardBackground");
-        if (bg != null) card.setBackground(bg);
-        Color border = UIManager.getColor("App.cardBorderColor");
-        if (border == null) border = UIManager.getColor("Separator.foreground");
-        if (border != null) card.setBorder(roundedBorder(border, 16));
-    }
-
-    /** Anti-aliased rounded-rect border — matches FlatLaf arc radius. */
-    private static AbstractBorder roundedBorder(Color color, int arc) {
-        return new AbstractBorder() {
-            @Override
-            public void paintBorder(Component c, Graphics g, int x, int y, int w, int h) {
-                Graphics2D g2 = (Graphics2D) g.create();
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(color);
-                g2.setStroke(new BasicStroke(1f));
-                g2.drawRoundRect(x, y, w - 1, h - 1, arc, arc);
-                g2.dispose();
-            }
-            @Override public Insets getBorderInsets(Component c) { return new Insets(1, 1, 1, 1); }
-            @Override public Insets getBorderInsets(Component c, Insets i) { i.set(1, 1, 1, 1); return i; }
-        };
+        return Cards.createCard(layout);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -310,7 +341,16 @@ public class FormPanel extends JPanel {
         if (fc.showSaveDialog(parentWindow()) != JFileChooser.APPROVE_OPTION)
             return;
 
-        filenameOutput = fc.getSelectedFile().getAbsolutePath();
+        File selected = fc.getSelectedFile();
+        if (selected.exists()) {
+            int choice = JOptionPane.showConfirmDialog(parentWindow(),
+                    "\"" + selected.getName() + "\" already exists.\nDo you want to replace it?",
+                    "Replace file?", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+            if (choice != JOptionPane.YES_OPTION)
+                return;
+        }
+
+        filenameOutput = selected.getAbsolutePath();
 
         owner.setStatus(AppStatus.GENERATING);
         generateButton.setEnabled(false);
@@ -319,10 +359,11 @@ public class FormPanel extends JPanel {
         final String inputPath  = filenameInput;
         final String outputPath = filenameOutput;
         final LocalDate date    = flatDatePickerField.getDate();
+        final PainVersion version = getSelectedPainVersion();
 
         new javax.swing.SwingWorker<Void, Void>() {
             @Override protected Void doInBackground() {
-                owner.getGenerator().generate(inputPath, outputPath, date);
+                owner.getGenerator().generate(inputPath, outputPath, date, version);
                 return null;
             }
             @Override protected void done() {
@@ -343,6 +384,7 @@ public class FormPanel extends JPanel {
         generateButton.setEnabled(false);
 
         owner.refreshStatus();
+        owner.restoreBaseMinimumSize();
         revalidate();
         repaint();
     }
@@ -353,23 +395,112 @@ public class FormPanel extends JPanel {
         fc.setFileFilter(new FileNameExtensionFilter("CSV / Excel", "csv", "xls", "xlsx"));
 
         if (fc.showOpenDialog(parentWindow()) == JFileChooser.APPROVE_OPTION) {
-            File f = fc.getSelectedFile();
-            filenameInput = f.getAbsolutePath();
-            inputField.setText(f.getName());
-            inputField.setToolTipText(filenameInput);
+            useInputFile(fc.getSelectedFile());
+        }
+    }
 
+    /** Selects {@code f} as the current input file and refreshes the form state. */
+    private void useInputFile(File f) {
+        filenameInput = f.getAbsolutePath();
+        inputField.setText(f.getName());
+        inputField.setToolTipText(filenameInput);
+
+        if (f.getParentFile() != null) {
             configStore.saveLastInputDirectory(f.getParentFile());
+        }
 
-            summaryCard.setVisible(false);
-            updateGenerateButtonState();
-            owner.refreshStatus();
+        summaryCard.setVisible(false);
+        updateGenerateButtonState();
+        owner.refreshStatus();
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Input templates (onboarding helper)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private JComponent createTemplateLink() {
+        JButton link = new JButton("Get input template...");
+        link.setHorizontalAlignment(SwingConstants.LEFT);
+        link.setBorderPainted(false);
+        link.setContentAreaFilled(false);
+        link.setFocusPainted(false);
+        link.setOpaque(false);
+        link.setMargin(new Insets(0, 0, 0, 0));
+        link.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        link.putClientProperty(FlatClientProperties.STYLE,
+                "foreground: $Component.accentColor; font: -1;");
+        link.setToolTipText("Save a ready-to-edit CSV or Excel template");
+        link.addActionListener(e -> showTemplateMenu(link));
+        return link;
+    }
+
+    private void showTemplateMenu(JComponent anchor) {
+        JPopupMenu menu = new JPopupMenu();
+        for (InputTemplates.Kind kind : InputTemplates.Kind.values()) {
+            JMenuItem item = new JMenuItem(kind.label());
+            item.setEnabled(InputTemplates.isAvailable(kind));
+            item.addActionListener(e -> saveTemplate(kind));
+            menu.add(item);
+        }
+        menu.show(anchor, 0, anchor.getHeight());
+    }
+
+    private void saveTemplate(InputTemplates.Kind kind) {
+        if (!InputTemplates.isAvailable(kind)) {
+            showLocalError("The " + kind.label() + " is not available in this build.");
+            return;
+        }
+
+        JFileChooser fc = new JFileChooser(configStore.lastInputDirectory());
+        fc.setDialogTitle("Save " + kind.label());
+        fc.setSelectedFile(new File(kind.defaultFileName()));
+
+        if (fc.showSaveDialog(parentWindow()) != JFileChooser.APPROVE_OPTION) {
+            return;
+        }
+
+        File target = fc.getSelectedFile();
+        if (target.exists()) {
+            int overwrite = JOptionPane.showConfirmDialog(parentWindow(),
+                    "\"" + target.getName() + "\" already exists. Replace it?",
+                    "Replace file?", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+            if (overwrite != JOptionPane.YES_OPTION) {
+                return;
+            }
+        }
+
+        try {
+            InputTemplates.copyTo(kind, target.toPath());
+        } catch (IOException ex) {
+            showLocalError("The template could not be saved:\n\n" + ex.getMessage());
+            return;
+        }
+
+        if (target.getParentFile() != null) {
+            configStore.saveLastInputDirectory(target.getParentFile());
+        }
+
+        int use = JOptionPane.showConfirmDialog(parentWindow(),
+                "Template saved to:\n" + target.getAbsolutePath()
+                        + "\n\nUse it as the current input file?",
+                "Template saved", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+        if (use == JOptionPane.YES_OPTION) {
+            useInputFile(target);
         }
     }
 
     private void updateGenerateButtonState() {
-        generateButton.setEnabled(
-                filenameInput != null && !filenameInput.isEmpty()
-                && flatDatePickerField.getDate() != null);
+        boolean ready = filenameInput != null && !filenameInput.isEmpty()
+                && flatDatePickerField.getDate() != null;
+        generateButton.setEnabled(ready);
+        generateButton.setToolTipText(ready ? null
+                : "Select an input file and an execution date first");
+    }
+
+    /** Error dialog for minor, non-generation failures (does not change the footer status). */
+    private void showLocalError(String message) {
+        JOptionPane.showMessageDialog(parentWindow(), message,
+                "SEPA Generator", JOptionPane.WARNING_MESSAGE);
     }
 
     private JTextField createFileField(String placeholder) {
@@ -414,6 +545,6 @@ public class FormPanel extends JPanel {
         summaryCard.setVisible(true);
         revalidate();
         repaint();
+        owner.ensureContentVisible();
     }
 }
-

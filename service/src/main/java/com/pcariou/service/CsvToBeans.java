@@ -43,7 +43,7 @@ public class CsvToBeans
 			List<CreditTransferTransactionInformation> creditTransferTransactionInformations = CsvToBeanBuilder.build().parse();
 			for (CreditTransferTransactionInformation creditTransferTransactionInformation : creditTransferTransactionInformations) {
 				if (!validate(creditTransferTransactionInformation)) {
-					throw new Exception("Invalid CSV file\n" + this.errors.toString());
+					throw new Exception("Invalid input file\n" + this.errors.toString());
 				}
 			}
 			return createDocument(creditTransferTransactionInformations, Paths.get(inputFile).getFileName().toString());
@@ -80,6 +80,7 @@ public class CsvToBeans
 		// Payment Information
 		PaymentTypeInformation paymentTypeInformation = new PaymentTypeInformation(new ServiceLevel());
 		Debtor debtor = new Debtor(debtorInformations.name);
+		debtor.setPostalAddress(debtorInformations.address);
 		DebtorAccount debtorAccount = new DebtorAccount( new AccountIdentification(debtorInformations.iban));
 		DebtorAgent debtorAgent = new DebtorAgent(new FinancialInstitutionIdentification(debtorInformations.bic));
 		PaymentInformation paymentInformation = new PaymentInformation(inputFile + "-1", paymentTypeInformation, debtorInformations.requestedExecutionDate, debtor, debtorAccount, debtorAgent, creditTransferTransactionInformations);

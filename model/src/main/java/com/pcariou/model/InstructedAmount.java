@@ -13,8 +13,8 @@ import com.opencsv.bean.*;
 public class InstructedAmount
 {
 	@XmlValue
-	@NotBlank(message = "InstructedAmount is mandatory")
-	@Pattern(regexp = "[0-9]+[.,]?[0-9]*", message = "InstructedAmount is not valid")
+	@NotBlank(message = "The transaction amount is mandatory. Please provide an amount in the amount column (e.g. 1250.50)")
+	@ValidAmount
 	@CsvBindByName(column = "amount")
 	private String instructedAmount;
 
@@ -30,6 +30,10 @@ public class InstructedAmount
 
 	public String getInstructedAmount() {
 		return instructedAmount;
+	}
+
+	public String getCurrency() {
+		return currency;
 	}
 
 	public void setInstructedAmount(String instructedAmount) {

@@ -10,7 +10,10 @@ import java.time.format.DateTimeFormatter;
 
 import javax.validation.constraints.*;
 
+import com.pcariou.model.PostalAddress;
+import com.pcariou.model.ValidBic;
 import com.pcariou.model.ValidIban;
+import com.pcariou.model.ValidPostalAddress;
 
 
 public class DebtorInformations {
@@ -22,8 +25,7 @@ public class DebtorInformations {
 	public String iban;
 
 	@NotBlank(message = "The BIC for the debtor is mandatory")
-	@Pattern(regexp = "^[A-Z]{4}[A-Z]{2}[A-Z0-9]{2}([A-Z0-9]{3})?$",
-	         message = "BIC for debtor is not valid (expected format: AAAABBCC or AAAABBCCDDD)")
+	@ValidBic
 	public String bic;
 
 	@NotBlank(message = "The initiating party name is mandatory")
@@ -36,6 +38,10 @@ public class DebtorInformations {
 	@NotBlank(message = "The execution date is mandatory")
 	@Pattern(regexp = "^(\\d{4})-(\\d{2})-(\\d{2})$", message = "Execution date is not valid")
 	public String requestedExecutionDate;
+
+	/** Optional debtor postal address (pain.001.001.09 only); null when not configured. */
+	@ValidPostalAddress(label = "debtor")
+	public PostalAddress address;
 
 	private static final File CONFIG_FILE =
 			new File(System.getProperty("user.home"), ".sepa-generator-config.json");
@@ -64,6 +70,7 @@ public class DebtorInformations {
 		this.name = (String) debtor.get("name");
 		this.iban = (String) debtor.get("iban");
 		this.bic = (String) debtor.get("bic");
+		this.address = readAddress((JSONObject) debtor.get("address"));
 
 		JSONObject initiatingParty = (JSONObject) jsonObject.get("initiatingParty");
 		this.initiatingPartyName = (String) initiatingParty.get("name");
@@ -74,5 +81,19 @@ public class DebtorInformations {
 		if (requestedExecutionDate.isBefore(LocalDate.now())) {
 			throw new IllegalArgumentException("Execution date must be in the future");
 		}
+	}
+
+	/** Reads the optional debtor address; returns null when absent or fully empty. */
+	private static PostalAddress readAddress(JSONObject json) {
+		if (json == null) {
+			return null;
+		}
+		PostalAddress address = new PostalAddress(
+				(String) json.get("street"),
+				(String) json.get("buildingNumber"),
+				(String) json.get("postcode"),
+				(String) json.get("town"),
+				(String) json.get("country"));
+		return address.isEmpty() ? null : address;
 	}
 }

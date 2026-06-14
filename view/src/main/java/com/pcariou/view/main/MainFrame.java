@@ -22,6 +22,9 @@ public class MainFrame extends JFrame {
 	private final ConfigStore configStore = new ConfigStore();
 	private FooterPanel footerPanel;
 
+	/** Smallest size the layout needs without the generation summary visible. */
+	private Dimension baseMinimumSize;
+
 	public IGenerator getGenerator() { return generator; }
     public MainFrame(IGenerator generator, String version) {
         super("SEPA Generator v" + version);
@@ -52,6 +55,7 @@ public class MainFrame extends JFrame {
 
         // Keep the smallest allowed size = what the layout truly needs
         Dimension packed = getSize();
+        baseMinimumSize = packed;
         setMinimumSize(packed);
 
         // 2) Compute usable screen size (accounts for taskbar/dock)
@@ -90,7 +94,9 @@ public class MainFrame extends JFrame {
 	public void showErrorMessage(String message) {
 		SwingUtilities.invokeLater(() -> {
 			setStatus(AppStatus.GENERATION_FAILED);
-			JOptionPane.showMessageDialog(this, message, "Error", JOptionPane.ERROR_MESSAGE);
+			JOptionPane.showMessageDialog(this,
+					"The SEPA file could not be generated:\n\n" + message,
+					"Generation failed", JOptionPane.ERROR_MESSAGE);
 		});
 	}
 
@@ -113,6 +119,56 @@ public class MainFrame extends JFrame {
 	/** Directly set a status (use for transient states like GENERATING). */
 	public void setStatus(AppStatus status) {
 		footerPanel.setStatus(status);
+	}
+
+	/**
+	 * Ensures the window is large enough to fully display its current content
+	 * (for example when the generation summary card becomes visible).
+	 *
+	 * The window only ever grows, never shrinks, to avoid jitter, and the
+	 * minimum size is raised so a later manual resize cannot clip the summary.
+	 * The result is clamped to the usable screen area.
+	 */
+	public void ensureContentVisible() {
+		validate();
+		Dimension pref = getPreferredSize();
+
+		GraphicsConfiguration gc = getGraphicsConfiguration();
+		if (gc == null) {
+			gc = GraphicsEnvironment.getLocalGraphicsEnvironment()
+					.getDefaultScreenDevice()
+					.getDefaultConfiguration();
+		}
+		Rectangle bounds = gc.getBounds();
+		Insets insets = Toolkit.getDefaultToolkit().getScreenInsets(gc);
+		int usableW = bounds.width  - insets.left - insets.right;
+		int usableH = bounds.height - insets.top  - insets.bottom;
+
+		int neededW = Math.min(pref.width,  usableW);
+		int neededH = Math.min(pref.height, usableH);
+
+		// Raise the minimum size so the content can never be clipped by resizing.
+		Dimension min = getMinimumSize();
+		setMinimumSize(new Dimension(
+				Math.max(min.width,  neededW),
+				Math.max(min.height, neededH)));
+
+		int newW = Math.max(getWidth(),  neededW);
+		int newH = Math.max(getHeight(), neededH);
+		if (newW != getWidth() || newH != getHeight()) {
+			setSize(newW, newH);
+		}
+	}
+
+	/**
+	 * Restores the minimum window size to the layout's base requirement
+	 * (used when the generation summary is hidden again, e.g. on reset),
+	 * so the window can be made compact once more.
+	 */
+	public void restoreBaseMinimumSize() {
+		if (baseMinimumSize != null) {
+			setMinimumSize(baseMinimumSize);
+		}
 	}
 
 	/**

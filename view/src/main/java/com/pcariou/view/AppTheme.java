@@ -3,12 +3,14 @@ package com.pcariou.view;
 import com.formdev.flatlaf.FlatDarkLaf;
 import com.formdev.flatlaf.FlatLaf;
 import com.formdev.flatlaf.FlatLightLaf;
+import com.pcariou.view.config.ConfigStore;
 
 import javax.swing.*;
 import javax.swing.plaf.ColorUIResource;
 import java.awt.*;
 
 public final class AppTheme {
+    private static final ConfigStore CONFIG = new ConfigStore();
     private static Mode currentMode = Mode.LIGHT;
 
     public enum Mode { LIGHT, DARK }
@@ -16,6 +18,19 @@ public final class AppTheme {
     public static Mode getCurrentMode() { return currentMode; }
 
     private AppTheme() {}
+
+    /** Resolves the persisted theme, falling back to {@link Mode#LIGHT}. */
+    public static Mode loadPersistedMode() {
+        String stored = CONFIG.readTheme();
+        if (stored != null) {
+            try {
+                return Mode.valueOf(stored.trim().toUpperCase());
+            } catch (IllegalArgumentException ignored) {
+                // unknown value — fall through to default
+            }
+        }
+        return Mode.LIGHT;
+    }
 
     public static void apply(Mode mode) {
         try {
@@ -38,6 +53,7 @@ public final class AppTheme {
 
     public static void switchMode() {
         apply(currentMode == Mode.LIGHT ? Mode.DARK : Mode.LIGHT);
+        CONFIG.saveTheme(currentMode.name());
     }
 
     private static void applyDefaults(Mode mode) {
@@ -124,6 +140,10 @@ public final class AppTheme {
         UIManager.put("CheckBox.icon.selectedBackground",       accent);
         UIManager.put("CheckBox.icon.focusedSelectedBackground", accent2);
         UIManager.put("Hyperlink.linkColor",                    accent);
+
+        // ── Status colors (footer) — tuned per theme for contrast ──────────
+        UIManager.put("App.successColor", dark ? c(102, 187, 106) : c(46, 125, 50));
+        UIManager.put("App.errorColor",   dark ? c(239, 83,  80)  : c(211, 47, 47));
 
         // ── Buttons — neutral defaults, accent only for primary ────────────
         UIManager.put("Button.background",          panelBg);

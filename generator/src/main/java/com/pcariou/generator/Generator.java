@@ -8,6 +8,9 @@ import com.pcariou.view.main.MainFrame;
 import org.apache.commons.io.FilenameUtils;
 
 import java.io.RandomAccessFile;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.util.Arrays;
 
@@ -29,21 +32,36 @@ public class Generator implements IGenerator
         this.view = view;
     }
 
-    public void generate(String inputFile, String outputFile, LocalDate date)
+    public void generate(String inputFile, String outputFile, LocalDate date, PainVersion version)
     {
         if (!argumentsAreValid(inputFile, outputFile, date))
             return;
-        if (isExcelFile(inputFile))
-            inputFile = convertToCsv(inputFile);
-        transformCsvToXml(inputFile, outputFile, date);
+        String csvInput = inputFile;
+        boolean csvIsTemporary = false;
+        if (isExcelFile(inputFile)) {
+            try {
+                csvInput = convertExcelToTempCsv(inputFile);
+                csvIsTemporary = true;
+            } catch (Exception e) {
+                view.showErrorMessage(e.getMessage());
+                return;
+            }
+        }
+        try {
+            transformCsvToXml(csvInput, outputFile, date, version);
+        } finally {
+            if (csvIsTemporary) {
+                deleteQuietly(csvInput);
+            }
+        }
     }
 
-    private void transformCsvToXml(String inputFile, String outputFile, LocalDate date)
+    private void transformCsvToXml(String inputFile, String outputFile, LocalDate date, PainVersion version)
     {
         try {
             CsvToBeans csvToBeans = new CsvToBeans(date);
             Document document = csvToBeans.read(inputFile);
-            new BeansToXml().write(document, outputFile);
+            PainWriter.forVersion(version).write(document, outputFile);
             view.showSuccessMessage(outputFile, " generated successfully.");
             view.showTableResult(csvToBeans.getTableResult());
         } catch (Exception e) {
@@ -86,17 +104,32 @@ public class Generator implements IGenerator
         return Arrays.asList(EXCEL_EXTENSIONS).contains(FilenameUtils.getExtension(inputFile));
     }
 
-    private String convertToCsv(String inputFile)
+    /**
+     * Converts an Excel workbook (.xls/.xlsx) to CSV at an absolute temporary
+     * path, independent of the process working directory. This is what makes
+     * Excel generation work when the app is launched from the installed Windows
+     * shortcut (whose working directory is not the input file's folder and may
+     * not be writable). The caller owns the returned file and must delete it
+     * once generation completes (see {@link #deleteQuietly(String)}).
+     */
+    static String convertExcelToTempCsv(String inputFile) throws Exception
+    {
+        Workbook workbook = new Workbook(inputFile);
+        Path tempCsv = Files.createTempFile("sepa-generator-", ".csv");
+        String csvPath = tempCsv.toAbsolutePath().toString();
+        workbook.save(csvPath);
+        eraseNoLicenseMessage(csvPath);
+        return csvPath;
+    }
+
+    /** Best-effort cleanup of a temporary converted CSV file. */
+    private static void deleteQuietly(String path)
     {
         try {
-            Workbook workbook = new Workbook(inputFile);
-            inputFile = FilenameUtils.getBaseName(inputFile) + ".csv";
-            workbook.save(FilenameUtils.getBaseName(inputFile) + ".csv");
-            eraseNoLicenseMessage(inputFile);
-        } catch (Exception e) {
-            view.showErrorMessage(e.getMessage());
+            Files.deleteIfExists(Paths.get(path));
+        } catch (Exception ignored) {
+            // Temp file cleanup is best-effort; the OS temp dir is reclaimed anyway.
         }
-        return inputFile;
     }
 
     private static void eraseNoLicenseMessage(String inputFile) 
@@ -119,50 +152,114 @@ public class Generator implements IGenerator
         }
     }
 
+    private static final String CLI_USAGE =
+            "Usage: java -jar generator.jar <input file> <output file> <execution date YYYY-MM-DD> [--format=02|09]";
+
     public static void fromCommandLine(String[] args)
     {
-    if (args.length != 4) {
-            System.out.println("Usage: java -jar generator.jar <input file> <output file>");
-            System.exit(1);
+        int exitCode = runCommandLine(args);
+        if (exitCode != 0) {
+            System.exit(exitCode);
         }
-        if (args[0].equals(args[1])) {
+    }
+
+    /**
+     * Runs the CLI generation flow and returns an exit code (0 on success).
+     * Separated from {@link #fromCommandLine} so it can be tested without
+     * killing the JVM.
+     */
+    static int runCommandLine(String[] args)
+    {
+        // Optional --format=02|09 argument (anywhere); defaults to pain.001.001.02.
+        PainVersion version = PainVersion.PAIN_001_001_02;
+        java.util.List<String> positional = new java.util.ArrayList<>();
+        for (String arg : args) {
+            if (arg != null && arg.startsWith("--format=")) {
+                PainVersion parsed = PainVersion.fromCode(arg.substring("--format=".length()));
+                if (parsed == null) {
+                    System.out.println("Unknown format. Supported values: --format=02 (pain.001.001.02), --format=09 (pain.001.001.09)");
+                    return 1;
+                }
+                version = parsed;
+            } else {
+                positional.add(arg);
+            }
+        }
+
+        // 3 positional arguments expected; a legacy unused 4th argument is
+        // still tolerated for backward compatibility with old invocations.
+        if (positional.size() < 3 || positional.size() > 4) {
+            System.out.println(CLI_USAGE);
+            return 1;
+        }
+
+        String inputFilename = positional.get(0);
+        String outputFilename = positional.get(1);
+        String rawDate = positional.get(2);
+
+        if (inputFilename.equals(outputFilename)) {
             System.out.println("Input and output files must be different");
-            System.exit(1);
+            return 1;
         }
-        if (!args[1].endsWith(".xml")) {
+        if (!outputFilename.endsWith(".xml")) {
             System.out.println("Output file must be an XML file");
-            System.exit(1);
+            return 1;
         }
 
-        String inputFilename = args[0];
-        String outputFilename = args[1];
+        LocalDate executionDate = parseExecutionDate(rawDate);
+        if (executionDate == null) {
+            return 1;
+        }
 
+        boolean csvIsTemporary = false;
         if (inputFilename.endsWith(".xls") || inputFilename.endsWith(".xlsx")) {
             try {
-                Workbook workbook = new Workbook(args[0]);
-                inputFilename = FilenameUtils.getBaseName(inputFilename) + ".csv";
-                workbook.save(FilenameUtils.getBaseName(inputFilename) + ".csv");
-                eraseNoLicenseMessage(inputFilename);
+                inputFilename = convertExcelToTempCsv(inputFilename);
+                csvIsTemporary = true;
             } catch (Exception e) {
-                e.printStackTrace();
+                System.out.println("Could not convert the Excel input file: " + e.getMessage());
+                return 1;
             }
         } else if (!inputFilename.endsWith(".csv")) {
             System.out.println("Input file must be a CSV or XLS/XLSX file");
-            System.exit(1);
+            return 1;
         }
 
         try {
-            Document document = new CsvToBeans(null).read(inputFilename);
-            new BeansToXml().write(document, outputFilename);
+            Document document = new CsvToBeans(executionDate).read(inputFilename);
+            PainWriter.forVersion(version).write(document, outputFilename);
+            System.out.println(outputFilename + " generated successfully.");
+            return 0;
         } catch (Exception e) {
-            e.printStackTrace();
+            System.out.println("Generation failed: " + e.getMessage());
+            return 1;
+        } finally {
+            if (csvIsTemporary) {
+                deleteQuietly(inputFilename);
+            }
+        }
+    }
+
+    /** Parses and validates the CLI execution date; prints an error and returns null when invalid. */
+    private static LocalDate parseExecutionDate(String rawDate)
+    {
+        if (rawDate == null || rawDate.trim().isEmpty()) {
+            System.out.println("The execution date is mandatory (expected format: YYYY-MM-DD, e.g. 2026-07-01)");
+            return null;
+        }
+        try {
+            return LocalDate.parse(rawDate.trim());
+        } catch (java.time.format.DateTimeParseException e) {
+            System.out.println("The execution date \"" + rawDate
+                    + "\" is not valid. Please use the YYYY-MM-DD format (e.g. 2026-07-01).");
+            return null;
         }
     }
 
     public static void main( String[] args )
     {
         if (args.length == 0) {
-            AppTheme.apply(AppTheme.Mode.LIGHT);
+            AppTheme.apply(AppTheme.loadPersistedMode());
             Generator generator = new Generator();
             MainFrame view = new MainFrame(generator, AppInfo.getVersion());
             generator.setView(view);

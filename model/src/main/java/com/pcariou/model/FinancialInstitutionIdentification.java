@@ -14,7 +14,8 @@ import javax.validation.constraints.*;
 public class FinancialInstitutionIdentification
 {
 	@XmlElement(name = "BIC")
-	@NotBlank(message = "BIC for FinancialInstitutionIdentification is mandatory")
+	@NotBlank(message = "The creditor BIC is mandatory. Please provide a BIC in the BIC column (e.g. BNPAFRPP)")
+	@ValidBic
 	@CsvBindByName(column = "BIC")
 	private String bic;
 

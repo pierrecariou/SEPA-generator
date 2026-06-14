@@ -1,15 +1,14 @@
 package com.pcariou.view.main;
 
 import com.formdev.flatlaf.FlatClientProperties;
+import com.pcariou.view.AppEdition;
 import com.pcariou.view.AppLinks;
+import com.pcariou.view.ExternalLinks;
 import com.pcariou.view.main.center.FormPanel;
 import net.miginfocom.swing.MigLayout;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.Desktop;
-import java.net.URI;
-import java.util.logging.Logger;
 
 public class FooterPanel extends JPanel {
 
@@ -19,7 +18,7 @@ public class FooterPanel extends JPanel {
     public FooterPanel(MainFrame owner, FormPanel formPanel, String version) {
         super(new MigLayout(
                 "insets 3 16 3 16, fillx, hidemode 3",
-                "[grow][][right][][][]",
+                "[grow][][right][][][][]",
                 "[]"
         ));
 
@@ -32,20 +31,22 @@ public class FooterPanel extends JPanel {
         progress.putClientProperty(FlatClientProperties.STYLE, "arc: 999;");
         progress.setPreferredSize(new Dimension(120, 6));
 
-        JLabel edition = new JLabel("Community Edition  •  v" + version);
+        JLabel edition = new JLabel(AppEdition.LABEL + "  •  v" + version);
         edition.putClientProperty(FlatClientProperties.STYLE, "font: -1; foreground: $Label.disabledForeground;");
 
-        JButton github = linkButton("GitHub",       AppLinks.GITHUB);
-        JButton docs   = linkButton("Docs",          AppLinks.DOCS);
-        JButton issue  = linkButton("Report issue",  AppLinks.ISSUES);
+        JButton website = linkButton("Website",           AppLinks.WEBSITE);
+        JButton privacy = linkButton("Privacy",           AppLinks.PRIVACY);
+        JButton contact = linkButton("Contact",           AppLinks.CONTACT);
+        JButton updates = linkButton("Check for updates",  AppLinks.CHECK_UPDATES);
 
         setOpaque(false);
         add(status,   "growx");
         add(progress, "w 120!, gapright 12");
         add(edition,  "gapright 12");
-        add(github);
-        add(docs);
-        add(issue);
+        add(website);
+        add(privacy);
+        add(contact);
+        add(updates);
 
         this.statusLabel = status;
         this.progressBar = progress;
@@ -69,8 +70,6 @@ public class FooterPanel extends JPanel {
         repaint();
     }
 
-    private static final Logger LOG = Logger.getLogger(FooterPanel.class.getName());
-
     private JButton linkButton(String text, String url) {
         JButton b = new JButton(text);
         b.setBorderPainted(false);
@@ -80,15 +79,7 @@ public class FooterPanel extends JPanel {
         b.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         b.putClientProperty(FlatClientProperties.STYLE,
                 "foreground: $Component.accentColor; font: -1;");
-        b.addActionListener(e -> openUrl(url));
+        b.addActionListener(e -> ExternalLinks.open(url, this));
         return b;
-    }
-
-    private void openUrl(String url) {
-        try {
-            Desktop.getDesktop().browse(new URI(url));
-        } catch (Exception ex) {
-            LOG.warning("Could not open URL: " + url + " — " + ex.getMessage());
-        }
     }
 }

@@ -9,13 +9,13 @@ package com.pcariou.view.main;
 public enum AppStatus {
 
     // ── Transient / action states ─────────────────────────────────────────
-    GENERATION_FAILED ("Generation failed",              "#D32F2F",                    false),
+    GENERATION_FAILED ("Generation failed",              "$App.errorColor",            false),
     GENERATING        ("Generating SEPA XML...",          "$Component.accentColor",     true),
-    GENERATED         ("File generated successfully",     "#2E7D32",                    false),
+    GENERATED         ("File generated successfully",     "$App.successColor",          false),
 
     // ── Blocking / input-required states ─────────────────────────────────
     DEBTOR_INFO_REQUIRED ("Debtor information required", "$Component.accentColor",     false),
-    SELECT_FILE          ("Select a credit transfer file","$Label.disabledForeground", false),
+    SELECT_FILE          ("Select a CSV or Excel input file","$Label.disabledForeground", false),
     SELECT_DATE          ("Select an execution date",     "$Label.disabledForeground", false),
 
     // ── Default ───────────────────────────────────────────────────────────

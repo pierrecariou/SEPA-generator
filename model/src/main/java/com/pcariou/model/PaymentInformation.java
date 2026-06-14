@@ -148,4 +148,9 @@ public class PaymentInformation
 	{
 		this.chargeBearer = "SLEV";
 	}
+
+	public List<CreditTransferTransactionInformation> getCreditTransferTransactionInformation()
+	{
+		return creditTransferTransactionInformation;
+	}
 }

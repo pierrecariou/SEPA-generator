@@ -1,0 +1,2 @@
+name,IBAN,BIC,amount,end_to_end_id,information,street,building_number,postcode,town,country
+Example Creditor GmbH,DE89370400440532013000,DEUTDEFF,1500.00,INV-2026-0001,Invoice 2026-0001 example,Hauptstrasse,12,10115,Berlin,DE

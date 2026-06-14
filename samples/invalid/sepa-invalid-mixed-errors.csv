@@ -1,0 +1,5 @@
+name,IBAN,BIC,amount,end_to_end_id,information
+Karlson GmbH,DE89370400440532013000,DEUTDEFF,1500.00,INV-2026-001,Valid row for contrast
+Juan Pablo Services,FR1420041010050500013M02606,ABCD123,980.25,INV-2026-002,Invalid BIC format
+Acme Supplies Ltd,GB29NWBK60161331926819,BANKNL2A,-50,INV-2026-003,Negative amount
+Tulip Logistics BV,,ABNANL2A,12.345,INV-2026-004,Missing IBAN and too many decimals

@@ -10,8 +10,8 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/license-Apache--2.0-blue" alt="License: Apache 2.0" />
-  <img src="https://img.shields.io/badge/release-v1.2-teal" alt="Release v1.2" />
-  <img src="https://img.shields.io/badge/format-pain.001.001.02-lightgrey" alt="pain.001.001.02" />
+  <img src="https://img.shields.io/badge/release-v1.3.0-teal" alt="Release v1.3.0" />
+  <img src="https://img.shields.io/badge/format-pain.001.001.02%20%7C%20.09-lightgrey" alt="pain.001.001.02 and pain.001.001.09" />
 </p>
 
 <p align="center">
@@ -26,16 +26,24 @@
 
 **SEPA Generator** is a local desktop application that generates **SEPA Credit Transfer Initiation XML** files from a CSV or Excel input file.
 
-It targets the ISO 20022 `pain.001.001.02` format and helps transform payment data into a structured SEPA XML file.
+It is designed to generate standards-based ISO 20022 SEPA credit transfer XML in two formats:
+
+* `pain.001.001.02` (classic)
+* `pain.001.001.09` (modern ISO 20022)
+
+The `pain.001.001.09` format additionally supports optional structured postal addresses for the debtor and creditors.
 
 The application is designed to stay simple:
 
 1. Configure debtor information.
 2. Select a payment input file.
 3. Choose an execution date.
-4. Generate the SEPA XML file.
+4. Choose the SEPA output format.
+5. Generate the SEPA XML file.
 
-> Always review and validate generated payment files before submitting them to your bank. Bank acceptance may depend on your bank, country, upload channel, and required `pain.001` version.
+All processing is local: payment files are read, validated, and generated entirely on your own machine.
+
+> Always review and validate generated payment files before submitting them to your bank. Final bank acceptance can depend on your bank, upload channel, account configuration, the required `pain.001` version, and bank-specific rules. SEPA Generator does not implement bank-specific validation profiles.
 
 ---
 
@@ -62,21 +70,29 @@ The application is designed to stay simple:
 ## Features
 
 * Desktop UI built with Java Swing and FlatLaf.
-* Generate SEPA Credit Transfer XML files in `pain.001.001.02` format.
+* Generate SEPA Credit Transfer XML files in two ISO 20022 formats:
+
+  * `pain.001.001.02` (classic)
+  * `pain.001.001.09` (modern ISO 20022)
 * Import payments from:
 
   * `.csv`
   * `.xls`
   * `.xlsx`
+* Optional structured postal address support (debtor and creditors) for `pain.001.001.09` output.
 * Configure debtor and initiating party information in the settings panel.
 * Validate key fields before generation:
 
+  * required payment fields
   * IBAN format and checksum
   * BIC format
   * SIRET format
+  * amount greater than 0 with at most 2 decimal places
+  * EndToEndId length
+  * remittance information length
+  * basic address completeness when address fields are provided
   * execution date
-  * payment amounts
-* Display clear status messages.
+* Display clear, actionable status messages.
 * Show a generation summary after successful generation:
 
   * transaction count
@@ -86,7 +102,7 @@ The application is designed to stay simple:
 * Remember the last used input directory.
 * Light and dark themes.
 * Command-line mode for simple batch usage.
-* Fully local Community Edition.
+* Fully local Community Edition focused on credit transfers (not direct debits).
 
 ---
 
@@ -101,7 +117,7 @@ The application is designed to stay simple:
 
 This is a multi-module Maven project:
 
-* `model` — JAXB-annotated ISO 20022 `pain.001.001.02` model and CSV bindings
+* `model` — JAXB-annotated ISO 20022 `pain.001.001.02` and `pain.001.001.09` models and CSV bindings
 * `service` — CSV/Excel reading, validation, and XML generation
 * `view` — Swing desktop user interface
 * `generator` — application entry point and wiring
@@ -145,6 +161,8 @@ Default config location:
 
 The input file can be a CSV or Excel spreadsheet.
 
+> **Tip:** You don't have to start from scratch. In the main window, use **"Get input template..."** directly under the *Input file* field to save a ready-to-edit template. A small menu offers a *Basic CSV template*, *Basic Excel template*, or a *CSV / Excel + optional addresses (.09)* template. The address columns are optional and are only used for `pain.001.001.09` output (they are ignored for `pain.001.001.02`). Each template contains the expected header row and one example row you can replace with your own payments.
+
 Supported formats:
 
 ```text
@@ -166,10 +184,22 @@ The expected columns are:
 
 The column order does not matter.
 
+For `pain.001.001.09`, you may optionally add structured creditor postal address columns. When provided, at least `town` and `country` (2-letter ISO country code) are required:
+
+| Column            | Description                          |
+| ----------------- | ------------------------------------ |
+| `street`          | Creditor street name (optional)      |
+| `building_number` | Creditor building number (optional)  |
+| `postcode`        | Creditor postcode (optional)         |
+| `town`            | Creditor town / city                 |
+| `country`         | Creditor 2-letter ISO country code   |
+
+Files without address columns remain fully supported.
+
 A working example is available in the repository:
 
 ```text
-Payments-template-example.csv
+samples/valid/sepa-valid-sample.csv
 ```
 
 ---
@@ -180,9 +210,10 @@ In the desktop application:
 
 1. Select the input file.
 2. Select the execution date.
-3. Click **Generate**.
-4. Review the generated XML file.
-5. Submit the file to your bank only after validation.
+3. Choose the SEPA output format (`pain.001.001.02` or `pain.001.001.09`).
+4. Click **Generate**.
+5. Review the generated XML file.
+6. Submit the file to your bank only after validation.
 
 After successful generation, the app displays a summary with:
 
@@ -198,37 +229,51 @@ After successful generation, the app displays a summary with:
 
 The project also supports command-line generation.
 
+Syntax:
+
+```bash
+java -jar generator.jar <input.csv|.xls|.xlsx> <output.xml> <YYYY-MM-DD> [--format=02|09]
+```
+
+* `<input>` — payment input file (`.csv`, `.xls`, or `.xlsx`)
+* `<output>` — destination file, must end with `.xml`
+* `<YYYY-MM-DD>` — execution date (must be a future date)
+* `--format=02|09` — optional SEPA format; defaults to `02` (`pain.001.001.02`)
+
 Example:
 
 ```bash
-java -jar generator/target/generator.jar <input.csv|xls|xlsx> <output.xml>
+java -jar generator/target/generator.jar payments.csv output.xml 2026-06-15 --format=09
 ```
 
-The input and output paths must be different, and the output file must end with:
-
-```text
-.xml
-```
+The input and output paths must be different, and the output file must end with `.xml`.
+Debtor and initiating party information is read from the local configuration file.
 
 ---
 
 ## ISO 20022 Format
 
-The generated document targets:
+SEPA Generator produces SEPA Credit Transfer Initiation documents in two ISO 20022 formats:
 
-```text
-pain.001.001.02
-```
+| Format             | Namespace                                              |
+| ------------------ | ----------------------------------------------------- |
+| `pain.001.001.02`  | `urn:iso:std:iso:20022:tech:xsd:pain.001.001.02`      |
+| `pain.001.001.09`  | `urn:iso:std:iso:20022:tech:xsd:pain.001.001.09`      |
 
-Namespace:
+`pain.001.001.09` uses the modern ISO 20022 structure (for example `BICFI` and `ReqdExctnDt/Dt`) and supports optional structured postal addresses.
 
-```text
-urn:iso:std:iso:20022:tech:xsd:pain.001.001.02
-```
+Some banks may require a specific `pain.001` version or apply bank-specific rules. Always check with your bank before using generated files in production.
 
-This is a SEPA Credit Transfer Initiation format.
+---
 
-Some banks may require newer `pain.001` versions or bank-specific rules. Always check with your bank before using generated files in production.
+## Samples
+
+The `samples/` folder contains fake/demo input files for manual testing and screenshots:
+
+* `samples/valid/` — valid CSV/XLS/XLSX inputs, including a sample with optional postal address columns
+* `samples/invalid/` — files demonstrating individual validation scenarios (invalid BIC, invalid amount, missing field, incomplete address, mixed errors)
+
+All sample data is fake and for demonstration only. See [`samples/README.md`](samples/README.md) for details.
 
 ---
 
@@ -237,6 +282,15 @@ Some banks may require newer `pain.001` versions or bank-specific rules. Always 
 For more detailed instructions, see:
 
 * [Usage Guide](docs/usage.md)
+
+## Links
+
+* Website: [sepa-xml-generator.com](https://sepa-xml-generator.com)
+* Download: [sepa-xml-generator.com/download](https://sepa-xml-generator.com/download)
+* Privacy: [sepa-xml-generator.com/privacy](https://sepa-xml-generator.com/privacy)
+* Contact: [contact@sepa-xml-generator.com](mailto:contact@sepa-xml-generator.com)
+* Releases: [GitHub releases](https://github.com/pierrecariou/SEPA-generator/releases/latest)
+* SEPA Generator Pro: [sepa-xml-generator.com/pro](https://sepa-xml-generator.com/pro)
 
 ---
 
@@ -260,17 +314,19 @@ mvn clean package
 
 This repository contains the **Community Edition** of SEPA Generator.
 
-The Community Edition is free and open source. It is intended to remain a useful local tool for generating SEPA XML files from CSV or Excel input files.
+The Community Edition is free and open source. It is intended to remain a useful local tool for generating SEPA credit transfer XML files from CSV or Excel input files.
 
-Future professional features may be developed separately, such as:
+The Community Edition focuses on SEPA credit transfers and does not generate direct debits.
 
-* newer `pain.001` version support
+Possible future professional features may be explored separately, such as:
+
 * advanced SEPA validation reports
-* bank-specific validation profiles
 * multiple debtor/company profiles
 * batch workflows
 * accountant-oriented features
 * paid support
+
+These professional features are not part of the Community Edition.
 
 ---
 

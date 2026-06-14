@@ -12,7 +12,7 @@ public class InitiatingPartyPanel extends AbstractSettingsPanel {
     private JLabel siretErrorLabel = new JLabel();
 
     public InitiatingPartyPanel() {
-        setBorder(BorderFactory.createTitledBorder("Initiating Party"));
+        setOpaque(false);
         setLayout(new GridBagLayout());
 
         configureErrorLabel(nameErrorLabel);

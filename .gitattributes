@@ -1,0 +1,7 @@
+# Shell scripts must always use LF line endings, even on Windows checkouts,
+# otherwise bash (macOS/Linux) fails with errors like "bad interpreter".
+*.sh text eol=lf
+
+# GitHub Actions workflows run on Linux/macOS too; keep them LF for safety.
+*.yml text eol=lf
+*.yaml text eol=lf
