@@ -376,6 +376,7 @@ public class FormPanel extends JPanel {
         generateButton.setEnabled(false);
 
         owner.refreshStatus();
+        owner.restoreBaseMinimumSize();
         revalidate();
         repaint();
     }
@@ -455,6 +456,6 @@ public class FormPanel extends JPanel {
         summaryCard.setVisible(true);
         revalidate();
         repaint();
+        owner.ensureContentVisible();
     }
 }
-
