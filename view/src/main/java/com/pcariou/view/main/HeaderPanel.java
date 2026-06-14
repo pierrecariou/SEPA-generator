@@ -1,8 +1,10 @@
 package com.pcariou.view.main;
 
 import com.formdev.flatlaf.FlatClientProperties;
+import com.pcariou.view.AppEdition;
 import com.pcariou.view.AppResources;
 import com.pcariou.view.AppTheme;
+import com.pcariou.view.ExternalLinks;
 import com.pcariou.view.SettingsFrame;
 import com.pcariou.view.SvgIcons;
 
@@ -36,7 +38,7 @@ public class HeaderPanel extends JPanel {
         appName.setFont(appName.getFont().deriveFont(Font.BOLD, 13f));
         appName.setAlignmentY(Component.CENTER_ALIGNMENT);
 
-        JLabel edition = new JLabel("  Community Edition");
+        JLabel edition = new JLabel("  " + AppEdition.LABEL);
         edition.putClientProperty(FlatClientProperties.STYLE,
                 "foreground: $Label.disabledForeground;");
         edition.setAlignmentY(Component.CENTER_ALIGNMENT);
@@ -68,9 +70,43 @@ public class HeaderPanel extends JPanel {
             settings.setVisible(true);
         });
 
+        JButton upgradeButton = createUpgradeButton();
+
+        if (upgradeButton != null) {
+            rightPanel.add(upgradeButton);
+            rightPanel.addSeparator(new Dimension(8, 0));
+        }
         rightPanel.add(themeButton);
         rightPanel.add(settingsButton);
         add(rightPanel, BorderLayout.EAST);
+    }
+
+    /**
+     * A discreet outlined "pill" link to the Pro upgrade page, or {@code null}
+     * when the current edition does not expose the Upgrade to Pro action.
+     */
+    private JButton createUpgradeButton() {
+        if (!AppEdition.showUpgradeToPro()) {
+            return null;
+        }
+        JButton upgrade = new JButton(AppEdition.UPGRADE_TEXT);
+        upgrade.setFocusable(false);
+        upgrade.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        upgrade.setToolTipText(AppEdition.UPGRADE_TOOLTIP);
+        upgrade.putClientProperty(FlatClientProperties.STYLE,
+                "arc: 999;"
+                        + " font: -1;"
+                        + " margin: 3,12,3,12;"
+                        + " focusWidth: 0;"
+                        + " innerFocusWidth: 0;"
+                        + " borderWidth: 1;"
+                        + " background: null;"
+                        + " borderColor: $Component.accentColor;"
+                        + " foreground: $Component.accentColor;"
+                        + " hoverBorderColor: $Component.accentColor;"
+                        + " hoverBackground: lighten($Component.accentColor,40%,relative);");
+        upgrade.addActionListener(e -> ExternalLinks.open(AppEdition.upgradeUrl(), this));
+        return upgrade;
     }
 
     @Override

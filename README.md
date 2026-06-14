@@ -280,9 +280,11 @@ For more detailed instructions, see:
 ## Links
 
 * Website: [sepa-xml-generator.com](https://sepa-xml-generator.com)
+* Download: [sepa-xml-generator.com/download](https://sepa-xml-generator.com/download)
 * Privacy: [sepa-xml-generator.com/privacy](https://sepa-xml-generator.com/privacy)
 * Contact: [contact@sepa-xml-generator.com](mailto:contact@sepa-xml-generator.com)
 * Releases: [GitHub releases](https://github.com/pierrecariou/SEPA-generator/releases/latest)
+* SEPA Generator Pro: [sepa-xml-generator.com/pro](https://sepa-xml-generator.com/pro)
 
 ---
 

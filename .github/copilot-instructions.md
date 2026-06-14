@@ -25,6 +25,17 @@ Do not put UI concerns into model or generator classes.
 
 Create new classes when it improves clarity, separation of concerns, testability, or maintainability.
 
+## Editions and Pro funnel
+
+This is the public **Community Edition** repository. Pro features live in a separate private repository.
+
+* Keep edition-specific features clearly organized, not scattered across unrelated UI classes.
+* Centralize Community-only funnel behavior (such as the "Upgrade to Pro" action: label, visibility, and target URL) in the dedicated edition abstraction (`view` → `AppEdition`), with URLs kept in `AppLinks`.
+* Generic UI classes (e.g. `HeaderPanel`, `FooterPanel`) should render edition info from that abstraction, not hard-code edition labels or commercial policy.
+* Do not add Pro-only implementation code to the Community repository. Community may only expose the entry point (link) to Pro.
+* Keep edition separation simple and pragmatic. Do not build a plugin system or over-engineer it.
+
+
 ## Clean code principles
 
 Prioritize clean, readable, maintainable Java code.

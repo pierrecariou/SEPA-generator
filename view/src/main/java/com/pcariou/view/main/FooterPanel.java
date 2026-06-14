@@ -1,6 +1,7 @@
 package com.pcariou.view.main;
 
 import com.formdev.flatlaf.FlatClientProperties;
+import com.pcariou.view.AppEdition;
 import com.pcariou.view.AppLinks;
 import com.pcariou.view.ExternalLinks;
 import com.pcariou.view.main.center.FormPanel;
@@ -30,7 +31,7 @@ public class FooterPanel extends JPanel {
         progress.putClientProperty(FlatClientProperties.STYLE, "arc: 999;");
         progress.setPreferredSize(new Dimension(120, 6));
 
-        JLabel edition = new JLabel("Community Edition  •  v" + version);
+        JLabel edition = new JLabel(AppEdition.LABEL + "  •  v" + version);
         edition.putClientProperty(FlatClientProperties.STYLE, "font: -1; foreground: $Label.disabledForeground;");
 
         JButton website = linkButton("Website",           AppLinks.WEBSITE);
