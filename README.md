@@ -108,8 +108,32 @@ All processing is local: payment files are read, validated, and generated entire
 
 ## Requirements
 
-* Java 8 or later
-* Apache Maven, if building from source
+**Packaged desktop downloads** (Windows MSI, macOS DMG, Linux DEB) **bundle their
+own Java runtime** — end users do **not** need to install Java separately.
+
+To **build from source** you need:
+
+* JDK 8 or later
+* Apache Maven
+
+---
+
+## Downloads
+
+Pre-built desktop packages for the final Community **v1.3.0** release:
+
+| Platform                   | Package                                            |
+| -------------------------- | ------------------------------------------------- |
+| Windows x64                | `SEPA-Generator-Community-1.3.0-windows-x64.msi`  |
+| macOS (Apple Silicon)      | `SEPA-Generator-Community-1.3.0-macos-arm64.dmg`  |
+| macOS (Intel)              | `SEPA-Generator-Community-1.3.0-macos-x64.dmg`    |
+| Linux x64 (Debian/Ubuntu)  | `SEPA-Generator-Community-1.3.0-linux-x64.deb`    |
+
+Each packaged download **bundles its own Java runtime**, so you do not need to
+install Java separately. Get the latest builds from the
+[official download page](https://sepa-xml-generator.com/download). See
+[`packaging/community/README.md`](packaging/community/README.md) for how the
+packages are built and how to install/uninstall them.
 
 ---
 
@@ -239,6 +263,10 @@ java -jar generator.jar <input.csv|.xls|.xlsx> <output.xml> <YYYY-MM-DD> [--form
 * `<output>` — destination file, must end with `.xml`
 * `<YYYY-MM-DD>` — execution date (must be a future date)
 * `--format=02|09` — optional SEPA format; defaults to `02` (`pain.001.001.02`)
+
+> **Note:** the command line defaults to `02` (`pain.001.001.02`) for backward
+> compatibility. The desktop app defaults to `09` (`pain.001.001.09`); pass
+> `--format=09` to match it on the command line.
 
 Example:
 
