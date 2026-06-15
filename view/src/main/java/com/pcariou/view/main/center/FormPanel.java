@@ -4,9 +4,11 @@ import com.formdev.flatlaf.FlatClientProperties;
 import com.pcariou.model.PainVersion;
 import com.pcariou.view.ExternalLinks;
 import com.pcariou.view.InputTemplates;
+import com.pcariou.view.SvgIcons;
 import com.pcariou.view.config.ConfigStore;
 import com.pcariou.view.custom.Cards;
 import com.pcariou.view.custom.FlatDatePickerField;
+import com.pcariou.view.custom.Links;
 import com.pcariou.view.main.AppStatus;
 import com.pcariou.view.main.MainFrame;
 import lombok.Getter;
@@ -25,7 +27,7 @@ import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.util.List;
 
-public class FormPanel extends JPanel {
+public class FormPanel extends JPanel implements Scrollable {
 
     private final MainFrame owner;
     private final ConfigStore configStore = new ConfigStore();
@@ -46,7 +48,7 @@ public class FormPanel extends JPanel {
     @Getter private String filenameOutput;
 
     public FormPanel(MainFrame owner) {
-        super(new MigLayout("fillx, insets 24 24 0 24", "[grow,center]", "[top][top]"));
+        super(new MigLayout("fillx, insets 24 24 24 24, hidemode 3", "[grow,center]", "[top][top]"));
         this.owner = owner;
 
         add(createInputCard(),   "w 760::, growx, wrap 16");
@@ -149,7 +151,7 @@ public class FormPanel extends JPanel {
         });
 
         PainVersion persisted = PainVersion.fromCode(configStore.readPainFormat());
-        combo.setSelectedItem(persisted != null ? persisted : PainVersion.PAIN_001_001_02);
+        combo.setSelectedItem(persisted != null ? persisted : PainVersion.PAIN_001_001_09);
         combo.addActionListener(e -> {
             PainVersion selected = (PainVersion) combo.getSelectedItem();
             if (selected != null) {
@@ -222,7 +224,7 @@ public class FormPanel extends JPanel {
         title.setFont(title.getFont().deriveFont(Font.BOLD, 14f));
 
         summaryFileName = new JLabel();
-        summaryFileName.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        summaryFileName.setIcon(SvgIcons.linkIcon(SvgIcons.FILE_CODE, "Component.accentColor"));
         summaryFileName.putClientProperty(FlatClientProperties.STYLE,
                 "foreground: $Component.accentColor;");
         summaryFileName.setToolTipText("Open the generated file");
@@ -242,9 +244,10 @@ public class FormPanel extends JPanel {
                         "foreground: $Component.accentColor;");
             }
         });
+        Links.asLink(summaryFileName);
 
-        JLabel openFolder = new JLabel("📂 Show in folder");
-        openFolder.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        JLabel openFolder = new JLabel("Show in folder");
+        openFolder.setIcon(SvgIcons.linkIcon(SvgIcons.FOLDER_OPEN, "Label.disabledForeground"));
         openFolder.putClientProperty(FlatClientProperties.STYLE,
                 "foreground: $Label.disabledForeground;");
         openFolder.addMouseListener(new MouseAdapter() {
@@ -253,15 +256,8 @@ public class FormPanel extends JPanel {
                     ExternalLinks.showInFolder(new File(filenameOutput), FormPanel.this);
                 }
             }
-            @Override public void mouseEntered(MouseEvent e) {
-                openFolder.putClientProperty(FlatClientProperties.STYLE,
-                        "foreground: $Component.accentColor;");
-            }
-            @Override public void mouseExited(MouseEvent e) {
-                openFolder.putClientProperty(FlatClientProperties.STYLE,
-                        "foreground: $Label.disabledForeground;");
-            }
         });
+        Links.asLink(openFolder);
 
         header.add(title,      "growx");
         header.add(openFolder, "gapright 12");
@@ -426,11 +422,11 @@ public class FormPanel extends JPanel {
         link.setFocusPainted(false);
         link.setOpaque(false);
         link.setMargin(new Insets(0, 0, 0, 0));
-        link.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         link.putClientProperty(FlatClientProperties.STYLE,
                 "foreground: $Component.accentColor; font: -1;");
         link.setToolTipText("Save a ready-to-edit CSV or Excel template");
         link.addActionListener(e -> showTemplateMenu(link));
+        Links.asLink(link);
         return link;
     }
 
@@ -523,6 +519,7 @@ public class FormPanel extends JPanel {
 
     public boolean hasInputFile()     { return filenameInput  != null && !filenameInput.isEmpty(); }
     public boolean hasExecutionDate() { return flatDatePickerField.getDate() != null; }
+    public boolean isSummaryVisible() { return summaryCard != null && summaryCard.isVisible(); }
     public LocalDate getExecutionDate() { return flatDatePickerField.getDate(); }
 
     /**
@@ -533,7 +530,7 @@ public class FormPanel extends JPanel {
         filenameOutput = outputFilePath;
         Path p = Paths.get(outputFilePath);
 
-        summaryFileName.setText("📄 " + p.getFileName());
+        summaryFileName.setText(p.getFileName().toString());
         summaryFileName.setToolTipText(outputFilePath);
 
         if (resultList != null && resultList.size() >= 3) {
@@ -546,5 +543,35 @@ public class FormPanel extends JPanel {
         revalidate();
         repaint();
         owner.ensureContentVisible();
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Scrollable: fill the viewport width (cards stretch horizontally) but never
+    // stretch vertically, so extra height stays as flexible filler below the form.
+    // ─────────────────────────────────────────────────────────────────────────
+
+    @Override
+    public Dimension getPreferredScrollableViewportSize() {
+        return getPreferredSize();
+    }
+
+    @Override
+    public int getScrollableUnitIncrement(Rectangle visibleRect, int orientation, int direction) {
+        return 16;
+    }
+
+    @Override
+    public int getScrollableBlockIncrement(Rectangle visibleRect, int orientation, int direction) {
+        return orientation == SwingConstants.VERTICAL ? visibleRect.height : visibleRect.width;
+    }
+
+    @Override
+    public boolean getScrollableTracksViewportWidth() {
+        return true;
+    }
+
+    @Override
+    public boolean getScrollableTracksViewportHeight() {
+        return false;
     }
 }

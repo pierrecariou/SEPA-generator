@@ -49,21 +49,21 @@ All processing is local: payment files are read, validated, and generated entire
 
 ## Screenshots
 
-### Light theme
+### Main window
 
-![SEPA Generator light theme](docs/assets/sepa-generator-light.png)
+![SEPA Generator main window with generation summary](docs/assets/screenshot-sepa-generator-summary-light.png)
 
 ### Dark theme
 
-![SEPA Generator dark theme](docs/assets/sepa-generator-dark.png)
+![SEPA Generator dark theme](docs/assets/screenshot-sepa-generator-home-dark.png)
 
 ### Settings
 
-![SEPA Generator settings](docs/assets/sepa-generator-settings.png)
+![SEPA Generator settings](docs/assets/screenshot-sepa-generator-settings-light.png)
 
-### Error handling
+### Validation and error handling
 
-![SEPA Generator error handling](docs/assets/sepa-generator-error.png)
+![SEPA Generator validation error](docs/assets/screenshot-sepa-generator-invalid-dark.png)
 
 ---
 

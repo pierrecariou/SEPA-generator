@@ -22,6 +22,14 @@ public class MainFrame extends JFrame {
 	private final ConfigStore configStore = new ConfigStore();
 	private FooterPanel footerPanel;
 
+	/** Stable default window size (within ~920–980 x 600–640) before screen clamping. */
+	private static final int DEFAULT_WIDTH  = 960;
+	private static final int DEFAULT_HEIGHT = 640;
+
+	/** Reasonable minimum: the cards stay fully visible; the scroll pane handles overflow. */
+	private static final int MIN_WIDTH  = 860;
+	private static final int MIN_HEIGHT = 520;
+
 	/** Smallest size the layout needs without the generation summary visible. */
 	private Dimension baseMinimumSize;
 
@@ -44,51 +52,61 @@ public class MainFrame extends JFrame {
 
         add(new HeaderPanel(this), BorderLayout.NORTH);
 
+        // Header and footer stay fixed; the main content scrolls so taller content
+        // (e.g. the generation summary or future report panels) stays accessible on
+        // smaller windows.
         formPanel = new FormPanel(this);
-        add(formPanel, BorderLayout.CENTER);
+        JScrollPane contentScroll = new JScrollPane(formPanel,
+                JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
+                JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        contentScroll.setBorder(BorderFactory.createEmptyBorder());
+        contentScroll.setViewportBorder(null);
+        contentScroll.setOpaque(false);
+        contentScroll.getViewport().setOpaque(false);
+        contentScroll.getVerticalScrollBar().setUnitIncrement(16);
+        add(contentScroll, BorderLayout.CENTER);
 
         footerPanel = new FooterPanel(this, formPanel, version);
         add(footerPanel, BorderLayout.SOUTH);
 
-        // 1) Compute natural layout size first
-        pack();
-
-        // Keep the smallest allowed size = what the layout truly needs
-        Dimension packed = getSize();
-        baseMinimumSize = packed;
-        setMinimumSize(packed);
-
-        // 2) Compute usable screen size (accounts for taskbar/dock)
-        GraphicsConfiguration gc = getGraphicsConfiguration();
-        if (gc == null) {
-            gc = GraphicsEnvironment.getLocalGraphicsEnvironment()
-                    .getDefaultScreenDevice()
-                    .getDefaultConfiguration();
-        }
-
-        Rectangle bounds = gc.getBounds();
-        Insets insets = Toolkit.getDefaultToolkit().getScreenInsets(gc);
-
-        int usableW = bounds.width  - insets.left - insets.right;
-        int usableH = bounds.height - insets.top  - insets.bottom;
-
-        // 3) Choose a "nice default" but clamp to screen & never smaller than packed
-        int baseW = 900;
-        int baseH = 540;
-
-        int maxW = (int) (usableW * 0.92);
-        int maxH = (int) (usableH * 0.88);
-
-        int targetW = Math.max(packed.width,  Math.min(baseW, maxW));
-        int targetH = Math.max(packed.height, Math.min(baseH, maxH));
-
-        setSize(targetW, targetH);
+        applyInitialSize();
 
         setResizable(true);
         setLocationRelativeTo(null);
         setVisible(true);
 
         refreshStatus();
+    }
+
+    /**
+     * Applies a stable, clamped initial window size. The default size stays in the
+     * 920–980 x 600–640 range (clamped to the usable screen) with a reasonable
+     * minimum; content overflow is handled by the scrollable content area rather
+     * than by forcing the window to grow.
+     */
+    private void applyInitialSize() {
+        // Realise the layout so child components report valid preferred sizes.
+        pack();
+
+        GraphicsConfiguration gc = getGraphicsConfiguration();
+        if (gc == null) {
+            gc = GraphicsEnvironment.getLocalGraphicsEnvironment()
+                    .getDefaultScreenDevice()
+                    .getDefaultConfiguration();
+        }
+        Rectangle bounds = gc.getBounds();
+        Insets insets = Toolkit.getDefaultToolkit().getScreenInsets(gc);
+        int usableW = bounds.width  - insets.left - insets.right;
+        int usableH = bounds.height - insets.top  - insets.bottom;
+
+        int targetW = Math.min(DEFAULT_WIDTH,  (int) (usableW * 0.95));
+        int targetH = Math.min(DEFAULT_HEIGHT, (int) (usableH * 0.92));
+
+        int minW = Math.min(MIN_WIDTH, targetW);
+        int minH = Math.min(MIN_HEIGHT, targetH);
+        baseMinimumSize = new Dimension(minW, minH);
+        setMinimumSize(baseMinimumSize);
+        setSize(targetW, targetH);
     }
 
 	public void showErrorMessage(String message) {
@@ -122,42 +140,16 @@ public class MainFrame extends JFrame {
 	}
 
 	/**
-	 * Ensures the window is large enough to fully display its current content
-	 * (for example when the generation summary card becomes visible).
+	 * Refreshes the layout when the visible content changes (for example when the
+	 * generation summary card becomes visible).
 	 *
-	 * The window only ever grows, never shrinks, to avoid jitter, and the
-	 * minimum size is raised so a later manual resize cannot clip the summary.
-	 * The result is clamped to the usable screen area.
+	 * The main content lives in a scroll pane, so taller content stays reachable
+	 * without resizing the window; the vertical scroll bar appears automatically
+	 * when needed.
 	 */
 	public void ensureContentVisible() {
-		validate();
-		Dimension pref = getPreferredSize();
-
-		GraphicsConfiguration gc = getGraphicsConfiguration();
-		if (gc == null) {
-			gc = GraphicsEnvironment.getLocalGraphicsEnvironment()
-					.getDefaultScreenDevice()
-					.getDefaultConfiguration();
-		}
-		Rectangle bounds = gc.getBounds();
-		Insets insets = Toolkit.getDefaultToolkit().getScreenInsets(gc);
-		int usableW = bounds.width  - insets.left - insets.right;
-		int usableH = bounds.height - insets.top  - insets.bottom;
-
-		int neededW = Math.min(pref.width,  usableW);
-		int neededH = Math.min(pref.height, usableH);
-
-		// Raise the minimum size so the content can never be clipped by resizing.
-		Dimension min = getMinimumSize();
-		setMinimumSize(new Dimension(
-				Math.max(min.width,  neededW),
-				Math.max(min.height, neededH)));
-
-		int newW = Math.max(getWidth(),  neededW);
-		int newH = Math.max(getHeight(), neededH);
-		if (newW != getWidth() || newH != getHeight()) {
-			setSize(newW, newH);
-		}
+		revalidate();
+		repaint();
 	}
 
 	/**
@@ -177,6 +169,13 @@ public class MainFrame extends JFrame {
 	 * Call this whenever a relevant input changes.
 	 */
 	public void refreshStatus() {
+		// While the generation summary is visible, keep the success status instead
+		// of reverting to "Ready", so the footer stays consistent with the result.
+		if (formPanel.isSummaryVisible()) {
+			footerPanel.setStatus(AppStatus.GENERATED);
+			return;
+		}
+
 		AppStatus debtorStatus = configStore.isDebtorConfigured() ? null : AppStatus.DEBTOR_INFO_REQUIRED;
 		AppStatus fileStatus   = formPanel.hasInputFile() ? null : AppStatus.SELECT_FILE;
 		AppStatus dateStatus   = formPanel.hasExecutionDate() ? null : AppStatus.SELECT_DATE;

@@ -4,6 +4,7 @@ import com.formdev.flatlaf.FlatClientProperties;
 import com.pcariou.view.AppEdition;
 import com.pcariou.view.AppLinks;
 import com.pcariou.view.ExternalLinks;
+import com.pcariou.view.custom.Links;
 import com.pcariou.view.main.center.FormPanel;
 import net.miginfocom.swing.MigLayout;
 
@@ -80,6 +81,7 @@ public class FooterPanel extends JPanel {
         b.putClientProperty(FlatClientProperties.STYLE,
                 "foreground: $Component.accentColor; font: -1;");
         b.addActionListener(e -> ExternalLinks.open(url, this));
+        Links.asLink(b);
         return b;
     }
 }
