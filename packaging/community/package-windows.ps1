@@ -31,7 +31,13 @@ param(
     [string]$Type = 'msi',
 
     # Skip the Maven build (use the jar already present in target/).
-    [switch]$SkipBuild
+    [switch]$SkipBuild,
+
+    # Architecture tag for the output file name (e.g. "x64"). This does NOT
+    # affect the build - jpackage produces an installer for the architecture of
+    # the Windows runner; the label only makes the release artifact name explicit
+    # (SEPA-Generator-Community-<ver>-windows-<arch>.<type>).
+    [string]$ArchLabel = 'x64'
 )
 
 # -----------------------------------------------------------------------------
@@ -64,7 +70,7 @@ $InputDir    = Join-Path $StageRoot 'input'
 $JpDestDir   = Join-Path $StageRoot 'out'
 
 # Final installer name placed in dist/.
-$FinalArtifact = "SEPA-Generator-Community-$AppVersion-windows.$Type"
+$FinalArtifact = "SEPA-Generator-Community-$AppVersion-windows-$ArchLabel.$Type"
 
 # -----------------------------------------------------------------------------
 # Helpers
@@ -237,7 +243,7 @@ Write-Step 'Collecting installer'
 if ($Type -eq 'app-image') {
     # jpackage produces a folder named after the app.
     $produced = Join-Path $JpDestDir $AppName
-    $finalPath = Join-Path $OutputDir "SEPA-Generator-Community-$AppVersion-windows-app-image"
+    $finalPath = Join-Path $OutputDir "SEPA-Generator-Community-$AppVersion-windows-$ArchLabel-app-image"
     if (Test-Path $finalPath) { Remove-Item $finalPath -Recurse -Force }
     Move-Item $produced $finalPath
     Write-Ok "App image: $finalPath"

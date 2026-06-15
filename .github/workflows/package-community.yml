@@ -11,7 +11,7 @@ on:
 
 jobs:
   windows:
-    name: Windows MSI
+    name: Windows MSI (x64)
     runs-on: windows-latest
     steps:
       - name: Checkout repository
@@ -41,13 +41,15 @@ jobs:
       - name: Upload MSI artifact
         uses: actions/upload-artifact@v4
         with:
-          name: sepa-generator-community-windows-msi
-          path: dist/SEPA-Generator-Community-*-windows.msi
+          name: sepa-generator-community-windows-x64-msi
+          path: dist/SEPA-Generator-Community-*-windows-x64.msi
           if-no-files-found: error
 
-  macos:
-    name: macOS DMG
-    runs-on: macos-latest
+  macos-arm64:
+    name: macOS DMG (arm64)
+    runs-on: macos-26
+    env:
+      ARCH_LABEL: arm64
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -59,12 +61,67 @@ jobs:
           java-version: '23'
           cache: maven
 
-      - name: Build macOS DMG
+      - name: Build macOS DMG (arm64)
         run: ./packaging/community/package-macos.sh
 
       - name: Upload DMG artifact
         uses: actions/upload-artifact@v4
         with:
-          name: sepa-generator-community-macos-dmg
-          path: dist/SEPA-Generator-Community-*-macos.dmg
+          name: sepa-generator-community-macos-arm64-dmg
+          path: dist/SEPA-Generator-Community-*-macos-arm64.dmg
+          if-no-files-found: error
+
+  macos-x64:
+    name: macOS DMG (x64)
+    runs-on: macos-26-intel
+    env:
+      ARCH_LABEL: x64
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 23 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '23'
+          cache: maven
+
+      - name: Build macOS DMG (x64)
+        run: ./packaging/community/package-macos.sh
+
+      - name: Upload DMG artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sepa-generator-community-macos-x64-dmg
+          path: dist/SEPA-Generator-Community-*-macos-x64.dmg
+          if-no-files-found: error
+
+  linux:
+    name: Linux DEB (x64)
+    runs-on: ubuntu-latest
+    env:
+      ARCH_LABEL: x64
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 23 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '23'
+          cache: maven
+
+      - name: Install Debian packaging tools (required by jpackage for .deb)
+        run: sudo apt-get update && sudo apt-get install -y fakeroot
+
+      - name: Build Linux DEB (x64)
+        run: ./packaging/community/package-linux.sh
+
+      - name: Upload DEB artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sepa-generator-community-linux-x64-deb
+          path: dist/SEPA-Generator-Community-*-linux-x64.deb
           if-no-files-found: error

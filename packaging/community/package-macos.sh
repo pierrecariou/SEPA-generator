@@ -55,7 +55,19 @@ INPUT_DIR="${STAGE_ROOT}/input"
 JP_DEST_DIR="${STAGE_ROOT}/out"
 
 # Final DMG name placed in dist/.
-FINAL_ARTIFACT="SEPA-Generator-Community-${APP_VERSION}-macos.dmg"
+#
+# ARCH_LABEL is an optional architecture tag for the output file name (e.g.
+# "arm64" or "x64"). It does NOT affect the build itself - jpackage always
+# produces a DMG for the architecture of the macOS runner this script runs on;
+# the label simply makes the artifact name explicit for release distribution.
+# When unset, the canonical name "SEPA-Generator-Community-<ver>-macos.dmg" is
+# used (preserving the original default behavior).
+ARCH_LABEL="${ARCH_LABEL:-}"
+if [ -n "${ARCH_LABEL}" ]; then
+  FINAL_ARTIFACT="SEPA-Generator-Community-${APP_VERSION}-macos-${ARCH_LABEL}.dmg"
+else
+  FINAL_ARTIFACT="SEPA-Generator-Community-${APP_VERSION}-macos.dmg"
+fi
 
 # -----------------------------------------------------------------------------
 # Code signing / notarization (DISABLED by default)

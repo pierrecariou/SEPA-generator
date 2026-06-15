@@ -6,14 +6,30 @@ Edition. They produce real, native installers using the official JDK
 tool. Maven remains the main build tool; `jpackage` only wraps the built
 application into a platform installer.
 
-| Platform | Script               | Output                                              |
-| -------- | -------------------- | --------------------------------------------------- |
-| Windows  | `package-windows.ps1`| `dist/SEPA-Generator-Community-1.3.0-windows.msi`   |
-| macOS    | `package-macos.sh`   | `dist/SEPA-Generator-Community-1.3.0-macos.dmg`     |
+| Platform | Script               | Output (CI release artifact)                              |
+| -------- | -------------------- | --------------------------------------------------------- |
+| Windows  | `package-windows.ps1`| `dist/SEPA-Generator-Community-1.3.0-windows-x64.msi`     |
+| macOS    | `package-macos.sh`   | `dist/SEPA-Generator-Community-1.3.0-macos-arm64.dmg`     |
+| macOS    | `package-macos.sh`   | `dist/SEPA-Generator-Community-1.3.0-macos-x64.dmg`       |
+| Linux    | `package-linux.sh`   | `dist/SEPA-Generator-Community-1.3.0-linux-x64.deb`       |
 
 > Each installer **bundles its own Java runtime** — end users do **not** need to
-> install Java separately. Linux packaging will be handled later, in its own
-> script.
+> install Java separately. The Linux `.deb` targets **Debian/Ubuntu-compatible**
+> distributions (anything using `dpkg`/`apt`).
+
+### Final v1.3.0 release artifacts
+
+The [`Package Community`](../../.github/workflows/package-community.yml) workflow
+(manual `workflow_dispatch`) builds four architecture-specific packages, each on
+a native runner, by calling the scripts in this folder (no jpackage/icon logic is
+duplicated in YAML):
+
+| Artifact                                            | Runner            | Arch label |
+| --------------------------------------------------- | ----------------- | ---------- |
+| `SEPA-Generator-Community-1.3.0-windows-x64.msi`    | `windows-latest`  | `x64`      |
+| `SEPA-Generator-Community-1.3.0-macos-arm64.dmg`    | `macos-26`        | `arm64`    |
+| `SEPA-Generator-Community-1.3.0-macos-x64.dmg`      | `macos-26-intel`  | `x64`      |
+| `SEPA-Generator-Community-1.3.0-linux-x64.deb`      | `ubuntu-latest`   | `x64`      |
 
 Shared configuration (app name, version, vendor, main JAR, icon, output dir,
 package name) is centralized near the top of each script.
@@ -71,9 +87,13 @@ powershell -ExecutionPolicy Bypass -File packaging\community\package-windows.ps1
 
 # Smoke-test packaging WITHOUT WiX: an unpacked app folder (no installer)
 .\packaging\community\package-windows.ps1 -Type app-image
+
+# Override the architecture tag in the artifact name (default: x64)
+.\packaging\community\package-windows.ps1 -ArchLabel x64
 ```
 
-The installer is written to `dist\SEPA-Generator-Community-1.3.0-windows.msi`.
+The installer is written to
+`dist\SEPA-Generator-Community-1.3.0-windows-x64.msi`.
 
 ### Test install / uninstall
 
@@ -83,7 +103,7 @@ The installer is written to `dist\SEPA-Generator-Community-1.3.0-windows.msi`.
 3. **Verify registration:** *Settings → Apps → Installed apps* should list
    *SEPA Generator Community 1.3.0* by *Pierre Cariou*.
 4. **Uninstall:** from *Installed apps*, or run
-   `msiexec /x dist\SEPA-Generator-Community-1.3.0-windows.msi`.
+   `msiexec /x dist\SEPA-Generator-Community-1.3.0-windows-x64.msi`.
 
 ---
 
@@ -129,11 +149,18 @@ To provide an icon, drop a 1024×1024 PNG at
 # Reuse an existing Maven build (skip 'mvn clean package')
 SKIP_BUILD=true ./packaging/community/package-macos.sh
 
+# Tag the architecture in the artifact name (used by CI for arm64 / x64).
+# Without ARCH_LABEL the canonical name ...-macos.dmg is produced.
+ARCH_LABEL=arm64 ./packaging/community/package-macos.sh
+
 # Local/test DMG that allows jpackage's default icon (no icon required)
 RELEASE=false ./packaging/community/package-macos.sh
 ```
 
-The DMG is written to `dist/SEPA-Generator-Community-1.3.0-macos.dmg`.
+By default the DMG is written to
+`dist/SEPA-Generator-Community-1.3.0-macos.dmg`. With `ARCH_LABEL` set, the name
+becomes `…-macos-arm64.dmg` or `…-macos-x64.dmg`. The CI workflow builds both:
+`arm64` on `macos-26` (Apple Silicon) and `x64` on `macos-26-intel`.
 
 ### Test the .app
 
@@ -162,6 +189,81 @@ this script yet.
 
 ---
 
+## Linux (DEB)
+
+Produces a Debian package (`.deb`) for **Debian/Ubuntu-compatible** distributions
+(anything using `dpkg`/`apt`). It installs a launchable application with a bundled
+Java runtime and registers a desktop/menu entry using the PNG icon. The package
+can be removed cleanly with the system package manager.
+
+### Prerequisites
+
+- A **Linux machine** (or a **Linux CI runner**). The `.deb` is built with
+  `jpackage --type deb`, which relies on native Debian tooling.
+- **JDK 17 or newer** with `jpackage` (this project builds with **JDK 23**). The
+  script finds it via `JAVA_HOME`, then `PATH`.
+- **Apache Maven** on `PATH` (`mvn`).
+- **Debian packaging tools**: `dpkg-deb` (from the `dpkg` package, preinstalled on
+  Debian/Ubuntu) and `fakeroot`. The script verifies both and stops with
+  instructions if either is missing. Install with:
+
+  ```bash
+  sudo apt-get update && sudo apt-get install -y fakeroot
+  ```
+
+### Icon
+
+Linux packaging uses a PNG icon, resolved in this order:
+
+1. **Prefer** `packaging/linux/sepa-generator.png`.
+2. **Otherwise** fall back to the shared 1024×1024 source PNG
+   `packaging/macos/sepa-generator-1024.png` (jpackage scales it for the desktop
+   entry).
+
+For **release** packaging (the default, `RELEASE=true`) the build **fails** if no
+PNG is found. Set `RELEASE=false` for a local build with jpackage's default icon.
+
+### How to run
+
+```bash
+# Build the app with Maven and create the .deb
+./packaging/community/package-linux.sh
+
+# Reuse an existing Maven build (skip 'mvn clean package')
+SKIP_BUILD=true ./packaging/community/package-linux.sh
+
+# Local/test .deb that allows jpackage's default icon (no icon required)
+RELEASE=false ./packaging/community/package-linux.sh
+```
+
+The package is written to
+`dist/SEPA-Generator-Community-1.3.0-linux-x64.deb`.
+
+### Package metadata
+
+| Setting           | Value                                |
+| ----------------- | ------------------------------------ |
+| Package name      | `sepa-generator-community`           |
+| Menu categories   | `Office;Finance`                     |
+| Debian section    | `utils`                              |
+| Maintainer        | `contact@sepa-xml-generator.com`     |
+
+### Test install / uninstall
+
+```bash
+# Install
+sudo apt-get install -y ./dist/SEPA-Generator-Community-1.3.0-linux-x64.deb
+#   - or -
+sudo dpkg -i ./dist/SEPA-Generator-Community-1.3.0-linux-x64.deb
+
+# Launch from the application menu (Office/Finance), then uninstall:
+sudo apt-get remove -y sepa-generator-community
+#   - or -
+sudo dpkg -r sepa-generator-community
+```
+
+---
+
 ## Troubleshooting
 
 - **`jpackage was not found`** — install a JDK 17+ and set `JAVA_HOME` or add
@@ -174,4 +276,12 @@ this script yet.
   `packaging/macos/sepa-generator.icns` or a 1024×1024
   `packaging/macos/sepa-generator-1024.png`, or run with `RELEASE=false` for a
   local build with the default icon.
+- **`Missing Debian packaging tool(s)`** (Linux) — install `fakeroot` (and ensure
+  `dpkg` is present): `sudo apt-get install -y fakeroot`. These are jpackage
+  prerequisites for `.deb`, not Maven dependencies.
+- **Linux script refuses to run on Windows/macOS** — `.deb` packages must be built
+  on Linux.
+- **`No Linux icon available for release packaging`** — add
+  `packaging/linux/sepa-generator.png` (or the shared
+  `packaging/macos/sepa-generator-1024.png`), or run with `RELEASE=false`.
 - **`Maven build failed`** — run `mvn clean package` directly to see the error.
