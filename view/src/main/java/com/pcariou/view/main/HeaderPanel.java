@@ -13,6 +13,9 @@ import java.awt.*;
 import java.net.URL;
 
 public class HeaderPanel extends JPanel {
+    /** Fixed square size for the small toolbar icon buttons so icons never shift on hover. */
+    private static final int ICON_BUTTON_SIZE = 30;
+
     private final JButton themeButton    = new JButton();
     private final JButton settingsButton = new JButton();
     private JLabel logoLabel;
@@ -52,10 +55,8 @@ public class HeaderPanel extends JPanel {
         rightPanel.setFloatable(false);
         rightPanel.setOpaque(false);
 
-        themeButton.putClientProperty(FlatClientProperties.BUTTON_TYPE, FlatClientProperties.BUTTON_TYPE_TOOLBAR_BUTTON);
-        settingsButton.putClientProperty(FlatClientProperties.BUTTON_TYPE, FlatClientProperties.BUTTON_TYPE_TOOLBAR_BUTTON);
-        themeButton.setFocusable(false);
-        settingsButton.setFocusable(false);
+        standardizeIconButton(themeButton);
+        standardizeIconButton(settingsButton);
         refreshThemeButton();
         settingsButton.setIcon(SvgIcons.toolbarIcon(SvgIcons.SETTINGS));
         settingsButton.setToolTipText("Settings");
@@ -105,9 +106,24 @@ public class HeaderPanel extends JPanel {
                         + " borderColor: $Component.accentColor;"
                         + " foreground: $Component.accentColor;"
                         + " hoverBorderColor: $Component.accentColor;"
-                        + " hoverBackground: lighten($Component.accentColor,40%,relative);");
+                        + " hoverBackground: fade($Component.accentColor,22%);"
+                        + " pressedBackground: fade($Component.accentColor,34%);");
         upgrade.addActionListener(e -> ExternalLinks.open(AppEdition.upgradeUrl(), this));
         return upgrade;
+    }
+
+    /**
+     * Standardizes a small action icon button: toolbar styling, a fixed square
+     * container so the icon stays centred (and never moves on hover) and a hand
+     * cursor for consistent clickable feedback.
+     */
+    private void standardizeIconButton(JButton button) {
+        button.putClientProperty(FlatClientProperties.BUTTON_TYPE, FlatClientProperties.BUTTON_TYPE_TOOLBAR_BUTTON);
+        button.setFocusable(false);
+        Dimension size = new Dimension(ICON_BUTTON_SIZE, ICON_BUTTON_SIZE);
+        button.setPreferredSize(size);
+        button.setMinimumSize(size);
+        button.setMaximumSize(size);
     }
 
     @Override

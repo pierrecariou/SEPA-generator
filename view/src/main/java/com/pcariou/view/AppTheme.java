@@ -74,7 +74,7 @@ public final class AppTheme {
 
         // ── Dark palette ───────────────────────────────────────────────────
         ColorUIResource darkAppBg    = c(31,  35,  40);
-        ColorUIResource darkCard     = c(40,  45,  52);
+        ColorUIResource darkCard     = c(44,  49,  57);
         ColorUIResource darkInputBg  = c(34,  39,  46);
         ColorUIResource darkBorder   = c(58,  65,  75);
         ColorUIResource darkText     = c(229, 231, 235);
@@ -158,6 +158,13 @@ public final class AppTheme {
         UIManager.put("Button.default.hoverBackground",   accent2);
         UIManager.put("Button.default.pressedBackground", accent2);
         UIManager.put("Button.default.focusedBackground", accent2);
+
+        // Toolbar (icon) buttons — make the hover/pressed feedback clearly
+        // visible against the header surface in both themes.
+        UIManager.put("Button.toolbar.hoverBackground",
+                dark ? c(63, 70, 82)  : c(232, 235, 240));
+        UIManager.put("Button.toolbar.pressedBackground",
+                dark ? c(78, 86, 100) : c(221, 225, 232));
 
         // ── Custom app keys ────────────────────────────────────────────────
         UIManager.put("App.cardBackground",  panelBg);
