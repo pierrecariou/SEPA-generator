@@ -159,7 +159,27 @@ public final class AppTheme {
         UIManager.put("Button.default.pressedBackground", accent2);
         UIManager.put("Button.default.focusedBackground", accent2);
 
-        // Toolbar (icon) buttons — make the hover/pressed feedback clearly
+        // ── Button borders & focus — eliminate FlatLaf's derived blue ──────
+        // FlatLaf derives these border/focus/hover keys from its built-in blue
+        // accent at LAF-install time. Setting Component.accentColor afterwards
+        // does NOT recompute them, so we override each one explicitly here.
+        // Secondary buttons: neutral border in normal/hover; subtle accent only
+        // for real keyboard focus.
+        UIManager.put("Button.borderColor",                border);
+        UIManager.put("Button.hoverBorderColor",           border);
+        UIManager.put("Button.focusedBorderColor",         accent);
+        // Default (primary) button is filled with accent: blend its border and
+        // hover border into the fill so there is NO permanent colored outline,
+        // and reserve a subtle accent2 border for real keyboard focus only.
+        UIManager.put("Button.default.borderColor",        accent);
+        UIManager.put("Button.default.hoverBorderColor",   accent2);
+        UIManager.put("Button.default.focusColor",         accent2);
+        UIManager.put("Button.default.focusedBorderColor", accent2);
+        // Help "?" button keys (also derived from blue)
+        UIManager.put("HelpButton.focusedBorderColor",     accent);
+        UIManager.put("HelpButton.hoverBorderColor",       border);
+
+        // Toolbar (icon) buttons— make the hover/pressed feedback clearly
         // visible against the header surface in both themes.
         UIManager.put("Button.toolbar.hoverBackground",
                 dark ? c(63, 70, 82)  : c(232, 235, 240));

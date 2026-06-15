@@ -106,7 +106,7 @@ public class FormPanel extends JPanel implements Scrollable {
         JLabel inputLabel = new JLabel("Input file");
         inputLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
 
-        JPanel inputColumn = new JPanel(new MigLayout("insets 0, fillx, gapy 2", "[grow,fill]", "[][]"));
+        JPanel inputColumn = new JPanel(new MigLayout("insets 0, fillx, gapy 2", "[grow]", "[][]"));
         inputColumn.setOpaque(false);
         inputColumn.add(inputField, "growx, wrap");
         inputColumn.add(createTemplateLink(), "alignx left, gapleft 0");
