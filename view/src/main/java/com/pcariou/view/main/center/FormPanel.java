@@ -235,6 +235,14 @@ public class FormPanel extends JPanel implements Scrollable {
                     catch (Exception ex) { showLocalError("Could not open the file:\n" + ex.getMessage()); }
                 }
             }
+            @Override public void mouseEntered(MouseEvent e) {
+                summaryFileName.putClientProperty(FlatClientProperties.STYLE,
+                        "foreground: $Component.accentColor; font: bold;");
+            }
+            @Override public void mouseExited(MouseEvent e) {
+                summaryFileName.putClientProperty(FlatClientProperties.STYLE,
+                        "foreground: $Component.accentColor;");
+            }
         });
         Links.asLink(summaryFileName);
 
