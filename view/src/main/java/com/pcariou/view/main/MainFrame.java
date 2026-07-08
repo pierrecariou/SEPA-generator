@@ -4,6 +4,7 @@ import com.pcariou.view.AppResources;
 import com.pcariou.view.IGenerator;
 import com.pcariou.view.config.ConfigStore;
 import com.pcariou.view.main.center.FormPanel;
+import com.pcariou.view.update.UpdateUi;
 
 import javax.swing.*;
 import java.awt.*;
@@ -21,6 +22,7 @@ public class MainFrame extends JFrame {
 	private final FormPanel formPanel;
 	private final ConfigStore configStore = new ConfigStore();
 	private FooterPanel footerPanel;
+	private UpdateUi updateUi;
 
 	/** Stable default window size (within ~920–980 x 600–640) before screen clamping. */
 	private static final int DEFAULT_WIDTH  = 960;
@@ -50,7 +52,8 @@ public class MainFrame extends JFrame {
             if (!icons.isEmpty()) setIconImages(icons);
         } catch (Exception ignored) {}
 
-        add(new HeaderPanel(this), BorderLayout.NORTH);
+        updateUi = new UpdateUi(this, version);
+        add(new HeaderPanel(this, updateUi), BorderLayout.NORTH);
 
         // Header and footer stay fixed; the main content scrolls so taller content
         // (e.g. the generation summary or future report panels) stays accessible on
@@ -76,6 +79,10 @@ public class MainFrame extends JFrame {
         setVisible(true);
 
         refreshStatus();
+
+        // Non-blocking, once-per-day background check. Runs after the window is
+        // shown; failures are silent and never interrupt normal use.
+        updateUi.startAutomaticCheck();
     }
 
     /**

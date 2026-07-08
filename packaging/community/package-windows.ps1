@@ -19,6 +19,29 @@
 
 .NOTES
     Community Edition only. macOS/Linux packaging is handled separately.
+
+    -------------------------------------------------------------------------
+    Manual MSI upgrade smoke test (run before publishing a new version)
+    -------------------------------------------------------------------------
+    Goal: confirm that installing a newer MSI upgrades in place (one app, kept
+    preferences) rather than installing a second copy.
+
+      a. Install the previous version MSI (e.g. v1.3.0) and launch the app.
+      b. Change some settings: switch theme, pick a default SEPA format, and
+         fill in debtor / initiating-party details, then close the app.
+      c. Bump $AppVersion in this script to the new version (e.g. 1.3.1),
+         rebuild the MSI, and install it WITHOUT uninstalling the old one.
+      d. Open "Apps & features": confirm only ONE "SEPA Generator Community"
+         entry remains (the new version), not two side-by-side installs.
+      e. Confirm the Start Menu and Desktop shortcuts still launch the app.
+      f. Confirm preferences are preserved: theme, default SEPA format and
+         debtor settings are still the values set in step (b). These live in
+         %USERPROFILE% (~/.sepa-generator-config.json and the Java Preferences
+         registry node), so the in-place upgrade must not reset them.
+      g. Confirm the title bar / About shows the new version (e.g. v1.3.1).
+
+    The in-place upgrade relies on a STABLE $UpgradeUuid and a stable $AppName
+    across releases (both defined below). Do not change them between versions.
 #>
 
 [CmdletBinding()]
