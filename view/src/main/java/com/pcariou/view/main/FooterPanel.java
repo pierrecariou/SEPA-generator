@@ -19,7 +19,7 @@ public class FooterPanel extends JPanel {
     public FooterPanel(MainFrame owner, FormPanel formPanel, String version) {
         super(new MigLayout(
                 "insets 3 16 3 16, fillx, hidemode 3",
-                "[grow][][right][][][][]",
+                "[grow][][right][][][]",
                 "[]"
         ));
 
@@ -35,10 +35,9 @@ public class FooterPanel extends JPanel {
         JLabel edition = new JLabel(AppEdition.LABEL + "  •  v" + version);
         edition.putClientProperty(FlatClientProperties.STYLE, "font: -1; foreground: $Label.disabledForeground;");
 
-        JButton website = linkButton("Website",           AppLinks.WEBSITE);
-        JButton privacy = linkButton("Privacy",           AppLinks.PRIVACY);
-        JButton contact = linkButton("Contact",           AppLinks.CONTACT);
-        JButton updates = linkButton("Check for updates",  AppLinks.CHECK_UPDATES);
+        JButton website = linkButton("Website", AppLinks.WEBSITE);
+        JButton privacy = linkButton("Privacy", AppLinks.PRIVACY);
+        JButton contact = linkButton("Contact", AppLinks.CONTACT);
 
         setOpaque(false);
         add(status,   "growx");
@@ -47,7 +46,6 @@ public class FooterPanel extends JPanel {
         add(website);
         add(privacy);
         add(contact);
-        add(updates);
 
         this.statusLabel = status;
         this.progressBar = progress;
@@ -72,6 +70,10 @@ public class FooterPanel extends JPanel {
     }
 
     private JButton linkButton(String text, String url) {
+        return actionLinkButton(text, () -> ExternalLinks.open(url, this));
+    }
+
+    private JButton actionLinkButton(String text, Runnable action) {
         JButton b = new JButton(text);
         b.setBorderPainted(false);
         b.setContentAreaFilled(false);
@@ -80,7 +82,7 @@ public class FooterPanel extends JPanel {
         b.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         b.putClientProperty(FlatClientProperties.STYLE,
                 "foreground: $Component.accentColor; font: -1;");
-        b.addActionListener(e -> ExternalLinks.open(url, this));
+        b.addActionListener(e -> action.run());
         Links.asLink(b);
         return b;
     }

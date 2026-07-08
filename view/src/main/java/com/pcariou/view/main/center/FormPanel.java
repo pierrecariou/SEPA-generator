@@ -180,6 +180,8 @@ public class FormPanel extends JPanel implements Scrollable {
         p.setOpaque(false);
 
         JButton reset = new JButton("Reset");
+        reset.setFocusable(false);
+        reset.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         reset.addActionListener(e -> resetAll());
 
         JButton generate = new JButton("Generate");

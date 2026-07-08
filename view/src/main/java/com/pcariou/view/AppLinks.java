@@ -11,6 +11,10 @@ public final class AppLinks {
     public static final String CHECK_UPDATES = "https://sepa-xml-generator.com/download";
     public static final String PRO           = "https://sepa-xml-generator.com/pro";
 
+    /** Static, machine-readable Community update manifest checked by the in-app updater. */
+    public static final String UPDATE_MANIFEST_COMMUNITY =
+            "https://sepa-xml-generator.com/releases/community/latest.json";
+
     private AppLinks() {
     }
 }

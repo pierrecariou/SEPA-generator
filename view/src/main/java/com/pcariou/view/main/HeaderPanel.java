@@ -7,6 +7,8 @@ import com.pcariou.view.AppTheme;
 import com.pcariou.view.ExternalLinks;
 import com.pcariou.view.SettingsFrame;
 import com.pcariou.view.SvgIcons;
+import com.pcariou.view.update.UpdateIndicator;
+import com.pcariou.view.update.UpdateUi;
 
 import javax.swing.*;
 import java.awt.*;
@@ -20,7 +22,7 @@ public class HeaderPanel extends JPanel {
     private final JButton settingsButton = new JButton();
     private JLabel logoLabel;
 
-    public HeaderPanel(MainFrame owner) {
+    public HeaderPanel(MainFrame owner, UpdateUi updateUi) {
         super(new BorderLayout());
         setOpaque(true);
         refreshColors();
@@ -72,6 +74,13 @@ public class HeaderPanel extends JPanel {
         });
 
         JButton upgradeButton = createUpgradeButton();
+
+        // Actionable product-level notification: hidden until an update is
+        // available, then shown just before "Upgrade to Pro". The trailing spacer
+        // is a zero-height (invisible) strut, so it costs nothing while hidden.
+        UpdateIndicator updateIndicator = updateUi.getIndicator();
+        rightPanel.add(updateIndicator);
+        rightPanel.addSeparator(new Dimension(8, 0));
 
         if (upgradeButton != null) {
             rightPanel.add(upgradeButton);
