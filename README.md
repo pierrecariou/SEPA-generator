@@ -100,6 +100,9 @@ All processing is local: payment files are read, validated, and generated entire
   * execution date
 * Open the generated file or output folder directly from the app.
 * Remember the last used input directory.
+* In-app update notification: checks the Community release manifest at most once
+  per day and shows a subtle "Update available" indicator in the header; clicking
+  it opens the download page in your browser. No automatic download or install.
 * Light and dark themes.
 * Command-line mode for simple batch usage.
 * Fully local Community Edition focused on credit transfers (not direct debits).
@@ -364,6 +367,11 @@ SEPA Generator runs locally on your machine.
 
 The Community Edition does not require uploading payment files to an external server.
 
+The only network request the app makes is a once-per-day check for a newer
+Community version (a small static JSON file on the official website). No payment
+data, personal data, or telemetry is ever sent. If the check fails or you are
+offline, it is silently ignored.
+
 You remain responsible for:
 
 * checking input data
@@ -405,6 +413,9 @@ mvn clean test
 ## License
 
 This project is licensed under the Apache License 2.0.
+
+Published by **Niryosys**. SEPA Generator Community Edition is free and open
+source; the source repository is maintained on GitHub under the author's account.
 
 See [LICENSE](LICENSE) for details.
 

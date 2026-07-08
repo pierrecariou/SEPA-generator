@@ -62,7 +62,7 @@ desktop.ini
 config.json
 DebtorInformations.json
 
-# Ad-hoc generated SEPA outputs (keep Payments-template-example.* as references)
+# Ad-hoc generated SEPA outputs
 /payments-*.xml
 /test.xml
 
@@ -86,3 +86,10 @@ view/design/
 # Environment variables
 .env
 .env.local
+
+# Local Copilot/agent instructions — kept locally, not published in the repo
+.github/copilot-instructions.md
+
+# Local maintainer/utility scripts — kept locally, not published in the repo
+/downloads_count.ps1
+/ico.ps1
