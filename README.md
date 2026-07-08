@@ -10,7 +10,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/license-Apache--2.0-blue" alt="License: Apache 2.0" />
-  <img src="https://img.shields.io/badge/release-v1.3.0-teal" alt="Release v1.3.0" />
+  <img src="https://img.shields.io/badge/release-v1.3.1-teal" alt="Release v1.3.1" />
   <img src="https://img.shields.io/badge/format-pain.001.001.02%20%7C%20.09-lightgrey" alt="pain.001.001.02 and pain.001.001.09" />
 </p>
 
@@ -120,14 +120,14 @@ To **build from source** you need:
 
 ## Downloads
 
-Pre-built desktop packages for the final Community **v1.3.0** release:
+Pre-built desktop packages for the final Community **v1.3.1** release:
 
 | Platform                   | Package                                            |
 | -------------------------- | ------------------------------------------------- |
-| Windows x64                | `SEPA-Generator-Community-1.3.0-windows-x64.msi`  |
-| macOS (Apple Silicon)      | `SEPA-Generator-Community-1.3.0-macos-arm64.dmg`  |
-| macOS (Intel)              | `SEPA-Generator-Community-1.3.0-macos-x64.dmg`    |
-| Linux x64 (Debian/Ubuntu)  | `SEPA-Generator-Community-1.3.0-linux-x64.deb`    |
+| Windows x64                | `SEPA-Generator-Community-1.3.1-windows-x64.msi`  |
+| macOS (Apple Silicon)      | `SEPA-Generator-Community-1.3.1-macos-arm64.dmg`  |
+| macOS (Intel)              | `SEPA-Generator-Community-1.3.1-macos-x64.dmg`    |
+| Linux x64 (Debian/Ubuntu)  | `SEPA-Generator-Community-1.3.1-linux-x64.deb`    |
 
 Each packaged download **bundles its own Java runtime**, so you do not need to
 install Java separately. Get the latest builds from the

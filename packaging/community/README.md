@@ -8,16 +8,16 @@ application into a platform installer.
 
 | Platform | Script               | Output (CI release artifact)                              |
 | -------- | -------------------- | --------------------------------------------------------- |
-| Windows  | `package-windows.ps1`| `dist/SEPA-Generator-Community-1.3.0-windows-x64.msi`     |
-| macOS    | `package-macos.sh`   | `dist/SEPA-Generator-Community-1.3.0-macos-arm64.dmg`     |
-| macOS    | `package-macos.sh`   | `dist/SEPA-Generator-Community-1.3.0-macos-x64.dmg`       |
-| Linux    | `package-linux.sh`   | `dist/SEPA-Generator-Community-1.3.0-linux-x64.deb`       |
+| Windows  | `package-windows.ps1`| `dist/SEPA-Generator-Community-1.3.1-windows-x64.msi`     |
+| macOS    | `package-macos.sh`   | `dist/SEPA-Generator-Community-1.3.1-macos-arm64.dmg`     |
+| macOS    | `package-macos.sh`   | `dist/SEPA-Generator-Community-1.3.1-macos-x64.dmg`       |
+| Linux    | `package-linux.sh`   | `dist/SEPA-Generator-Community-1.3.1-linux-x64.deb`       |
 
 > Each installer **bundles its own Java runtime** — end users do **not** need to
 > install Java separately. The Linux `.deb` targets **Debian/Ubuntu-compatible**
 > distributions (anything using `dpkg`/`apt`).
 
-### Final v1.3.0 release artifacts
+### Final v1.3.1 release artifacts
 
 The [`Package Community`](../../.github/workflows/package-community.yml) workflow
 (manual `workflow_dispatch`) builds four architecture-specific packages, each on
@@ -26,10 +26,10 @@ duplicated in YAML):
 
 | Artifact                                            | Runner            | Arch label |
 | --------------------------------------------------- | ----------------- | ---------- |
-| `SEPA-Generator-Community-1.3.0-windows-x64.msi`    | `windows-latest`  | `x64`      |
-| `SEPA-Generator-Community-1.3.0-macos-arm64.dmg`    | `macos-26`        | `arm64`    |
-| `SEPA-Generator-Community-1.3.0-macos-x64.dmg`      | `macos-26-intel`  | `x64`      |
-| `SEPA-Generator-Community-1.3.0-linux-x64.deb`      | `ubuntu-latest`   | `x64`      |
+| `SEPA-Generator-Community-1.3.1-windows-x64.msi`    | `windows-latest`  | `x64`      |
+| `SEPA-Generator-Community-1.3.1-macos-arm64.dmg`    | `macos-26`        | `arm64`    |
+| `SEPA-Generator-Community-1.3.1-macos-x64.dmg`      | `macos-26-intel`  | `x64`      |
+| `SEPA-Generator-Community-1.3.1-linux-x64.deb`      | `ubuntu-latest`   | `x64`      |
 
 Shared configuration (app name, version, vendor, main JAR, icon, output dir,
 package name) is centralized near the top of each script.
@@ -37,9 +37,9 @@ package name) is centralized near the top of each script.
 | Setting     | Value                             |
 | ----------- | --------------------------------- |
 | App name    | `SEPA Generator Community`        |
-| Version     | `1.3.0`                           |
-| Vendor      | `Pierre Cariou`                   |
-| Main JAR    | `generator-1.3.0.jar` (shaded)    |
+| Version     | `1.3.1`                           |
+| Vendor      | `Niryosys`                        |
+| Main JAR    | `generator-1.3.1.jar` (shaded)    |
 | Main class  | `com.pcariou.generator.Generator` |
 | Output dir  | `dist/`                           |
 
@@ -93,7 +93,7 @@ powershell -ExecutionPolicy Bypass -File packaging\community\package-windows.ps1
 ```
 
 The installer is written to
-`dist\SEPA-Generator-Community-1.3.0-windows-x64.msi`.
+`dist\SEPA-Generator-Community-1.3.1-windows-x64.msi`.
 
 ### Test install / uninstall
 
@@ -101,9 +101,9 @@ The installer is written to
 2. **Launch:** from the **Start Menu** group *SEPA Generator Community* or the
    **Desktop shortcut**. Confirm the correct icon appears.
 3. **Verify registration:** *Settings → Apps → Installed apps* should list
-   *SEPA Generator Community 1.3.0* by *Pierre Cariou*.
+   *SEPA Generator Community 1.3.1* by *Niryosys*.
 4. **Uninstall:** from *Installed apps*, or run
-   `msiexec /x dist\SEPA-Generator-Community-1.3.0-windows-x64.msi`.
+   `msiexec /x dist\SEPA-Generator-Community-1.3.1-windows-x64.msi`.
 
 ---
 
@@ -158,7 +158,7 @@ RELEASE=false ./packaging/community/package-macos.sh
 ```
 
 By default the DMG is written to
-`dist/SEPA-Generator-Community-1.3.0-macos.dmg`. With `ARCH_LABEL` set, the name
+`dist/SEPA-Generator-Community-1.3.1-macos.dmg`. With `ARCH_LABEL` set, the name
 becomes `…-macos-arm64.dmg` or `…-macos-x64.dmg`. The CI workflow builds both:
 `arm64` on `macos-26` (Apple Silicon) and `x64` on `macos-26-intel`.
 
@@ -237,7 +237,7 @@ RELEASE=false ./packaging/community/package-linux.sh
 ```
 
 The package is written to
-`dist/SEPA-Generator-Community-1.3.0-linux-x64.deb`.
+`dist/SEPA-Generator-Community-1.3.1-linux-x64.deb`.
 
 ### Package metadata
 
@@ -252,9 +252,9 @@ The package is written to
 
 ```bash
 # Install
-sudo apt-get install -y ./dist/SEPA-Generator-Community-1.3.0-linux-x64.deb
+sudo apt-get install -y ./dist/SEPA-Generator-Community-1.3.1-linux-x64.deb
 #   - or -
-sudo dpkg -i ./dist/SEPA-Generator-Community-1.3.0-linux-x64.deb
+sudo dpkg -i ./dist/SEPA-Generator-Community-1.3.1-linux-x64.deb
 
 # Launch from the application menu (Office/Finance), then uninstall:
 sudo apt-get remove -y sepa-generator-community

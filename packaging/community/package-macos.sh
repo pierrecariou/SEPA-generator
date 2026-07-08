@@ -18,8 +18,8 @@ set -euo pipefail
 # Configuration (centralized - edit here)
 # -----------------------------------------------------------------------------
 APP_NAME="SEPA Generator Community"
-APP_VERSION="1.3.0"
-VENDOR="Pierre Cariou"
+APP_VERSION="1.3.1"
+VENDOR="Niryosys"
 DESCRIPTION="Generate SEPA payment XML files from spreadsheet inputs."
 COPYRIGHT="Copyright (c) $(date +%Y) ${VENDOR}"
 

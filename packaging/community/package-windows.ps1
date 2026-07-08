@@ -67,8 +67,8 @@ param(
 # Configuration (centralized - edit here)
 # -----------------------------------------------------------------------------
 $AppName     = 'SEPA Generator Community'
-$AppVersion  = '1.3.0'
-$Vendor      = 'Pierre Cariou'
+$AppVersion  = '1.3.1'
+$Vendor      = 'Niryosys'
 $Description = 'Generate SEPA payment XML files from spreadsheet inputs.'
 $Copyright   = "Copyright (c) $(Get-Date -Format yyyy) $Vendor"
 
