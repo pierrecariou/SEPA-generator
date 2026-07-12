@@ -2,7 +2,6 @@ package com.pcariou.service;
 
 import com.pcariou.model.*;
 import java.io.FileReader;
-import java.nio.file.Paths;
 
 import com.opencsv.bean.*;
 
@@ -42,14 +41,30 @@ public class CsvToBeans
 			CsvToBeanBuilder.withThrowExceptions(true);
 			List<CreditTransferTransactionInformation> creditTransferTransactionInformations = CsvToBeanBuilder.build().parse();
 			for (CreditTransferTransactionInformation creditTransferTransactionInformation : creditTransferTransactionInformations) {
+				normalizeRemittanceInformation(creditTransferTransactionInformation);
 				if (!validate(creditTransferTransactionInformation)) {
 					throw new Exception("Invalid input file\n" + this.errors.toString());
 				}
 			}
-			return createDocument(creditTransferTransactionInformations, Paths.get(inputFile).getFileName().toString());
+			return createDocument(creditTransferTransactionInformations);
 	}
 
-	private Document createDocument(List<CreditTransferTransactionInformation> creditTransferTransactionInformations, String inputFile) throws Exception {
+	/**
+	 * Drops the RmtInf element entirely when the optional "information" column
+	 * is blank: the ISO 20022 schemas require Ustrd, when present, to be a
+	 * non-empty Max140Text, so an empty {@code <Ustrd></Ustrd>} would make the
+	 * generated file schema-invalid.
+	 */
+	private static void normalizeRemittanceInformation(CreditTransferTransactionInformation transaction)
+	{
+		RemittanceInformation remittance = transaction.getRemittanceInformation();
+		if (remittance != null
+				&& (remittance.getUnstructured() == null || remittance.getUnstructured().trim().isEmpty())) {
+			transaction.setRemittanceInformation(null);
+		}
+	}
+
+	private Document createDocument(List<CreditTransferTransactionInformation> creditTransferTransactionInformations) throws Exception {
 		DebtorInformations debtorInformations = new DebtorInformations(executionDate);
 		if (!validate(debtorInformations)) {
 			throw new Exception("Validation failed: Please check and modify your JSON file\n" + this.errors.toString());
@@ -75,7 +90,11 @@ public class CsvToBeans
 		PartyIdentification partyIdentification = new PartyIdentification(organisationIdentification);
 		InitiatingParty initiatingParty = new InitiatingParty(debtorInformations.initiatingPartyName, partyIdentification);
 
-		GroupHeader groupHeader = new GroupHeader(inputFile, creationDateTime, numberOfTransactions, controlSum, initiatingParty);
+		// Unique MsgId/PmtInfId: filenames are neither unique nor guaranteed
+		// to fit the ISO 20022 Max35Text limit (schema-invalid otherwise).
+		String messageId = MessageIdGenerator.generate("CT");
+
+		GroupHeader groupHeader = new GroupHeader(messageId, creationDateTime, numberOfTransactions, controlSum, initiatingParty);
 
 		// Payment Information
 		PaymentTypeInformation paymentTypeInformation = new PaymentTypeInformation(new ServiceLevel());
@@ -83,7 +102,7 @@ public class CsvToBeans
 		debtor.setPostalAddress(debtorInformations.address);
 		DebtorAccount debtorAccount = new DebtorAccount( new AccountIdentification(debtorInformations.iban));
 		DebtorAgent debtorAgent = new DebtorAgent(new FinancialInstitutionIdentification(debtorInformations.bic));
-		PaymentInformation paymentInformation = new PaymentInformation(inputFile + "-1", paymentTypeInformation, debtorInformations.requestedExecutionDate, debtor, debtorAccount, debtorAgent, creditTransferTransactionInformations);
+		PaymentInformation paymentInformation = new PaymentInformation(messageId + "-1", paymentTypeInformation, debtorInformations.requestedExecutionDate, debtor, debtorAccount, debtorAgent, creditTransferTransactionInformations);
 
 		// Document
 		ArrayList<PaymentInformation> paymentInformations = new ArrayList<>();
