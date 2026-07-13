@@ -4,6 +4,7 @@ import com.formdev.flatlaf.FlatClientProperties;
 import com.pcariou.view.AppEdition;
 import com.pcariou.view.AppLinks;
 import com.pcariou.view.ExternalLinks;
+import com.pcariou.view.SvgIcons;
 import com.pcariou.view.custom.Links;
 import com.pcariou.view.main.center.FormPanel;
 import net.miginfocom.swing.MigLayout;
@@ -61,7 +62,16 @@ public class FooterPanel extends JPanel {
     }
 
     public void setStatus(AppStatus status) {
-        statusLabel.setText("● " + status.label);
+        if (status.iconName != null) {
+            // Terminal outcome: semantic icon carries the colour, text stays neutral.
+            statusLabel.setIcon(SvgIcons.linkIcon(status.iconName, status.iconColorKey));
+            statusLabel.setIconTextGap(6);
+        } else {
+            // Neutral / instructional / in-progress: plain neutral text, no icon
+            // and no generic status dot.
+            statusLabel.setIcon(null);
+        }
+        statusLabel.setText(status.label);
         statusLabel.putClientProperty(FlatClientProperties.STYLE,
                 "font: -1; foreground: " + status.styleColor + ";");
         progressBar.setVisible(status.showProgress);

@@ -1,7 +1,8 @@
 package com.pcariou.view.update;
 
+import com.pcariou.view.AppDialogs;
+
 import javax.swing.JFrame;
-import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 
 /**
@@ -87,16 +88,16 @@ public final class UpdateUi {
                 break;
             case UP_TO_DATE:
                 indicator.clear();
-                JOptionPane.showMessageDialog(owner,
+                AppDialogs.show(owner, "You are up to date",
                         "You are running the latest version (v" + currentVersion + ").",
-                        "You are up to date", JOptionPane.INFORMATION_MESSAGE);
+                        AppDialogs.Kind.INFO);
                 break;
             case FAILED:
             default:
-                JOptionPane.showMessageDialog(owner,
+                AppDialogs.show(owner, "Update check failed",
                         "Unable to check for updates right now.\n"
                                 + "Please check your internet connection and try again later.",
-                        "Update check failed", JOptionPane.WARNING_MESSAGE);
+                        AppDialogs.Kind.WARNING);
                 break;
         }
     }

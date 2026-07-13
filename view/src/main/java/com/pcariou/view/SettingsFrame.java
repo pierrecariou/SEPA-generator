@@ -214,10 +214,10 @@ public class SettingsFrame extends JDialog {
         configToSave.initiatingParty = updatedSettings.initiatingParty;
 
         if (!configStore.write(configToSave)) {
-            JOptionPane.showMessageDialog(this,
+            AppDialogs.show(this, "Save failed",
                     "Could not save settings.\nPlease check that this file is writable:\n"
                             + configStore.file().getAbsolutePath(),
-                    "Save failed", JOptionPane.ERROR_MESSAGE);
+                    AppDialogs.Kind.ERROR);
             return;
         }
 

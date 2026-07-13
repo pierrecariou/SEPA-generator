@@ -2,6 +2,7 @@ package com.pcariou.view.main.center;
 
 import com.formdev.flatlaf.FlatClientProperties;
 import com.pcariou.model.PainVersion;
+import com.pcariou.view.AppDialogs;
 import com.pcariou.view.ExternalLinks;
 import com.pcariou.view.InputTemplates;
 import com.pcariou.view.SvgIcons;
@@ -333,9 +334,9 @@ public class FormPanel extends JPanel implements Scrollable {
 
         File selected = fc.getSelectedFile();
         if (selected.exists()) {
-            int choice = JOptionPane.showConfirmDialog(parentWindow(),
+            int choice = AppDialogs.confirm(parentWindow(), "Replace file?",
                     "\"" + selected.getName() + "\" already exists.\nDo you want to replace it?",
-                    "Replace file?", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+                    AppDialogs.Kind.WARNING, JOptionPane.YES_NO_OPTION);
             if (choice != JOptionPane.YES_OPTION)
                 return;
         }
@@ -451,9 +452,9 @@ public class FormPanel extends JPanel implements Scrollable {
 
         File target = fc.getSelectedFile();
         if (target.exists()) {
-            int overwrite = JOptionPane.showConfirmDialog(parentWindow(),
+            int overwrite = AppDialogs.confirm(parentWindow(), "Replace file?",
                     "\"" + target.getName() + "\" already exists. Replace it?",
-                    "Replace file?", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+                    AppDialogs.Kind.WARNING, JOptionPane.YES_NO_OPTION);
             if (overwrite != JOptionPane.YES_OPTION) {
                 return;
             }
@@ -470,10 +471,10 @@ public class FormPanel extends JPanel implements Scrollable {
             configStore.saveLastInputDirectory(target.getParentFile());
         }
 
-        int use = JOptionPane.showConfirmDialog(parentWindow(),
+        int use = AppDialogs.confirm(parentWindow(), "Template saved",
                 "Template saved to:\n" + target.getAbsolutePath()
                         + "\n\nUse it as the current input file?",
-                "Template saved", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+                AppDialogs.Kind.SUCCESS, JOptionPane.YES_NO_OPTION);
         if (use == JOptionPane.YES_OPTION) {
             useInputFile(target);
         }
@@ -489,8 +490,7 @@ public class FormPanel extends JPanel implements Scrollable {
 
     /** Error dialog for minor, non-generation failures (does not change the footer status). */
     private void showLocalError(String message) {
-        JOptionPane.showMessageDialog(parentWindow(), message,
-                "SEPA Generator", JOptionPane.WARNING_MESSAGE);
+        AppDialogs.show(parentWindow(), "SEPA Generator", message, AppDialogs.Kind.WARNING);
     }
 
     private JTextField createFileField(String placeholder) {

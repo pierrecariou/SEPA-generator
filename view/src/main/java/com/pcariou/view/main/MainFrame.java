@@ -1,5 +1,6 @@
 package com.pcariou.view.main;
 
+import com.pcariou.view.AppDialogs;
 import com.pcariou.view.AppResources;
 import com.pcariou.view.IGenerator;
 import com.pcariou.view.config.ConfigStore;
@@ -119,9 +120,9 @@ public class MainFrame extends JFrame {
 	public void showErrorMessage(String message) {
 		SwingUtilities.invokeLater(() -> {
 			setStatus(AppStatus.GENERATION_FAILED);
-			JOptionPane.showMessageDialog(this,
+			AppDialogs.show(this, "Generation failed",
 					"The SEPA file could not be generated:\n\n" + message,
-					"Generation failed", JOptionPane.ERROR_MESSAGE);
+					AppDialogs.Kind.ERROR);
 		});
 	}
 
