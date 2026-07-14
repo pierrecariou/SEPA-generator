@@ -69,6 +69,25 @@ public final class AppDialogs {
     }
 
     /**
+     * Shows a standardized single-line text prompt with the semantic icon for
+     * {@code kind} and returns the entered text, or {@code null} when cancelled.
+     * {@code initialValue} pre-fills the field (e.g. the current name on rename).
+     */
+    public static String prompt(Component parent, String title, Object message, Kind kind,
+            String initialValue) {
+        JOptionPane pane = new JOptionPane(message, kind.messageType, JOptionPane.OK_CANCEL_OPTION,
+                kind.icon());
+        pane.setWantsInput(true);
+        pane.setInitialSelectionValue(initialValue);
+        pane.createDialog(parent, title).setVisible(true);
+        Object selected = pane.getInputValue();
+        if (selected == JOptionPane.UNINITIALIZED_VALUE || selected == null) {
+            return null;
+        }
+        return selected.toString();
+    }
+
+    /**
      * Shows a standardized option dialog with the semantic icon for {@code kind}
      * and returns the selected option index (see
      * {@link JOptionPane#showOptionDialog}). Use for flows that need custom

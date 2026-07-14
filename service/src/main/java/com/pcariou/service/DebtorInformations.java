@@ -6,6 +6,7 @@ import org.json.simple.*;
 import java.time.LocalDate;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.time.format.DateTimeFormatter;
 
 import javax.validation.constraints.*;
@@ -62,9 +63,14 @@ public class DebtorInformations {
 
 	public DebtorInformations(LocalDate requestedExecutionDate) throws IOException, ParseException, FileNotFoundException, IllegalArgumentException {
 		JSONParser parser = new JSONParser();
-		Object obj = parser.parse(new FileReader(resolveConfigFile()));
-
-		JSONObject jsonObject = (JSONObject) obj;
+		JSONObject jsonObject;
+		// UTF-8 to match ConfigStore's explicit encoding, and try-with-resources
+		// so the config file handle is always released deterministically (a
+		// lingering handle can block ConfigStore's atomic replace on Windows).
+		try (Reader reader = new InputStreamReader(
+				new FileInputStream(resolveConfigFile()), StandardCharsets.UTF_8)) {
+			jsonObject = (JSONObject) parser.parse(reader);
+		}
 
 		JSONObject debtor = (JSONObject) jsonObject.get("debtor");
 		this.name = (String) debtor.get("name");

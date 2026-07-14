@@ -35,7 +35,16 @@ public class CsvToBeans
 	}
 
 	public Document read(String inputFile) throws Exception {
-			CsvToBeanBuilder<CreditTransferTransactionInformation> CsvToBeanBuilder = new CsvToBeanBuilder<CreditTransferTransactionInformation>(new FileReader(inputFile));
+			return read(new FileReader(inputFile));
+	}
+
+	/**
+	 * Reads the transactions from an already-opened CSV stream. Extension point
+	 * for callers that prepare their own {@link java.io.Reader}; behaviour is
+	 * identical to {@link #read(String)}.
+	 */
+	public Document read(java.io.Reader reader) throws Exception {
+			CsvToBeanBuilder<CreditTransferTransactionInformation> CsvToBeanBuilder = new CsvToBeanBuilder<CreditTransferTransactionInformation>(reader);
 			CsvToBeanBuilder.withType(CreditTransferTransactionInformation.class);
 			CsvToBeanBuilder.withIgnoreLeadingWhiteSpace(true);
 			CsvToBeanBuilder.withThrowExceptions(true);
