@@ -121,6 +121,9 @@ public class MainFrame extends JFrame {
 	public void showErrorMessage(String message) {
 		SwingUtilities.invokeLater(() -> {
 			setStatus(AppStatus.GENERATION_FAILED);
+			// A prior successful result must not remain looking current after a
+			// failed attempt; the failure dialog owns all failure detail.
+			formPanel.markResultStaleAfterFailure();
 			GenerationFailureDialog.show(this, message);
 		});
 	}

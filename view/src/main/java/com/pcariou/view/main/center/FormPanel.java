@@ -50,10 +50,25 @@ public class FormPanel extends JPanel implements Scrollable {
 
     // Summary card fields
     private JPanel summaryCard;
+    private JLabel summaryTitle;
     private JLabel summaryFileName;
     private JLabel summaryTxCount;
     private JLabel summaryAmount;
     private JLabel summaryDate;
+
+    /**
+     * True once the result surface has appeared during this session. After that
+     * its layout space stays reserved: regeneration updates it in place instead
+     * of collapsing and re-expanding the card. Reset (and selecting a new input)
+     * clears it back to false so the surface fully collapses again.
+     */
+    private boolean summaryShownOnce;
+
+    // Result-surface outcome headings (semantic icon carries the state colour).
+    static final String RESULT_TITLE_SUCCESS = "File generated successfully";
+    static final String RESULT_TITLE_GENERATING = "Generating\u2026";
+    static final String RESULT_TITLE_STALE_FAILED = "No file generated \u2014 last attempt failed";
+
 
     @Getter private String filenameInput;
     @Getter private String filenameOutput;
@@ -235,8 +250,14 @@ public class FormPanel extends JPanel implements Scrollable {
         JPanel header = new JPanel(new MigLayout("insets 0", "[grow][][]", "[]"));
         header.setOpaque(false);
 
-        JLabel title = new JLabel("Generation summary");
+        JLabel title = new JLabel(RESULT_TITLE_SUCCESS);
         title.setFont(title.getFont().deriveFont(Font.BOLD, 14f));
+        title.setIconTextGap(8);
+        // Focusable so keyboard/assistive users land on the outcome after a run;
+        // it carries an accessible name describing the result surface.
+        title.setFocusable(true);
+        title.getAccessibleContext().setAccessibleName("Generation result");
+        this.summaryTitle = title;
 
         summaryFileName = new JLabel();
         summaryFileName.setIcon(SvgIcons.linkIcon(SvgIcons.FILE_CODE, "Component.accentColor"));
@@ -357,7 +378,14 @@ public class FormPanel extends JPanel implements Scrollable {
 
         owner.setStatus(AppStatus.GENERATING);
         generateButton.setEnabled(false);
-        summaryCard.setVisible(false);
+        // Reserved-space: once the result surface has been shown, keep it and move
+        // it to the in-progress state instead of collapsing it; on the first run
+        // it stays hidden so there is no empty placeholder before any generation.
+        if (summaryShownOnce) {
+            markResultGenerating();
+        } else {
+            summaryCard.setVisible(false);
+        }
 
         final String inputPath  = filenameInput;
         final String outputPath = filenameOutput;
@@ -384,6 +412,7 @@ public class FormPanel extends JPanel implements Scrollable {
         flatDatePickerField.setDate(LocalDate.now().plusDays(1));
 
         summaryCard.setVisible(false);
+        summaryShownOnce = false;
         generateButton.setEnabled(false);
 
         owner.refreshStatus();
@@ -412,7 +441,11 @@ public class FormPanel extends JPanel implements Scrollable {
             configStore.saveLastInputDirectory(f.getParentFile());
         }
 
+        // Selecting a new input is a deliberate context change, not a
+        // regeneration: collapse the result surface so the next run is treated
+        // as a first result again (reserved-space applies to consecutive runs).
         summaryCard.setVisible(false);
+        summaryShownOnce = false;
         updateGenerateButtonState();
         owner.refreshStatus();
     }
@@ -545,10 +578,79 @@ public class FormPanel extends JPanel implements Scrollable {
             summaryDate.setText(resultList.get(2));
         }
 
+        // Clean success: the result surface has no warning states in Community.
+        setOutcomeTitle(RESULT_TITLE_SUCCESS, SvgIcons.CIRCLE_CHECK, "App.successColor");
+        summaryShownOnce = true;
         summaryCard.setVisible(true);
         revalidate();
         repaint();
         owner.ensureContentVisible();
+        revealAndFocusSummary();
+    }
+
+    /**
+     * Called from MainFrame when a generation attempt fails. If a previous
+     * successful result is on screen, mark the reserved surface as carrying no
+     * current result (blanked metrics, neutral heading) so it can never be
+     * mistaken for the outcome of the failed attempt. All failure detail is
+     * owned by the failure dialog MainFrame shows.
+     */
+    public void markResultStaleAfterFailure() {
+        if (!summaryShownOnce) {
+            return;
+        }
+        setOutcomeTitle(RESULT_TITLE_STALE_FAILED, SvgIcons.CIRCLE_INFO, "Label.disabledForeground");
+        blankSummaryMetrics();
+        revalidate();
+        repaint();
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Result-surface state (G2): stable space, in-place updates, stale clarity
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Sets the outcome heading text and its semantic icon (the icon carries the
+     * state colour; the text stays in the default foreground so it reads calmly).
+     */
+    private void setOutcomeTitle(String text, String iconName, String colorKey) {
+        summaryTitle.setText(text);
+        summaryTitle.setIcon(SvgIcons.linkIcon(iconName, colorKey));
+    }
+
+    /** Clears the metric values so a stale result never reads as current. */
+    private void blankSummaryMetrics() {
+        summaryTxCount.setText("");
+        summaryAmount.setText("");
+        summaryDate.setText("");
+    }
+
+    /**
+     * Regeneration: keep the reserved result surface visible but clearly
+     * in-progress — a neutral "Generating…" heading and blanked metrics — so the
+     * previous result can never be mistaken for the new one.
+     */
+    private void markResultGenerating() {
+        setOutcomeTitle(RESULT_TITLE_GENERATING, SvgIcons.CIRCLE_INFO, "Label.disabledForeground");
+        blankSummaryMetrics();
+        revalidate();
+        repaint();
+    }
+
+    /**
+     * After layout settles, scroll the result surface fully into the viewport and
+     * move keyboard focus to its outcome title. Deferred with invokeLater so the
+     * pending revalidate/layout has completed before we measure and scroll.
+     */
+    private void revealAndFocusSummary() {
+        SwingUtilities.invokeLater(() -> {
+            if (summaryCard == null || !summaryCard.isVisible()) {
+                return;
+            }
+            summaryCard.scrollRectToVisible(
+                    new Rectangle(0, 0, summaryCard.getWidth(), summaryCard.getHeight()));
+            summaryTitle.requestFocusInWindow();
+        });
     }
 
     // ─────────────────────────────────────────────────────────────────────────
