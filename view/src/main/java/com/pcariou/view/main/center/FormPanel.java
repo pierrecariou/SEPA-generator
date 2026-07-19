@@ -10,6 +10,7 @@ import com.pcariou.view.config.ConfigStore;
 import com.pcariou.view.custom.Cards;
 import com.pcariou.view.custom.FlatDatePickerField;
 import com.pcariou.view.custom.Links;
+import com.pcariou.view.custom.SectionHeader;
 import com.pcariou.view.main.AppStatus;
 import com.pcariou.view.main.MainFrame;
 import lombok.Getter;
@@ -32,6 +33,15 @@ public class FormPanel extends JPanel implements Scrollable {
 
     private final MainFrame owner;
     private final ConfigStore configStore = new ConfigStore();
+
+    // Form section headers (visual grouping of the input card, in display order).
+    static final String SECTION_INPUT = "Input";
+    static final String SECTION_OUTPUT = "Output";
+
+    /** The form's section headers, in the order they appear on the card. */
+    static java.util.List<String> formSectionOrder() {
+        return java.util.Arrays.asList(SECTION_INPUT, SECTION_OUTPUT);
+    }
 
     private JTextField inputField;
     private FlatDatePickerField flatDatePickerField;
@@ -112,6 +122,7 @@ public class FormPanel extends JPanel implements Scrollable {
         inputColumn.add(inputField, "growx, wrap");
         inputColumn.add(createTemplateLink(), "alignx left, gapleft 0");
 
+        grid.add(new SectionHeader(SECTION_INPUT), "span 2, growx, wrap");
         grid.add(inputLabel, "alignx right, aligny top, gaptop 6");
         grid.add(inputColumn, "growx, wrap");
 
@@ -125,6 +136,7 @@ public class FormPanel extends JPanel implements Scrollable {
 
         JLabel dateLabel = new JLabel("Execution date");
         dateLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
+        grid.add(new SectionHeader(SECTION_OUTPUT), "span 2, growx, gaptop 6, wrap");
         grid.add(dateLabel, "alignx right");
         grid.add(flatDatePickerField, "growx, wrap");
 
