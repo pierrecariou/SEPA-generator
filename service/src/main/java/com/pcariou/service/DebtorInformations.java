@@ -19,6 +19,7 @@ import com.pcariou.model.ValidPostalAddress;
 
 public class DebtorInformations {
 	@NotBlank(message = "The debtor's name is mandatory")
+	@Size(max = 70, message = "The debtor's name must be at most 70 characters")
 	public String name;
 
 	@NotBlank(message = "The IBAN for the debtor is mandatory")
@@ -30,6 +31,7 @@ public class DebtorInformations {
 	public String bic;
 
 	@NotBlank(message = "The initiating party name is mandatory")
+	@Size(max = 70, message = "The initiating party name must be at most 70 characters")
 	public String initiatingPartyName;
 
 	@NotBlank(message = "The initiating party SIRET is mandatory")
@@ -74,8 +76,8 @@ public class DebtorInformations {
 
 		JSONObject debtor = (JSONObject) jsonObject.get("debtor");
 		this.name = (String) debtor.get("name");
-		this.iban = (String) debtor.get("iban");
-		this.bic = (String) debtor.get("bic");
+		this.iban = com.pcariou.model.SepaFieldNormalizer.iban((String) debtor.get("iban"));
+		this.bic = com.pcariou.model.SepaFieldNormalizer.bic((String) debtor.get("bic"));
 		this.address = readAddress((JSONObject) debtor.get("address"));
 
 		JSONObject initiatingParty = (JSONObject) jsonObject.get("initiatingParty");

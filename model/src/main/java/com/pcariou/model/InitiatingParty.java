@@ -13,6 +13,7 @@ public class InitiatingParty
 {
 	@XmlElement(name = "Nm")
 	@NotBlank(message = "Name for InitiatingParty is mandatory")
+	@Size(max = 70, message = "Name for InitiatingParty must be at most 70 characters")
 	private String name;
 
 	@XmlElement(name = "Id")

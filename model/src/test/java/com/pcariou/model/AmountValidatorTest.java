@@ -46,7 +46,19 @@ public class AmountValidatorTest {
         assertTrue(isValid("0.01"));
     }
 
+    @Test
+    public void maximumPermittedAmountIsValid() {
+        assertTrue("999999999.99 is the EPC ceiling and must be accepted",
+                isValid("999999999.99"));
+    }
+
     // ── Invalid amounts ──────────────────────────────────────────────────────
+
+    @Test
+    public void amountAboveTheEpcCeilingIsRejected() {
+        assertFalse("1000000000.00 exceeds the EPC ceiling", isValid("1000000000.00"));
+        assertFalse("Just over the ceiling must be rejected", isValid("1000000000"));
+    }
 
     @Test
     public void zeroAmountIsRejected() {

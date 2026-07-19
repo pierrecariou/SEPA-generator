@@ -8,9 +8,13 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+import com.aspose.cells.Workbook;
+import com.aspose.cells.Worksheet;
+
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.List;
 
 /**
  * Verifies that a failing Excel conversion is surfaced as a thrown exception
@@ -48,6 +52,40 @@ public class ExcelToCsvConverterTest {
             fail("Expected conversion of a missing file to throw");
         } catch (Exception expected) {
             assertNotNull(expected);
+        }
+    }
+
+    /**
+     * A cell that itself contains a comma must be quoted (MINIMUM quoting) so it
+     * cannot split into extra columns when the CSV is parsed. This exercises the
+     * hardened deterministic CSV export options.
+     */
+    @Test
+    public void cellContainingCommaIsQuotedAndNotSplit() throws Exception {
+        Workbook workbook = new Workbook();
+        Worksheet sheet = workbook.getWorksheets().get(0);
+        sheet.getCells().get(0, 0).putValue("name");
+        sheet.getCells().get(0, 1).putValue("information");
+        sheet.getCells().get(1, 0).putValue("Karlson GmbH");
+        sheet.getCells().get(1, 1).putValue("Invoice, urgent, paid");
+        File xlsx = tmp.newFile("commas.xlsx");
+        workbook.save(xlsx.getAbsolutePath());
+
+        java.nio.file.Path csv = ExcelToCsvConverter.convert(xlsx.getAbsolutePath(), "sepa-generator-test-");
+        try {
+            List<String> lines = Files.readAllLines(csv, StandardCharsets.UTF_8);
+            String dataRow = null;
+            for (String line : lines) {
+                if (line.contains("Karlson GmbH")) {
+                    dataRow = line;
+                    break;
+                }
+            }
+            assertNotNull("Data row should be present", dataRow);
+            assertTrue("A comma-bearing cell must be quoted so it stays one column: " + dataRow,
+                    dataRow.contains("\"Invoice, urgent, paid\""));
+        } finally {
+            Files.deleteIfExists(csv);
         }
     }
 }

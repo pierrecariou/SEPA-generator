@@ -1,5 +1,9 @@
 package com.pcariou.generator;
 
+import com.aspose.cells.Encoding;
+import com.aspose.cells.SaveFormat;
+import com.aspose.cells.TxtSaveOptions;
+import com.aspose.cells.TxtValueQuoteType;
 import com.aspose.cells.Workbook;
 
 import java.io.RandomAccessFile;
@@ -16,6 +20,25 @@ import java.nio.file.Path;
  * <p>Used by the Community generation flow ({@code Generator}). It strips the
  * trailing Aspose evaluation footer appended to saved CSV files. The caller
  * owns the returned file and must delete it once it is done reading from it.
+ *
+ * <p>The CSV is written with explicit, deterministic options rather than the
+ * library defaults, so a spreadsheet cannot be silently corrupted on its way to
+ * the parser:
+ * <ul>
+ *   <li>a fixed comma field separator (never a locale-dependent one), matching
+ *       the comma-delimited format the CSV parser expects;</li>
+ *   <li>UTF-8 without a byte-order mark, so accented names and other non-ASCII
+ *       text survive and decode consistently with {@code CsvSourceReader};</li>
+ *   <li>minimum quoting, so a cell that itself contains a comma, quote or line
+ *       break is quoted and cannot split into extra columns;</li>
+ *   <li>no trimming of leading blank rows/columns, so a value is never shifted
+ *       into a neighbouring column and mis-bound.</li>
+ * </ul>
+ * The cell text itself is Aspose's displayed value; this converter never
+ * re-interprets an ambiguous cell (for example, it does not turn a
+ * thousands-separated or scientific-notation display into a number). Such a
+ * value simply reaches the normal validation, which rejects it with row and
+ * field context rather than generating a wrong amount.
  */
 public final class ExcelToCsvConverter {
 
@@ -30,9 +53,19 @@ public final class ExcelToCsvConverter {
     public static Path convert(String inputFile, String tempFilePrefix) throws Exception {
         Path tempCsv = Files.createTempFile(tempFilePrefix, ".csv");
         Workbook workbook = new Workbook(inputFile);
-        workbook.save(tempCsv.toAbsolutePath().toString());
+        workbook.save(tempCsv.toAbsolutePath().toString(), csvSaveOptions());
         eraseEvaluationFooter(tempCsv);
         return tempCsv;
+    }
+
+    /** Deterministic CSV export options (see the class comment). */
+    private static TxtSaveOptions csvSaveOptions() {
+        TxtSaveOptions options = new TxtSaveOptions(SaveFormat.CSV);
+        options.setSeparator(',');
+        options.setEncoding(Encoding.getUTF8NoBOM());
+        options.setQuoteType(TxtValueQuoteType.MINIMUM);
+        options.setTrimLeadingBlankRowAndColumn(false);
+        return options;
     }
 
     /** Removes the trailing Aspose evaluation line appended to saved CSV files. */

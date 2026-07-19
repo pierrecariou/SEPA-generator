@@ -1,7 +1,8 @@
 package com.pcariou.service;
 
 import com.pcariou.model.*;
-import java.io.FileReader;
+import java.io.File;
+import java.io.Reader;
 
 import com.opencsv.bean.*;
 
@@ -35,7 +36,9 @@ public class CsvToBeans
 	}
 
 	public Document read(String inputFile) throws Exception {
-			return read(new FileReader(inputFile));
+			try (Reader reader = CsvSourceReader.open(new File(inputFile))) {
+				return read(reader);
+			}
 	}
 
 	/**
@@ -51,11 +54,52 @@ public class CsvToBeans
 			List<CreditTransferTransactionInformation> creditTransferTransactionInformations = CsvToBeanBuilder.build().parse();
 			for (CreditTransferTransactionInformation creditTransferTransactionInformation : creditTransferTransactionInformations) {
 				normalizeRemittanceInformation(creditTransferTransactionInformation);
-				if (!validate(creditTransferTransactionInformation)) {
-					throw new Exception("Invalid input file\n" + this.errors.toString());
-				}
+				normalizeAccountFields(creditTransferTransactionInformation);
 			}
+			validateRows(creditTransferTransactionInformations);
 			return createDocument(creditTransferTransactionInformations);
+	}
+
+	/**
+	 * Validates every row, collecting all findings with their source row number
+	 * (the header is line 1, so the first data row is line 2). This gives
+	 * imported-data errors precise row context instead of aborting on the first
+	 * offending row without a line number.
+	 */
+	private void validateRows(List<CreditTransferTransactionInformation> rows) throws Exception
+	{
+		StringBuilder rowErrors = new StringBuilder();
+		for (int i = 0; i < rows.size(); i++) {
+			Set<ConstraintViolation<CreditTransferTransactionInformation>> violations =
+					validator.validate(rows.get(i));
+			for (ConstraintViolation<CreditTransferTransactionInformation> violation : violations) {
+				rowErrors.append("Row ").append(i + 2).append(": ")
+						.append(violation.getMessage()).append("\n");
+			}
+		}
+		if (rowErrors.length() > 0) {
+			throw new Exception("Invalid input file\n" + rowErrors.toString());
+		}
+	}
+
+	/**
+	 * Canonicalises the creditor IBAN and BIC to the exact form that will be
+	 * emitted (whitespace removed / upper-cased), so the value validated is the
+	 * value written to the file. Purely lexical; never invents account data.
+	 */
+	private static void normalizeAccountFields(CreditTransferTransactionInformation transaction)
+	{
+		CreditorAccount account = transaction.getCreditorAccount();
+		if (account != null && account.getAccountIdentification() != null) {
+			AccountIdentification identification = account.getAccountIdentification();
+			identification.setIban(SepaFieldNormalizer.iban(identification.getIban()));
+		}
+		CreditorAgent agent = transaction.getCreditorAgent();
+		if (agent != null && agent.getFinancialInstitutionIdentification() != null) {
+			FinancialInstitutionIdentification institution =
+					agent.getFinancialInstitutionIdentification();
+			institution.setBic(SepaFieldNormalizer.bic(institution.getBic()));
+		}
 	}
 
 	/**
@@ -86,13 +130,14 @@ public class CsvToBeans
 
 		String numberOfTransactions = Integer.toString(creditTransferTransactionInformations.size());
 
-		double totalAmount = 0;
+		java.math.BigDecimal totalAmountDecimal = java.math.BigDecimal.ZERO;
 		for (CreditTransferTransactionInformation creditTransferTransactionInformation : creditTransferTransactionInformations) {
-			String amount = creditTransferTransactionInformation.getAmount().getInstructedAmount().getInstructedAmount();
-			creditTransferTransactionInformation.getAmount().getInstructedAmount().setInstructedAmount(String.format("%.2f", Double.parseDouble(amount)));
-			totalAmount += Double.valueOf(creditTransferTransactionInformation.getAmount().getInstructedAmount().getInstructedAmount());
+			InstructedAmount instructedAmount = creditTransferTransactionInformation.getAmount().getInstructedAmount();
+			java.math.BigDecimal amount = new java.math.BigDecimal(normalizedAmount(instructedAmount.getInstructedAmount()));
+			instructedAmount.setInstructedAmount(String.format(Locale.US, "%.2f", amount));
+			totalAmountDecimal = totalAmountDecimal.add(amount);
 		}
-		String controlSum = String.format(Locale.US,"%.2f", totalAmount);
+		String controlSum = String.format(Locale.US,"%.2f", totalAmountDecimal);
 		
 		ProprietaryIdentification proprietaryIdentification = new ProprietaryIdentification(debtorInformations.initiatingPartySiret);
 		OrganisationIdentification organisationIdentification = new OrganisationIdentification(proprietaryIdentification);
@@ -129,6 +174,12 @@ public class CsvToBeans
 
 	public List<String> getTableResult() {
 		return tableResult;
+	}
+
+	/** Accepts "," as decimal separator, matching the amount validation. */
+	private static String normalizedAmount(String amount)
+	{
+		return amount.trim().replace(',', '.');
 	}
 
 	private boolean validate(Object object) {
