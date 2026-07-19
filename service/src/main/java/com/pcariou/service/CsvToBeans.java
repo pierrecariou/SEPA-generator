@@ -76,6 +76,10 @@ public class CsvToBeans
 				rowErrors.append("Row ").append(i + 2).append(": ")
 						.append(violation.getMessage()).append("\n");
 			}
+			for (XmlCharacterValidation.Finding finding : XmlCharacterValidation.scan(rows.get(i))) {
+				rowErrors.append("Row ").append(i + 2).append(": ")
+						.append(finding.message()).append("\n");
+			}
 		}
 		if (rowErrors.length() > 0) {
 			throw new Exception("Invalid input file\n" + rowErrors.toString());
@@ -121,6 +125,17 @@ public class CsvToBeans
 		DebtorInformations debtorInformations = new DebtorInformations(executionDate);
 		if (!validate(debtorInformations)) {
 			throw new Exception("Validation failed: Please check and modify your JSON file\n" + this.errors.toString());
+		}
+
+		List<XmlCharacterValidation.Finding> configFindings =
+				XmlCharacterValidation.scan(debtorInformations);
+		if (!configFindings.isEmpty()) {
+			StringBuilder msg = new StringBuilder(
+					"The debtor or initiating party configuration contains a character that cannot be written to XML.");
+			for (XmlCharacterValidation.Finding f : configFindings) {
+				msg.append("\n- ").append(f.message());
+			}
+			throw new Exception(msg.toString());
 		}
 
 		// Group Header

@@ -172,6 +172,88 @@ public class CreditTransferGenerationAssuranceTest {
         }
     }
 
+    // ── XML 1.0 legality: generation is blocked before any XML is written ─────
+
+    @Test
+    public void xmlIllegalCharacterIsRejectedBeforeGeneration() throws Exception {
+        try {
+            generate(
+                    "Karlson GmbH,DE89370400440532013000,DEUTDEFF,100.00,E2E-1,Invoice",
+                    "Bad\u0007Name,DE89370400440532013000,DEUTDEFF,200.00,E2E-2,Invoice");
+            fail("A value with an XML 1.0-illegal character must be rejected before writing XML");
+        } catch (Exception e) {
+            assertTrue("Error must carry the source row context: " + e.getMessage(),
+                    e.getMessage().contains("Row 3"));
+            assertTrue("Error must name the illegal character: " + e.getMessage(),
+                    e.getMessage().contains("U+0007"));
+        }
+    }
+
+    @Test
+    public void tabIsNotRejectedByTheXmlRuleDuringGeneration() throws Exception {
+        Document document = generate(
+                "Karlson GmbH,DE89370400440532013000,DEUTDEFF,100.00,E2E-1,Invoice\twith tab");
+        assertEquals("1", document.getPain().getGroupHeader().getNumberOfTransactions());
+    }
+
+    @Test
+    public void xmlIllegalCharInDebtorNameConfigIsRejectedBeforeGeneration() throws Exception {
+        // Override the config written by @Before with one that has a BEL (U+0007)
+        // in the debtor name — use the JSON \u0007 escape so the file is parseable.
+        String illegalNameConfig = "{\n"
+                + "  \"debtor\": {\n"
+                + "    \"name\": \"Bad\\u0007Debtor\",\n"
+                + "    \"iban\": \"GB29NWBK60161331926819\",\n"
+                + "    \"bic\": \"NWBKGB2L\"\n"
+                + "  },\n"
+                + "  \"initiatingParty\": {\n"
+                + "    \"name\": \"Test Initiating Party\",\n"
+                + "    \"siret\": \"12345678901234\"\n"
+                + "  }\n"
+                + "}\n";
+        File illegalConfig = tmp.newFile("config-illegal-debtor-" + System.nanoTime() + ".json");
+        Files.write(illegalConfig.toPath(), illegalNameConfig.getBytes(StandardCharsets.UTF_8));
+        System.setProperty("sepa.config.file", illegalConfig.getAbsolutePath());
+
+        try {
+            generate("Karlson GmbH,DE89370400440532013000,DEUTDEFF,100.00,E2E-1,Invoice");
+            fail("An XML-illegal character in the debtor name must block generation");
+        } catch (Exception e) {
+            assertTrue("Error must mention the illegal character U+0007: " + e.getMessage(),
+                    e.getMessage().contains("U+0007"));
+        }
+    }
+
+    @Test
+    public void normalUnicodeAndAccentsAreAccepted() throws Exception {
+        // French accents, euro sign, non-Latin CJK — all legal XML 1.0
+        Document document = generate(csv(
+                "Société Müller \u4E2D\u56FD,DE89370400440532013000,DEUTDEFF,1500.00,E2E-1,Facture \u20AC"));
+        assertEquals("1", document.getPain().getGroupHeader().getNumberOfTransactions());
+    }
+
+    @Test
+    public void noOutputFileIsCreatedWhenXmlValidationBlocksGeneration() throws Exception {
+        File outputXml = new File(tmp.getRoot(), "output-" + System.nanoTime() + ".xml");
+        File inputCsv = new File(tmp.getRoot(), "input-" + System.nanoTime() + ".csv");
+        String content = CSV_HEADER + "\n"
+                + "Bad\u0007Name,DE89370400440532013000,DEUTDEFF,100.00,E2E-1,Invoice\n";
+        Files.write(inputCsv.toPath(), content.getBytes(StandardCharsets.UTF_8));
+
+        try {
+            com.pcariou.model.Document doc =
+                    new CsvToBeans(LocalDate.now().plusDays(7)).read(inputCsv.getAbsolutePath());
+            new com.pcariou.service.BeansToXml().write(doc, outputXml.getAbsolutePath());
+            fail("Should have thrown before writing XML");
+        } catch (Exception expected) {
+            // Verify CsvToBeans threw before BeansToXml was reached
+            assertTrue("Exception must mention the illegal char: " + expected.getMessage(),
+                    expected.getMessage().contains("U+0007"));
+        }
+        assertTrue("No XML output file must exist after a blocked generation",
+                !outputXml.exists());
+    }
+
     // ── Helpers ──────────────────────────────────────────────────────────────
 
     private Document generate(String... rows) throws Exception {
