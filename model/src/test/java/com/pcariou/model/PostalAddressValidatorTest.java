@@ -106,4 +106,43 @@ public class PostalAddressValidatorTest {
     public void countryLongerThanTwoLettersIsRejected() {
         assertEquals(1, validate(address(null, null, null, "Paris", "FRA")).size());
     }
+
+    // ── ISO 20022 field-length limits ────────────────────────────────────────
+
+    @Test
+    public void streetAtMaximumLengthIsValid() {
+        String street = repeat('A', 70);
+        assertTrue(validate(address(street, "12", "75001", "Paris", "FR")).isEmpty());
+    }
+
+    @Test
+    public void streetOverMaximumLengthIsRejected() {
+        Set<ConstraintViolation<Holder>> violations =
+                validate(address(repeat('A', 71), "12", "75001", "Paris", "FR"));
+        assertEquals(1, violations.size());
+        assertTrue(violations.iterator().next().getMessage().contains("street name"));
+    }
+
+    @Test
+    public void townOverMaximumLengthIsRejected() {
+        Set<ConstraintViolation<Holder>> violations =
+                validate(address("Main Street", "12", "75001", repeat('B', 36), "FR"));
+        assertEquals(1, violations.size());
+        assertTrue(violations.iterator().next().getMessage().contains("town/city"));
+    }
+
+    @Test
+    public void buildingNumberAndPostcodeOverMaximumLengthAreRejected() {
+        Set<ConstraintViolation<Holder>> violations =
+                validate(address("Main Street", repeat('1', 17), repeat('9', 17), "Paris", "FR"));
+        assertEquals(2, violations.size());
+    }
+
+    private static String repeat(char c, int count) {
+        StringBuilder builder = new StringBuilder();
+        for (int i = 0; i < count; i++) {
+            builder.append(c);
+        }
+        return builder.toString();
+    }
 }

@@ -29,8 +29,9 @@
       a. Install the previous version MSI (e.g. v1.3.0) and launch the app.
       b. Change some settings: switch theme, pick a default SEPA format, and
          fill in debtor / initiating-party details, then close the app.
-      c. Bump $AppVersion in this script to the new version (e.g. 1.3.1),
-         rebuild the MSI, and install it WITHOUT uninstalling the old one.
+      c. Bump the module version in the Maven POMs to the new version, rebuild
+         the MSI (this script derives $AppVersion from Maven), and install it
+         WITHOUT uninstalling the old one.
       d. Open "Apps & features": confirm only ONE "SEPA Generator Community"
          entry remains (the new version), not two side-by-side installs.
       e. Confirm the Start Menu and Desktop shortcuts still launch the app.
@@ -38,10 +39,11 @@
          debtor settings are still the values set in step (b). These live in
          %USERPROFILE% (~/.sepa-generator-config.json and the Java Preferences
          registry node), so the in-place upgrade must not reset them.
-      g. Confirm the title bar / About shows the new version (e.g. v1.3.1).
+      g. Confirm the title bar / About shows the new version.
 
-    The in-place upgrade relies on a STABLE $UpgradeUuid and a stable $AppName
-    across releases (both defined below). Do not change them between versions.
+    The in-place upgrade relies on a STABLE UpgradeUuid and a stable AppName
+    across releases (both come from packaging/edition.properties). Do not change
+    them between versions.
 #>
 
 [CmdletBinding()]
@@ -60,29 +62,93 @@ param(
     # affect the build - jpackage produces an installer for the architecture of
     # the Windows runner; the label only makes the release artifact name explicit
     # (SEPA-Generator-Community-<ver>-windows-<arch>.<type>).
-    [string]$ArchLabel = 'x64'
+    [string]$ArchLabel = 'x64',
+
+    # Explicitly enable optional Authenticode signing of the produced installer.
+    # Signing is OFF by default. It can also be enabled by setting the
+    # environment variable WINDOWS_SIGN=true (useful in CI). When enabled, the
+    # required secret inputs must be present or packaging fails (fail-closed):
+    #   WINDOWS_CERT_PFX_BASE64  base64 of the .pfx code-signing certificate
+    #   WINDOWS_CERT_PASSWORD    password for that .pfx
+    #   WINDOWS_TIMESTAMP_URL    optional RFC3161 timestamp URL (has a default)
+    [switch]$Sign
 )
 
 # -----------------------------------------------------------------------------
-# Configuration (centralized - edit here)
+# Helpers
 # -----------------------------------------------------------------------------
-$AppName     = 'SEPA Generator Community'
-$AppVersion  = '1.3.1'
-$Vendor      = 'Niryosys'
-$Description = 'Generate SEPA payment XML files from spreadsheet inputs.'
-$Copyright   = "Copyright (c) $(Get-Date -Format yyyy) $Vendor"
+$ErrorActionPreference = 'Stop'
 
-# Stable upgrade UUID so future versions upgrade/uninstall cleanly in place.
-# Do NOT change this value between releases of the Community Edition.
-$UpgradeUuid = 'b1f8e2a4-3c7d-4e15-9a2b-7c6d5e4f3a21'
+function Write-Step  ([string]$m) { Write-Host "==> $m" -ForegroundColor Cyan }
+function Write-Ok    ([string]$m) { Write-Host "    $m" -ForegroundColor Green }
+function Fail        ([string]$m) { Write-Host "ERROR: $m" -ForegroundColor Red; exit 1 }
+
+# Parse a simple KEY=VALUE .properties file into a hashtable (ignores blank
+# lines and '#' comments; values are taken verbatim after the first '=').
+function Read-EditionProperties ([string]$path) {
+    if (-not (Test-Path $path)) { Fail "Edition properties file not found: $path" }
+    $props = @{}
+    foreach ($line in Get-Content -LiteralPath $path) {
+        $trim = $line.Trim()
+        if ($trim -eq '' -or $trim.StartsWith('#')) { continue }
+        $idx = $trim.IndexOf('=')
+        if ($idx -lt 1) { continue }
+        $props[$trim.Substring(0, $idx).Trim()] = $trim.Substring($idx + 1).Trim()
+    }
+    return $props
+}
+
+function Get-EditionValue ([hashtable]$props, [string]$key) {
+    if (-not $props.ContainsKey($key) -or [string]::IsNullOrWhiteSpace($props[$key])) {
+        Fail "Required key '$key' missing from edition.properties."
+    }
+    return $props[$key]
+}
+
+# Locate Maven (mvn.cmd preferred on Windows, then mvn).
+function Resolve-Mvn {
+    $m = Get-Command mvn.cmd -ErrorAction SilentlyContinue
+    if (-not $m) { $m = Get-Command mvn -ErrorAction SilentlyContinue }
+    if (-not $m) { Fail 'Maven (mvn) was not found on PATH. Install Maven or add it to PATH.' }
+    return $m.Source
+}
+
+# Derive the authoritative application version from the Maven generator module,
+# so the packaging version can never drift from the POM.
+function Get-MavenVersion ([string]$repoRoot, [string]$mvn) {
+    $out = & $mvn -q -DforceStdout -pl generator -f (Join-Path $repoRoot 'pom.xml') `
+        org.apache.maven.plugins:maven-help-plugin:3.5.0:evaluate '-Dexpression=project.version'
+    if ($LASTEXITCODE -ne 0) { Fail 'Failed to derive the application version from Maven (help:evaluate).' }
+    $version = ($out | Select-Object -Last 1).ToString().Trim()
+    if ([string]::IsNullOrWhiteSpace($version) -or $version.StartsWith('$')) {
+        Fail "Maven returned an invalid application version: '$version'."
+    }
+    return $version
+}
+
+# -----------------------------------------------------------------------------
+# Configuration (from packaging/edition.properties + authoritative Maven version)
+# -----------------------------------------------------------------------------
+# Paths are resolved relative to the repository root (two levels above this
+# script: <repo>/packaging/community/package-windows.ps1).
+$RepoRoot     = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
+$EditionFile  = Join-Path $RepoRoot 'packaging\edition.properties'
+$Edition      = Read-EditionProperties $EditionFile
+
+$AppName      = Get-EditionValue $Edition 'APP_NAME'
+$ArtifactSlug = Get-EditionValue $Edition 'ARTIFACT_SLUG'
+$Vendor       = Get-EditionValue $Edition 'VENDOR'
+$Description  = Get-EditionValue $Edition 'DESCRIPTION'
+$MainClass    = Get-EditionValue $Edition 'MAIN_CLASS'
+$UpgradeUuid  = Get-EditionValue $Edition 'WIN_UPGRADE_UUID'
+$Copyright    = "Copyright (c) $(Get-Date -Format yyyy) $Vendor"
+
+# Authoritative application version (derived from Maven, never hardcoded).
+$Mvn         = Resolve-Mvn
+$AppVersion  = Get-MavenVersion $RepoRoot $Mvn
 
 # Runnable fat JAR produced by the Maven build (generator module, shaded).
 $MainJarName = "generator-$AppVersion.jar"
-$MainClass   = 'com.pcariou.generator.Generator'
-
-# Paths are resolved relative to the repository root (two levels above this
-# script: <repo>/packaging/community/package-windows.ps1).
-$RepoRoot    = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 $MainJarPath = Join-Path $RepoRoot "generator\target\$MainJarName"
 $IconPath    = Join-Path $RepoRoot 'packaging\windows\sepa-generator.ico'
 $OutputDir   = Join-Path $RepoRoot 'dist'
@@ -93,16 +159,36 @@ $InputDir    = Join-Path $StageRoot 'input'
 $JpDestDir   = Join-Path $StageRoot 'out'
 
 # Final installer name placed in dist/.
-$FinalArtifact = "SEPA-Generator-Community-$AppVersion-windows-$ArchLabel.$Type"
+$FinalArtifact = "$ArtifactSlug-$AppVersion-windows-$ArchLabel.$Type"
 
 # -----------------------------------------------------------------------------
-# Helpers
+# Signing configuration (optional; DISABLED unless explicitly requested)
 # -----------------------------------------------------------------------------
-$ErrorActionPreference = 'Stop'
-
-function Write-Step  ([string]$m) { Write-Host "==> $m" -ForegroundColor Cyan }
-function Write-Ok    ([string]$m) { Write-Host "    $m" -ForegroundColor Green }
-function Fail        ([string]$m) { Write-Host "ERROR: $m" -ForegroundColor Red; exit 1 }
+# Signing logic lives in the sibling windows-signing.ps1 so its decision logic
+# is unit-testable. Signing never activates just because a partial credential is
+# present: it requires an explicit request (-Sign or WINDOWS_SIGN=true) AND all
+# secret inputs, otherwise packaging fails closed.
+. (Join-Path $PSScriptRoot 'windows-signing.ps1')
+$SignRequested = $Sign.IsPresent -or ($env:WINDOWS_SIGN -eq 'true')
+try {
+    $SigningPlan = Resolve-WindowsSigningPlan `
+        -SignRequested $SignRequested `
+        -PfxBase64 $env:WINDOWS_CERT_PFX_BASE64 `
+        -PfxPassword $env:WINDOWS_CERT_PASSWORD `
+        -TimestampUrl $env:WINDOWS_TIMESTAMP_URL
+} catch {
+    Fail $_.Exception.Message
+}
+if ($SigningPlan.Enabled) {
+    if ($Type -eq 'app-image') {
+        Fail 'Signing is supported for msi/exe installers only, not -Type app-image.'
+    }
+    try { $SigntoolPath = Resolve-Signtool } catch { Fail $_.Exception.Message }
+    Write-Ok 'Signing hook: ENABLED (installer will be Authenticode-signed and its signature verified).'
+} else {
+    $SigntoolPath = $null
+    Write-Ok 'Signing hook: DISABLED (unsigned build; this is the default).'
+}
 
 # -----------------------------------------------------------------------------
 # 1. Verify we are on Windows
@@ -192,13 +278,9 @@ if ($SkipBuild) {
     Write-Step 'Skipping Maven build (-SkipBuild)'
 } else {
     Write-Step 'Building application with Maven (mvn clean package)'
-    $mvn = Get-Command mvn.cmd -ErrorAction SilentlyContinue
-    if (-not $mvn) { $mvn = Get-Command mvn -ErrorAction SilentlyContinue }
-    if (-not $mvn) { Fail 'Maven (mvn) was not found on PATH. Install Maven or add it to PATH.' }
-
     Push-Location $RepoRoot
     try {
-        & $mvn.Source clean package
+        & $Mvn clean package
         if ($LASTEXITCODE -ne 0) { Fail "Maven build failed (exit code $LASTEXITCODE)." }
     } finally {
         Pop-Location
@@ -280,6 +362,27 @@ if ($Type -eq 'app-image') {
     Write-Ok "Installer: $finalPath"
 }
 
+# -----------------------------------------------------------------------------
+# 8. Optional Authenticode signing of the produced installer (+ verify)
+# -----------------------------------------------------------------------------
+$Signed = $false
+if ($SigningPlan.Enabled -and $Type -ne 'app-image') {
+    Write-Step 'Signing installer (Authenticode) and verifying the signature'
+    try {
+        Invoke-WindowsAuthenticodeSign `
+            -FilePath $finalPath `
+            -PfxBase64 $env:WINDOWS_CERT_PFX_BASE64 `
+            -PfxPassword $env:WINDOWS_CERT_PASSWORD `
+            -TimestampUrl $SigningPlan.TimestampUrl `
+            -SigntoolPath $SigntoolPath
+    } catch {
+        Fail $_.Exception.Message
+    }
+    $Signed = $true
+    Write-Ok 'Installer signed and signature verified.'
+}
+
 Write-Host ''
-Write-Host "SUCCESS: $AppName $AppVersion packaged." -ForegroundColor Green
+$signState = if ($Signed) { 'signed + verified' } else { 'unsigned' }
+Write-Host "SUCCESS: $AppName $AppVersion packaged ($signState)." -ForegroundColor Green
 Write-Host "Output : $finalPath" -ForegroundColor Green

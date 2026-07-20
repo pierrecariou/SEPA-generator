@@ -1,8 +1,11 @@
 package com.pcariou.view.main;
 
+import com.pcariou.view.AppDialogs;
 import com.pcariou.view.AppResources;
+import com.pcariou.view.GenerationFailureDialog;
 import com.pcariou.view.IGenerator;
 import com.pcariou.view.config.ConfigStore;
+import com.pcariou.view.custom.WindowBoundsPolicy;
 import com.pcariou.view.main.center.FormPanel;
 import com.pcariou.view.update.UpdateUi;
 
@@ -31,6 +34,9 @@ public class MainFrame extends JFrame {
 	/** Reasonable minimum: the cards stay fully visible; the scroll pane handles overflow. */
 	private static final int MIN_WIDTH  = 860;
 	private static final int MIN_HEIGHT = 520;
+
+	/** Modest gap kept between the window and the usable screen edges when room allows. */
+	private static final int SCREEN_MARGIN = 24;
 
 	/** Smallest size the layout needs without the generation summary visible. */
 	private Dimension baseMinimumSize;
@@ -75,7 +81,6 @@ public class MainFrame extends JFrame {
         applyInitialSize();
 
         setResizable(true);
-        setLocationRelativeTo(null);
         setVisible(true);
 
         refreshStatus();
@@ -87,9 +92,9 @@ public class MainFrame extends JFrame {
 
     /**
      * Applies a stable, clamped initial window size. The default size stays in the
-     * 920–980 x 600–640 range (clamped to the usable screen) with a reasonable
-     * minimum; content overflow is handled by the scrollable content area rather
-     * than by forcing the window to grow.
+     * 920–980 x 600–640 range, clamped to the usable screen (accounting for
+     * taskbars/docks) and centred within that work area; content overflow is handled
+     * by the scrollable content area rather than by forcing the window to grow.
      */
     private void applyInitialSize() {
         // Realise the layout so child components report valid preferred sizes.
@@ -103,25 +108,26 @@ public class MainFrame extends JFrame {
         }
         Rectangle bounds = gc.getBounds();
         Insets insets = Toolkit.getDefaultToolkit().getScreenInsets(gc);
-        int usableW = bounds.width  - insets.left - insets.right;
-        int usableH = bounds.height - insets.top  - insets.bottom;
+        Rectangle usable = new Rectangle(
+                bounds.x + insets.left,
+                bounds.y + insets.top,
+                bounds.width  - insets.left - insets.right,
+                bounds.height - insets.top  - insets.bottom);
 
-        int targetW = Math.min(DEFAULT_WIDTH,  (int) (usableW * 0.95));
-        int targetH = Math.min(DEFAULT_HEIGHT, (int) (usableH * 0.92));
-
-        int minW = Math.min(MIN_WIDTH, targetW);
-        int minH = Math.min(MIN_HEIGHT, targetH);
-        baseMinimumSize = new Dimension(minW, minH);
+        Rectangle target = WindowBoundsPolicy.compute(
+                DEFAULT_WIDTH, DEFAULT_HEIGHT, MIN_WIDTH, MIN_HEIGHT, usable, SCREEN_MARGIN);
+        baseMinimumSize = WindowBoundsPolicy.effectiveMinimum(MIN_WIDTH, MIN_HEIGHT, usable);
         setMinimumSize(baseMinimumSize);
-        setSize(targetW, targetH);
+        setBounds(target);
     }
 
 	public void showErrorMessage(String message) {
 		SwingUtilities.invokeLater(() -> {
 			setStatus(AppStatus.GENERATION_FAILED);
-			JOptionPane.showMessageDialog(this,
-					"The SEPA file could not be generated:\n\n" + message,
-					"Generation failed", JOptionPane.ERROR_MESSAGE);
+			// A prior successful result must not remain looking current after a
+			// failed attempt; the failure dialog owns all failure detail.
+			formPanel.markResultStaleAfterFailure();
+			GenerationFailureDialog.show(this, message);
 		});
 	}
 

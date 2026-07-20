@@ -41,6 +41,8 @@ bin/
 nbproject/private/
 nbbuild/
 dist/
+# Release-artifact collection dir used by the packaging workflow (CI only).
+dist-release/
 nbdist/
 .nb-gradle/
 

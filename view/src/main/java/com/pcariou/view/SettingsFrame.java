@@ -5,6 +5,7 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
 
+import com.pcariou.model.BicValidator;
 import com.pcariou.view.config.AppConfig;
 import com.pcariou.view.config.ConfigStore;
 import com.pcariou.view.custom.Cards;
@@ -190,7 +191,7 @@ public class SettingsFrame extends JDialog {
     }
 
     private static final String IBAN_FORMAT_PATTERN = "^[A-Z]{2}[0-9]{2}[A-Z0-9]{11,30}$";
-    private static final String BIC_PATTERN         = "^[A-Z]{4}[A-Z]{2}[A-Z0-9]{2}([A-Z0-9]{3})?$";
+    private static final String BIC_PATTERN         = BicValidator.BIC_PATTERN;
     private static final String SIRET_PATTERN       = "^[0-9]{14}$";
     private static final String COUNTRY_PATTERN     = "^[A-Z]{2}$";
 
@@ -213,10 +214,10 @@ public class SettingsFrame extends JDialog {
         configToSave.initiatingParty = updatedSettings.initiatingParty;
 
         if (!configStore.write(configToSave)) {
-            JOptionPane.showMessageDialog(this,
+            AppDialogs.show(this, "Save failed",
                     "Could not save settings.\nPlease check that this file is writable:\n"
                             + configStore.file().getAbsolutePath(),
-                    "Save failed", JOptionPane.ERROR_MESSAGE);
+                    AppDialogs.Kind.ERROR);
             return;
         }
 

@@ -199,7 +199,59 @@ public class ReleaseSafetyTest {
                 elapsedMs < 30_000);
     }
 
+    // 6. A blank "information" column omits RmtInf entirely rather than emitting
+    //    an empty <Ustrd> (which would be schema-invalid). Non-blank rows still
+    //    carry their remittance information.
+    @Test
+    public void blankRemittanceInformationOmitsRmtInf() throws Exception {
+        String csvContent = CSV_HEADER + "\n"
+                + "Creditor A," + VALID_IBAN + ",BANKNL2A,100.00,E2E-A,\n"
+                + "Creditor B," + VALID_IBAN + ",BANKNL2A,200.00,E2E-B,Invoice B\n";
+        File csv = tmp.newFile("remittance-" + System.nanoTime() + ".csv");
+        Files.write(csv.toPath(), csvContent.getBytes(StandardCharsets.UTF_8));
+        File xml = tmp.newFile("remittance.xml");
+
+        generate(csv, xml, LocalDate.now().plusDays(1));
+
+        String content = read(xml);
+        assertTrue("Non-blank remittance should still be present",
+                content.contains("<Ustrd>Invoice B</Ustrd>"));
+        assertEquals("Only one transaction should carry an RmtInf/Ustrd",
+                1, countOccurrences(content, "<Ustrd>"));
+        assertTrue("Blank remittance must not emit an empty Ustrd",
+                !content.contains("<Ustrd></Ustrd>") && !content.contains("<Ustrd/>"));
+    }
+
+    // 7. Message ids are unique per run and fit the ISO 20022 Max35Text limit.
+    @Test
+    public void generatedMessageIdIsUniqueAndWithinMax35() throws Exception {
+        File csv = writeCsv("100.00");
+
+        File xml1 = tmp.newFile("msgid1.xml");
+        generate(csv, xml1, LocalDate.now().plusDays(1));
+        String msgId1 = extractMessageId(read(xml1));
+
+        File xml2 = tmp.newFile("msgid2.xml");
+        generate(csv, xml2, LocalDate.now().plusDays(1));
+        String msgId2 = extractMessageId(read(xml2));
+
+        assertNotNull("MsgId should be present", msgId1);
+        assertNotNull("MsgId should be present", msgId2);
+        assertTrue("MsgId should start with the CT- prefix", msgId1.startsWith("CT-"));
+        assertTrue("MsgId must fit Max35Text (<= 35 chars), was " + msgId1.length(),
+                msgId1.length() <= 35);
+        assertTrue("PmtInfId (MsgId-1) must fit Max35Text (<= 35 chars)",
+                (msgId1.length() + 2) <= 35);
+        assertTrue("Two runs must not reuse the same MsgId", !msgId1.equals(msgId2));
+    }
+
     // ── Helpers ──────────────────────────────────────────────────────────────
+
+    private String extractMessageId(String content) {
+        java.util.regex.Matcher m =
+                java.util.regex.Pattern.compile("<MsgId>(.*?)</MsgId>").matcher(content);
+        return m.find() ? m.group(1) : null;
+    }
 
     private void generate(File csv, File xml, LocalDate date) throws Exception {
         CsvToBeans csvToBeans = new CsvToBeans(date);

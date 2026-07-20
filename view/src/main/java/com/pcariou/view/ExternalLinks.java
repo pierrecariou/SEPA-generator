@@ -93,9 +93,9 @@ public final class ExternalLinks {
     }
 
     private static void showFolderError(Component parent, java.io.File file) {
-        JOptionPane.showMessageDialog(parent,
+        AppDialogs.show(parent, "Unable to open folder",
                 "Could not open the containing folder.\nThe file is located at:\n" + file.getAbsolutePath(),
-                "Unable to open folder", JOptionPane.WARNING_MESSAGE);
+                AppDialogs.Kind.WARNING);
     }
 
     static String stripMailto(String target) {
@@ -109,6 +109,6 @@ public final class ExternalLinks {
         String message = (kind == Kind.MAIL)
                 ? "Could not open your email client.\nPlease email us at: " + stripMailto(target)
                 : "Could not open your web browser.\nPlease visit: " + target;
-        JOptionPane.showMessageDialog(parent, message, "Unable to open link", JOptionPane.WARNING_MESSAGE);
+        AppDialogs.show(parent, "Unable to open link", message, AppDialogs.Kind.WARNING);
     }
 }

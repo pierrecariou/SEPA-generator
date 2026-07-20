@@ -8,40 +8,49 @@ application into a platform installer.
 
 | Platform | Script               | Output (CI release artifact)                              |
 | -------- | -------------------- | --------------------------------------------------------- |
-| Windows  | `package-windows.ps1`| `dist/SEPA-Generator-Community-1.3.1-windows-x64.msi`     |
-| macOS    | `package-macos.sh`   | `dist/SEPA-Generator-Community-1.3.1-macos-arm64.dmg`     |
-| macOS    | `package-macos.sh`   | `dist/SEPA-Generator-Community-1.3.1-macos-x64.dmg`       |
-| Linux    | `package-linux.sh`   | `dist/SEPA-Generator-Community-1.3.1-linux-x64.deb`       |
+| Windows  | `package-windows.ps1`| `dist/SEPA-Generator-Community-1.4.0-windows-x64.msi`     |
+| macOS    | `package-macos.sh`   | `dist/SEPA-Generator-Community-1.4.0-macos-arm64.dmg`     |
+| macOS    | `package-macos.sh`   | `dist/SEPA-Generator-Community-1.4.0-macos-x64.dmg`       |
+| Linux    | `package-linux.sh`   | `dist/SEPA-Generator-Community-1.4.0-linux-x64.deb`       |
 
 > Each installer **bundles its own Java runtime** — end users do **not** need to
 > install Java separately. The Linux `.deb` targets **Debian/Ubuntu-compatible**
 > distributions (anything using `dpkg`/`apt`).
 
-### Final v1.3.1 release artifacts
+### Final v1.4.0 release artifacts
 
 The [`Package Community`](../../.github/workflows/package-community.yml) workflow
-(manual `workflow_dispatch`) builds four architecture-specific packages, each on
-a native runner, by calling the scripts in this folder (no jpackage/icon logic is
-duplicated in YAML):
+builds four architecture-specific packages, each on a native runner, by calling
+the scripts in this folder (no jpackage/icon logic is duplicated in YAML):
 
 | Artifact                                            | Runner            | Arch label |
 | --------------------------------------------------- | ----------------- | ---------- |
-| `SEPA-Generator-Community-1.3.1-windows-x64.msi`    | `windows-latest`  | `x64`      |
-| `SEPA-Generator-Community-1.3.1-macos-arm64.dmg`    | `macos-26`        | `arm64`    |
-| `SEPA-Generator-Community-1.3.1-macos-x64.dmg`      | `macos-26-intel`  | `x64`      |
-| `SEPA-Generator-Community-1.3.1-linux-x64.deb`      | `ubuntu-latest`   | `x64`      |
+| `SEPA-Generator-Community-1.4.0-windows-x64.msi`    | `windows-latest`  | `x64`      |
+| `SEPA-Generator-Community-1.4.0-macos-arm64.dmg`    | `macos-26`        | `arm64`    |
+| `SEPA-Generator-Community-1.4.0-macos-x64.dmg`      | `macos-26-intel`  | `x64`      |
+| `SEPA-Generator-Community-1.4.0-linux-x64.deb`      | `ubuntu-latest`   | `x64`      |
 
-Shared configuration (app name, version, vendor, main JAR, icon, output dir,
-package name) is centralized near the top of each script.
+The workflow has **two clearly-separated modes** — a manual **release
+candidate** and a tag-driven **final release** that produces a reviewable draft
+GitHub Release with checksums. See
+[Release workflow (RC & final)](#release-workflow-rc--final) below.
 
-| Setting     | Value                             |
-| ----------- | --------------------------------- |
-| App name    | `SEPA Generator Community`        |
-| Version     | `1.3.1`                           |
-| Vendor      | `Niryosys`                        |
-| Main JAR    | `generator-1.3.1.jar` (shaded)    |
-| Main class  | `com.pcariou.generator.Generator` |
-| Output dir  | `dist/`                           |
+Shared packaging identity (app name, artifact slug, vendor, description, main
+class, and the permanent Windows/macOS/Linux package identifiers) lives in a
+single [`packaging/edition.properties`](../edition.properties) file that all
+three scripts read. The **application version is not hardcoded**: each script
+derives it from the authoritative Maven module version (the `generator` module,
+via `help:evaluate`), so package metadata, filenames and the in-app version can
+never drift. Bump the release version by editing the Maven POMs only.
+
+| Setting     | Value                             | Source                      |
+| ----------- | --------------------------------- | --------------------------- |
+| App name    | `SEPA Generator Community`        | `edition.properties`        |
+| Version     | `1.4.0`                           | Maven (`generator` module)  |
+| Vendor      | `Niryosys`                        | `edition.properties`        |
+| Main JAR    | `generator-1.4.0.jar` (shaded)    | Maven (`generator` module)  |
+| Main class  | `com.pcariou.generator.Generator` | `edition.properties`        |
+| Output dir  | `dist/`                           | script (constant)           |
 
 ---
 
@@ -93,7 +102,7 @@ powershell -ExecutionPolicy Bypass -File packaging\community\package-windows.ps1
 ```
 
 The installer is written to
-`dist\SEPA-Generator-Community-1.3.1-windows-x64.msi`.
+`dist\SEPA-Generator-Community-1.4.0-windows-x64.msi`.
 
 ### Test install / uninstall
 
@@ -101,9 +110,9 @@ The installer is written to
 2. **Launch:** from the **Start Menu** group *SEPA Generator Community* or the
    **Desktop shortcut**. Confirm the correct icon appears.
 3. **Verify registration:** *Settings → Apps → Installed apps* should list
-   *SEPA Generator Community 1.3.1* by *Niryosys*.
+   *SEPA Generator Community 1.4.0* by *Niryosys*.
 4. **Uninstall:** from *Installed apps*, or run
-   `msiexec /x dist\SEPA-Generator-Community-1.3.1-windows-x64.msi`.
+   `msiexec /x dist\SEPA-Generator-Community-1.4.0-windows-x64.msi`.
 
 ---
 
@@ -158,7 +167,7 @@ RELEASE=false ./packaging/community/package-macos.sh
 ```
 
 By default the DMG is written to
-`dist/SEPA-Generator-Community-1.3.1-macos.dmg`. With `ARCH_LABEL` set, the name
+`dist/SEPA-Generator-Community-1.4.0-macos.dmg`. With `ARCH_LABEL` set, the name
 becomes `…-macos-arm64.dmg` or `…-macos-x64.dmg`. The CI workflow builds both:
 `arm64` on `macos-26` (Apple Silicon) and `x64` on `macos-26-intel`.
 
@@ -169,23 +178,33 @@ becomes `…-macos-arm64.dmg` or `…-macos-x64.dmg`. The CI workflow builds bot
 3. Launch it from Launchpad/Finder and confirm it opens (no separate Java
    install needed) and shows the correct icon.
 
-### Signing & notarization (future step)
+### Signing & notarization (optional)
 
 The basic DMG build is **unsigned** and does **not** require an Apple Developer
 account. Because it is unsigned, Gatekeeper warns on first launch
 ("…cannot be opened because the developer cannot be verified"); users must
 right-click → **Open**, or allow it under *System Settings → Privacy & Security*.
 
-Signing is cleanly optional and **off by default**. To enable it later:
+Signing and notarization are **optional, off by default, and fail-closed**: if
+you explicitly request them but required inputs are missing, packaging aborts
+rather than producing an artifact mislabeled as signed. See the dedicated
+[Signing & notarization](#signing--notarization-optional-cross-platform)
+section below for the full environment-variable contract.
+
+Quick reference (see below for the full list of secrets):
 
 ```bash
-SIGN=true MAC_SIGNING_IDENTITY="Developer ID Application: Your Name (TEAMID)" \
+# Sign the .app + bundled runtime with a Developer ID identity already present
+# in an available keychain:
+MAC_SIGN=true MAC_SIGNING_IDENTITY="Developer ID Application: Your Name (TEAMID)" \
+  ./packaging/community/package-macos.sh
+
+# Sign AND notarize + staple (requires Apple credentials):
+MAC_SIGN=true MAC_SIGNING_IDENTITY="Developer ID Application: Your Name (TEAMID)" \
+MAC_NOTARIZE=true APPLE_ID="you@example.com" APPLE_TEAM_ID="TEAMID" \
+APPLE_APP_PASSWORD="app-specific-password" \
   ./packaging/community/package-macos.sh
 ```
-
-Full **notarization** (`xcrun notarytool` + stapling) is a separate, future step
-for a more professional macOS distribution and is intentionally not performed by
-this script yet.
 
 ---
 
@@ -237,7 +256,7 @@ RELEASE=false ./packaging/community/package-linux.sh
 ```
 
 The package is written to
-`dist/SEPA-Generator-Community-1.3.1-linux-x64.deb`.
+`dist/SEPA-Generator-Community-1.4.0-linux-x64.deb`.
 
 ### Package metadata
 
@@ -252,15 +271,210 @@ The package is written to
 
 ```bash
 # Install
-sudo apt-get install -y ./dist/SEPA-Generator-Community-1.3.1-linux-x64.deb
+sudo apt-get install -y ./dist/SEPA-Generator-Community-1.4.0-linux-x64.deb
 #   - or -
-sudo dpkg -i ./dist/SEPA-Generator-Community-1.3.1-linux-x64.deb
+sudo dpkg -i ./dist/SEPA-Generator-Community-1.4.0-linux-x64.deb
 
 # Launch from the application menu (Office/Finance), then uninstall:
 sudo apt-get remove -y sepa-generator-community
 #   - or -
 sudo dpkg -r sepa-generator-community
 ```
+
+### Package signing (not applicable)
+
+DEB **signing is intentionally not implemented**. Repository signing
+(`dpkg-sig` / GPG-signed APT `Release` files) is only meaningful when
+distributing through an APT repository. The Community release model is direct
+download of a standalone `.deb`, whose integrity is covered by the published
+**SHA-256 checksums** (added in the release-workflow stage). No Linux signing
+system existed previously, so there is nothing to preserve.
+
+---
+
+## Release workflow (RC & final)
+
+The `Package Community` workflow orchestrates the per-platform scripts. It runs
+in **two deliberately separated modes** and **never publishes a release
+automatically** — final publication is always a manual action.
+
+### Mode 1 — Release candidate (manual)
+
+Trigger: **Actions → Package Community → Run workflow** (`workflow_dispatch`).
+
+- Builds all four installers on native runners and uploads them as **workflow
+  artifacts** (downloadable from the run page).
+- **Creates no GitHub Release** and generates no checksums file.
+- Unsigned by default. Tick the **`sign`** input to attempt a signed build (only
+  succeeds if the signing secrets are configured; otherwise it fails closed).
+
+Use RC builds to smoke-test packaging on any branch without touching releases.
+
+### Mode 2 — Final release (tag)
+
+Trigger: pushing an annotated **`vX.Y.Z`** tag whose version exactly matches
+Maven's `${revision}` (currently `1.4.0`).
+
+```bash
+# From a clean, green checkout of the exact release commit:
+mvn clean verify                     # full suite must pass
+git tag -a v1.4.0 -m "Community 1.4.0"
+git push origin v1.4.0               # <-- this triggers the release run
+```
+
+The run then:
+
+1. **Preflight** — resolves the Maven version, asserts the tag matches it
+   (mismatch fails **before** any packaging), and runs the full test suite.
+2. **Build** — produces the four installers from the immutable tagged commit.
+3. **Release** — downloads the four artifacts, writes **`SHA256SUMS.txt`**
+   (after any signing/notarization), **verifies** it, and creates/updates a
+   **draft** GitHub Release titled `SEPA Generator Community <version>` with the
+   installers, the checksum file, and a reviewer checklist.
+
+The draft is **not** published and **not** marked *latest*. A maintainer reviews
+it (see the checklist in the generated notes) and clicks **Publish** manually.
+
+Ordinary pushes and pull requests do **not** trigger this workflow, so secrets
+are never exposed to forks.
+
+### Version contract
+
+The tag version and Maven `${revision}` must be identical. To ship a new
+version, bump the Maven `<revision>` (root POM) — never edit installer names or
+script versions by hand — then tag the matching `vX.Y.Z`.
+
+### Checksums
+
+`SHA256SUMS.txt` lists one SHA-256 per distributed installer (basenames only)
+and is verified in CI before the draft is created. Users verify a download with:
+
+```bash
+sha256sum -c SHA256SUMS.txt          # from the folder containing the installers
+```
+
+### Signing in the release
+
+Signing is a **separate, deliberate release gate** (see the next section):
+
+- **RC:** the `sign` input (default off).
+- **Final release:** the repository variable `COMMUNITY_RELEASE_SIGN` (`true`
+  to enable; default off). When enabled, the build **fails closed** if the
+  required signing secrets are missing, and signatures are verified during
+  packaging. Unsigned artifacts are never described as signed.
+
+### Rerun / retry behavior
+
+- Reruns for the same tag **update the single existing draft** (assets are
+  re-uploaded with `--clobber`) rather than creating duplicates; a `concurrency`
+  group serializes runs for the same ref.
+- If a release for the tag already exists and is **published**, the workflow
+  **refuses to modify it** and fails — publish is final.
+- To redo a botched draft: delete the draft release (and, if needed, the tag),
+  fix the issue, then re-tag/re-push.
+
+### Least-privilege permissions
+
+The workflow default is `contents: read`. Only the `release` job is granted
+`contents: write` (to create the draft), using the built-in `GITHUB_TOKEN`.
+
+### Secondary artifacts
+
+Community ships **only** the four native installers above (MSI, two DMGs, DEB).
+There is **no** portable ZIP, standalone JAR, RPM, AppImage, or ARM Linux
+deliverable, and none is removed by this change — none existed. If a secondary
+artifact is added later, add it to `expected_artifacts` in
+[`release-lib.sh`](release/release-lib.sh) so completeness/checksum checks cover
+it.
+
+---
+
+## Signing & notarization (optional, cross-platform)
+
+Signing is **infrastructure only**: the hooks below let a signed/notarized build
+happen when credentials are supplied, but their presence does **not** mean any
+current artifact is signed. Unsigned development builds always work with no
+secrets.
+
+Key properties:
+
+- **Disabled by default.** A normal build (and any ordinary pull request) needs
+  no secrets and produces an unsigned installer.
+- **Explicit opt-in.** Signing activates only when you set the enable flag
+  (`WINDOWS_SIGN=true` / `-Sign` on Windows, `MAC_SIGN=true` on macOS).
+- **Fail-closed.** If you request signing but a required input is missing,
+  packaging **aborts** instead of emitting an unsigned artifact under a "signed"
+  label. A single stray partial credential can never silently switch signing on.
+- **No secret leakage.** Passwords are never echoed; command previews redact
+  them. Temporary certificates/keychains are always cleaned up.
+
+> Enabling these hooks is a **separate release gate**. Actually signing,
+> notarizing, and verifying artifacts is decided and performed outside these
+> packaging steps. This document does **not** claim any artifact is signed.
+
+### Windows (Authenticode)
+
+| Variable                  | Secret? | Purpose                                                        |
+| ------------------------- | ------- | -------------------------------------------------------------- |
+| `WINDOWS_SIGN` / `-Sign`  | no      | Enable signing (`true`). Off by default.                       |
+| `WINDOWS_CERT_PFX_BASE64` | **yes** | Base64 of the code-signing `.pfx` (PKCS#12).                   |
+| `WINDOWS_CERT_PASSWORD`   | **yes** | Password for the `.pfx`.                                       |
+| `WINDOWS_TIMESTAMP_URL`   | no      | RFC3161 timestamp URL. Default `http://timestamp.digicert.com`.|
+
+Requires `signtool.exe` (Windows SDK). The MSI is signed with
+`/fd SHA256 /tr <url> /td SHA256` and then **verified** (`signtool verify /pa`);
+verification failure aborts packaging. The decoded `.pfx` is written to a unique
+temp file that is always deleted.
+
+```powershell
+$env:WINDOWS_CERT_PFX_BASE64 = [Convert]::ToBase64String([IO.File]::ReadAllBytes("cert.pfx"))
+$env:WINDOWS_CERT_PASSWORD   = "…"
+.\packaging\community\package-windows.ps1 -Sign
+```
+
+### macOS (Developer ID + notarization)
+
+| Variable               | Secret? | Purpose                                                            |
+| ---------------------- | ------- | ------------------------------------------------------------------ |
+| `MAC_SIGN`             | no      | Enable Developer ID signing (`true`). Off by default.              |
+| `MAC_SIGNING_IDENTITY` | no*     | e.g. `Developer ID Application: Name (TEAMID)`. Required if signing.|
+| `MACOS_CERT_P12_BASE64`| **yes** | Optional: base64 `.p12` imported into a temporary keychain.        |
+| `MACOS_CERT_PASSWORD`  | **yes** | Password for the `.p12` (required if `MACOS_CERT_P12_BASE64` set). |
+| `MAC_NOTARIZE`         | no      | Enable notarization + stapling (`true`). Requires `MAC_SIGN=true`. |
+| `APPLE_ID`             | **yes** | Apple ID for `notarytool`. Required if notarizing.                 |
+| `APPLE_TEAM_ID`        | **yes** | Apple Developer Team ID. Required if notarizing.                   |
+| `APPLE_APP_PASSWORD`   | **yes** | App-specific password for `notarytool`. Required if notarizing.    |
+
+\*Not a secret, but signing fails closed if it is empty.
+
+`jpackage` signs the `.app` and its bundled Java runtime, applying the
+hardened-runtime entitlements in `packaging/macos/entitlements.plist`. When
+`MACOS_CERT_P12_BASE64` is supplied the certificate is imported into a
+**temporary keychain** that is removed on exit; otherwise the identity is taken
+from an existing keychain. Notarization requires signing — `notarytool submit
+--wait`, `stapler staple`, `stapler validate` and a `spctl` Gatekeeper check all
+must pass or packaging aborts.
+
+### Local vs GitHub Actions
+
+These variables can be exported locally for a one-off signed build. In CI they
+are wired as encrypted **GitHub Actions secrets/variables** consumed by the
+`Package Community` release workflow (see
+[Release workflow](#release-workflow-rc--final)):
+
+| Name                                                | Kind     | Used by            |
+| --------------------------------------------------- | -------- | ------------------ |
+| `WINDOWS_CERT_PFX_BASE64`, `WINDOWS_CERT_PASSWORD`  | secret   | Windows job        |
+| `WINDOWS_TIMESTAMP_URL`                             | variable | Windows job (opt.) |
+| `MACOS_CERT_P12_BASE64`, `MACOS_CERT_PASSWORD`      | secret   | macOS jobs         |
+| `APPLE_ID`, `APPLE_TEAM_ID`, `APPLE_APP_PASSWORD`   | secret   | macOS jobs         |
+| `MAC_SIGNING_IDENTITY`                              | variable | macOS jobs         |
+| `COMMUNITY_RELEASE_SIGN`                            | variable | enables tag-release signing |
+
+Signing stays **off** unless explicitly enabled (RC `sign` input, or the
+`COMMUNITY_RELEASE_SIGN` variable for tag releases). No secret is stored in the
+repository, and no placeholder credential is committed. Because the workflow
+never runs on pull requests, secrets are not exposed to forks.
 
 ---
 

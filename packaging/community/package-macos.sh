@@ -15,26 +15,60 @@
 set -euo pipefail
 
 # -----------------------------------------------------------------------------
-# Configuration (centralized - edit here)
+# Helpers
 # -----------------------------------------------------------------------------
-APP_NAME="SEPA Generator Community"
-APP_VERSION="1.3.1"
-VENDOR="Niryosys"
-DESCRIPTION="Generate SEPA payment XML files from spreadsheet inputs."
-COPYRIGHT="Copyright (c) $(date +%Y) ${VENDOR}"
+step() { printf '==> %s\n' "$1"; }
+ok()   { printf '    %s\n' "$1"; }
+fail() { printf 'ERROR: %s\n' "$1" >&2; exit 1; }
 
-# macOS bundle identifier (reverse-DNS) and short menu-bar name (<= 16 chars).
-MAC_PACKAGE_IDENTIFIER="com.pcariou.sepa.community"
-MAC_MENU_NAME="SEPA Generator"
+# Read a required KEY=VALUE from edition.properties (value taken verbatim after
+# the first '='). Blank lines and '#' comments are ignored by the '^KEY=' match.
+prop() {
+  local key="$1" val
+  val="$(grep -E "^${key}=" "${EDITION_PROPS}" | head -n1 | cut -d= -f2-)"
+  [ -n "${val}" ] || fail "Required key '${key}' missing from ${EDITION_PROPS}."
+  printf '%s' "${val}"
+}
 
-# Runnable fat JAR produced by the Maven build (generator module, shaded).
-MAIN_JAR_NAME="generator-${APP_VERSION}.jar"
-MAIN_CLASS="com.pcariou.generator.Generator"
+# Derive the authoritative application version from the Maven generator module,
+# so the packaging version can never drift from the POM.
+derive_app_version() {
+  command -v mvn >/dev/null 2>&1 || fail "Maven (mvn) was not found on PATH; it is required to derive the application version."
+  local v
+  v="$(cd "${REPO_ROOT}" && mvn -q -DforceStdout -pl generator \
+        org.apache.maven.plugins:maven-help-plugin:3.5.0:evaluate -Dexpression=project.version)" \
+    || fail "Failed to derive the application version from Maven (help:evaluate)."
+  v="$(printf '%s' "${v}" | tail -n1 | tr -d '[:space:]')"
+  case "${v}" in
+    ''|\$*) fail "Maven returned an invalid application version: '${v}'." ;;
+  esac
+  printf '%s' "${v}"
+}
 
+# -----------------------------------------------------------------------------
+# Configuration (from packaging/edition.properties + authoritative Maven version)
+# -----------------------------------------------------------------------------
 # Paths are resolved relative to the repository root (two levels above this
 # script: <repo>/packaging/community/package-macos.sh).
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+EDITION_PROPS="${REPO_ROOT}/packaging/edition.properties"
+[ -f "${EDITION_PROPS}" ] || fail "Edition properties file not found: ${EDITION_PROPS}"
+
+APP_NAME="$(prop APP_NAME)"
+ARTIFACT_SLUG="$(prop ARTIFACT_SLUG)"
+VENDOR="$(prop VENDOR)"
+DESCRIPTION="$(prop DESCRIPTION)"
+MAIN_CLASS="$(prop MAIN_CLASS)"
+MAC_PACKAGE_IDENTIFIER="$(prop MAC_PACKAGE_IDENTIFIER)"
+MAC_MENU_NAME="$(prop MAC_MENU_NAME)"
+COPYRIGHT="Copyright (c) $(date +%Y) ${VENDOR}"
+
+# Authoritative application version (derived from Maven, never hardcoded).
+APP_VERSION="$(derive_app_version)"
+
+# Runnable fat JAR produced by the Maven build (generator module, shaded).
+MAIN_JAR_NAME="generator-${APP_VERSION}.jar"
 MAIN_JAR_PATH="${REPO_ROOT}/generator/target/${MAIN_JAR_NAME}"
 
 # macOS icon. Resolution order (handled later, after the Maven build):
@@ -60,31 +94,31 @@ JP_DEST_DIR="${STAGE_ROOT}/out"
 # "arm64" or "x64"). It does NOT affect the build itself - jpackage always
 # produces a DMG for the architecture of the macOS runner this script runs on;
 # the label simply makes the artifact name explicit for release distribution.
-# When unset, the canonical name "SEPA-Generator-Community-<ver>-macos.dmg" is
-# used (preserving the original default behavior).
+# When unset, the canonical name "<slug>-<ver>-macos.dmg" is used (preserving
+# the original default behavior).
 ARCH_LABEL="${ARCH_LABEL:-}"
 if [ -n "${ARCH_LABEL}" ]; then
-  FINAL_ARTIFACT="SEPA-Generator-Community-${APP_VERSION}-macos-${ARCH_LABEL}.dmg"
+  FINAL_ARTIFACT="${ARTIFACT_SLUG}-${APP_VERSION}-macos-${ARCH_LABEL}.dmg"
 else
-  FINAL_ARTIFACT="SEPA-Generator-Community-${APP_VERSION}-macos.dmg"
+  FINAL_ARTIFACT="${ARTIFACT_SLUG}-${APP_VERSION}-macos.dmg"
 fi
 
 # -----------------------------------------------------------------------------
-# Code signing / notarization (DISABLED by default)
+# Code signing / notarization (OPTIONAL; DISABLED by default)
 #
 # A basic DMG build does NOT require an Apple Developer account. Unsigned macOS
-# builds are perfectly usable for testing and direct distribution, but Gatekeeper
-# will warn on first launch ("cannot be opened because the developer cannot be
-# verified"); users must right-click -> Open, or allow it in System Settings ->
-# Privacy & Security. Proper signing + notarization is a FUTURE step for a more
-# polished distribution and is intentionally left off here.
-#
-# To enable signing later: set SIGN=true and MAC_SIGNING_IDENTITY to your
-# "Developer ID Application: ..." identity. Notarization is a separate step
-# (xcrun notarytool) and is NOT performed by this script.
+# builds are usable for testing/direct distribution, but Gatekeeper warns on
+# first launch; users must right-click -> Open. Signing + notarization is opt-in
+# and fail-closed (see packaging/community/macos-signing.sh). Enable via:
+#   MAC_SIGN=true       and MAC_SIGNING_IDENTITY="Developer ID Application: ..."
+#   MAC_NOTARIZE=true   and APPLE_ID / APPLE_TEAM_ID / APPLE_APP_PASSWORD
+# Optionally import the certificate from MACOS_CERT_P12_BASE64 (+ MACOS_CERT_PASSWORD)
+# into a temporary keychain. Notarization requires signing.
 # -----------------------------------------------------------------------------
-SIGN="${SIGN:-false}"
-MAC_SIGNING_IDENTITY="${MAC_SIGNING_IDENTITY:-}"
+ENTITLEMENTS_PLIST="${REPO_ROOT}/packaging/macos/entitlements.plist"
+# shellcheck source=./macos-signing.sh
+source "${SCRIPT_DIR}/macos-signing.sh"
+resolve_macos_signing_plan || fail "Invalid macOS signing configuration (see error above)."
 
 # Skip the Maven build (use the jar already present in target/).
 SKIP_BUILD="${SKIP_BUILD:-false}"
@@ -95,12 +129,8 @@ SKIP_BUILD="${SKIP_BUILD:-false}"
 RELEASE="${RELEASE:-true}"
 
 # -----------------------------------------------------------------------------
-# Helpers
+# Helpers (icon generation)
 # -----------------------------------------------------------------------------
-step() { printf '==> %s\n' "$1"; }
-ok()   { printf '    %s\n' "$1"; }
-fail() { printf 'ERROR: %s\n' "$1" >&2; exit 1; }
-
 # Generate a macOS .icns from a single high-resolution PNG using the native
 # macOS tools `sips` and `iconutil`. Writes an intermediate .iconset next to the
 # output .icns. Both tools ship with macOS.
@@ -242,15 +272,18 @@ if [ -n "${RESOLVED_ICON}" ]; then
   ok "Using icon: ${RESOLVED_ICON}"
 fi
 
-# Optional code signing (disabled by default; see notes above).
-if [ "${SIGN}" = "true" ]; then
-  if [ -z "${MAC_SIGNING_IDENTITY}" ]; then
-    fail "SIGN=true but MAC_SIGNING_IDENTITY is empty. Set it to your 'Developer ID Application: ...' identity."
-  fi
+# Optional Developer ID signing. jpackage signs the .app AND its nested Java
+# runtime; --mac-entitlements applies the hardened-runtime entitlements needed
+# by the bundled JVM. The signing identity value is not echoed.
+if [ "${MAC_DO_SIGN}" = "true" ]; then
+  setup_macos_keychain
   JP_ARGS+=( --mac-sign --mac-signing-key-user-name "${MAC_SIGNING_IDENTITY}" )
-  ok "Code signing enabled with identity: ${MAC_SIGNING_IDENTITY}"
+  if [ -f "${ENTITLEMENTS_PLIST}" ]; then
+    JP_ARGS+=( --mac-entitlements "${ENTITLEMENTS_PLIST}" )
+  fi
+  ok "Code signing ENABLED (Developer ID; hardened-runtime entitlements applied)."
 else
-  ok "Code signing disabled (unsigned build; Gatekeeper will warn on first launch)."
+  ok "Code signing DISABLED (unsigned build; Gatekeeper will warn on first launch)."
 fi
 
 "${JPACKAGE}" "${JP_ARGS[@]}" || fail "jpackage failed. See the output above for the exact cause."
@@ -266,6 +299,25 @@ rm -f "${FINAL_PATH}"
 mv "${PRODUCED}" "${FINAL_PATH}"
 ok "DMG: ${FINAL_PATH}"
 
+# -----------------------------------------------------------------------------
+# 7. Optional notarization + stapling (requires a signed app)
+# -----------------------------------------------------------------------------
+NOTARIZED=false
+if [ "${MAC_DO_NOTARIZE}" = "true" ]; then
+  notarize_and_staple "${FINAL_PATH}" || fail "Notarization/stapling failed; the DMG is NOT notarized."
+  NOTARIZED=true
+  ok "DMG notarized, stapled and validated."
+elif [ "${MAC_DO_SIGN}" = "true" ]; then
+  ok "App is signed but the DMG was NOT notarized (MAC_NOTARIZE not set)."
+fi
+
 printf '\n'
-printf 'SUCCESS: %s %s packaged.\n' "${APP_NAME}" "${APP_VERSION}"
+if [ "${NOTARIZED}" = "true" ]; then
+  SIGN_STATE="signed + notarized + stapled"
+elif [ "${MAC_DO_SIGN}" = "true" ]; then
+  SIGN_STATE="signed (not notarized)"
+else
+  SIGN_STATE="unsigned"
+fi
+printf 'SUCCESS: %s %s packaged (%s).\n' "${APP_NAME}" "${APP_VERSION}" "${SIGN_STATE}"
 printf 'Output : %s\n' "${FINAL_PATH}"

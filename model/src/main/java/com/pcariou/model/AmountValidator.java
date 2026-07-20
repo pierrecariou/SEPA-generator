@@ -15,6 +15,14 @@ public class AmountValidator implements ConstraintValidator<ValidAmount, String>
     private static final String DECIMAL_PATTERN = "^-?[0-9]+([.][0-9]+)?$";
     private static final String MAX_2_DECIMALS_PATTERN = "^-?[0-9]+([.][0-9]{1,2})?$";
 
+    /**
+     * EPC maximum amount per transaction for SEPA Credit Transfer
+     * (999 999 999.99 EUR). The ISO schema allows a far larger
+     * {@code fractionDigits}-bounded value, so this ceiling is an EPC business
+     * rule enforced separately from schema validity.
+     */
+    private static final BigDecimal MAX_AMOUNT = new BigDecimal("999999999.99");
+
     @Override
     public boolean isValid(String amount, ConstraintValidatorContext context) {
         if (amount == null || amount.trim().isEmpty()) {
@@ -37,6 +45,12 @@ public class AmountValidator implements ConstraintValidator<ValidAmount, String>
         if (new BigDecimal(normalized).compareTo(BigDecimal.ZERO) <= 0) {
             buildMessage(context,
                     "Amount \"" + amount + "\" must be greater than 0");
+            return false;
+        }
+        if (new BigDecimal(normalized).compareTo(MAX_AMOUNT) > 0) {
+            buildMessage(context,
+                    "Amount \"" + amount + "\" exceeds the maximum permitted SEPA amount of "
+                            + "999999999.99");
             return false;
         }
         return true;

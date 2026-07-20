@@ -17,32 +17,79 @@
 set -euo pipefail
 
 # -----------------------------------------------------------------------------
-# Configuration (centralized - edit here)
+# Helpers
 # -----------------------------------------------------------------------------
-APP_NAME="SEPA Generator Community"
-APP_VERSION="1.3.1"
-VENDOR="Niryosys"
-DESCRIPTION="Generate SEPA payment XML files from spreadsheet inputs."
-COPYRIGHT="Copyright (c) $(date +%Y) ${VENDOR}"
+step() { printf '==> %s\n' "$1"; }
+ok()   { printf '    %s\n' "$1"; }
+fail() { printf 'ERROR: %s\n' "$1" >&2; exit 1; }
 
-# Linux package metadata.
-LINUX_PACKAGE_NAME="sepa-generator-community"
-# Freedesktop menu categories for an office/finance utility (placed in the
-# generated .desktop "Categories=" entry).
-LINUX_MENU_GROUP="Office;Finance"
-# Debian "Section" field for the package.
-LINUX_APP_CATEGORY="utils"
-# Debian maintainer (matches the project's official contact in AppLinks.CONTACT).
-LINUX_DEB_MAINTAINER="contact@sepa-xml-generator.com"
+# Read a required KEY=VALUE from edition.properties (value taken verbatim after
+# the first '='). Blank lines and '#' comments are ignored by the '^KEY=' match.
+prop() {
+  local key="$1" val
+  val="$(grep -E "^${key}=" "${EDITION_PROPS}" | head -n1 | cut -d= -f2-)"
+  [ -n "${val}" ] || fail "Required key '${key}' missing from ${EDITION_PROPS}."
+  printf '%s' "${val}"
+}
 
-# Runnable fat JAR produced by the Maven build (generator module, shaded).
-MAIN_JAR_NAME="generator-${APP_VERSION}.jar"
-MAIN_CLASS="com.pcariou.generator.Generator"
+# Derive the authoritative application version from the Maven generator module,
+# so the packaging version can never drift from the POM.
+derive_app_version() {
+  command -v mvn >/dev/null 2>&1 || fail "Maven (mvn) was not found on PATH; it is required to derive the application version."
+  local v
+  v="$(cd "${REPO_ROOT}" && mvn -q -DforceStdout -pl generator \
+        org.apache.maven.plugins:maven-help-plugin:3.5.0:evaluate -Dexpression=project.version)" \
+    || fail "Failed to derive the application version from Maven (help:evaluate)."
+  v="$(printf '%s' "${v}" | tail -n1 | tr -d '[:space:]')"
+  case "${v}" in
+    ''|\$*) fail "Maven returned an invalid application version: '${v}'." ;;
+  esac
+  printf '%s' "${v}"
+}
 
+# -----------------------------------------------------------------------------
+# Configuration (from packaging/edition.properties + authoritative Maven version)
+# -----------------------------------------------------------------------------
 # Paths are resolved relative to the repository root (two levels above this
 # script: <repo>/packaging/community/package-linux.sh).
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+EDITION_PROPS="${REPO_ROOT}/packaging/edition.properties"
+[ -f "${EDITION_PROPS}" ] || fail "Edition properties file not found: ${EDITION_PROPS}"
+
+APP_NAME="$(prop APP_NAME)"
+ARTIFACT_SLUG="$(prop ARTIFACT_SLUG)"
+VENDOR="$(prop VENDOR)"
+DESCRIPTION="$(prop DESCRIPTION)"
+MAIN_CLASS="$(prop MAIN_CLASS)"
+COPYRIGHT="Copyright (c) $(date +%Y) ${VENDOR}"
+
+# Linux package metadata.
+LINUX_PACKAGE_NAME="$(prop LINUX_PACKAGE_NAME)"
+# Freedesktop menu categories for an office/finance utility (placed in the
+# generated .desktop "Categories=" entry).
+LINUX_MENU_GROUP="$(prop LINUX_MENU_GROUP)"
+# Debian "Section" field for the package.
+LINUX_APP_CATEGORY="$(prop LINUX_APP_CATEGORY)"
+# Debian maintainer (matches the project's official contact in AppLinks.CONTACT).
+LINUX_DEB_MAINTAINER="$(prop DEB_MAINTAINER)"
+
+# Authoritative application version (derived from Maven, never hardcoded).
+APP_VERSION="$(derive_app_version)"
+
+# -----------------------------------------------------------------------------
+# Package signing: intentionally NOT implemented for Linux.
+#
+# DEB repository (dpkg-sig / Release-file GPG) signing is only meaningful when
+# distributing through an APT repository. The Community release model is direct
+# download of a standalone .deb, whose integrity is covered by the published
+# SHA-256 checksums (release workflow stage). Adding a GPG signing system here
+# would be unused infrastructure, so it is deferred. No Linux signing existed
+# previously, so there is nothing to preserve.
+# -----------------------------------------------------------------------------
+
+# Runnable fat JAR produced by the Maven build (generator module, shaded).
+MAIN_JAR_NAME="generator-${APP_VERSION}.jar"
 MAIN_JAR_PATH="${REPO_ROOT}/generator/target/${MAIN_JAR_NAME}"
 
 # Linux icon (PNG). Resolution order (handled after the Maven build):
@@ -65,7 +112,7 @@ JP_DEST_DIR="${STAGE_ROOT}/out"
 # does NOT affect the build - jpackage produces a .deb for the architecture of
 # the Linux runner; the label only makes the release artifact name explicit.
 ARCH_LABEL="${ARCH_LABEL:-x64}"
-FINAL_ARTIFACT="SEPA-Generator-Community-${APP_VERSION}-linux-${ARCH_LABEL}.deb"
+FINAL_ARTIFACT="${ARTIFACT_SLUG}-${APP_VERSION}-linux-${ARCH_LABEL}.deb"
 
 # Skip the Maven build (use the jar already present in target/).
 SKIP_BUILD="${SKIP_BUILD:-false}"
@@ -74,13 +121,6 @@ SKIP_BUILD="${SKIP_BUILD:-false}"
 # source PNG is available the build fails. Set RELEASE=false for a local/test
 # build that may fall back to jpackage's default icon.
 RELEASE="${RELEASE:-true}"
-
-# -----------------------------------------------------------------------------
-# Helpers
-# -----------------------------------------------------------------------------
-step() { printf '==> %s\n' "$1"; }
-ok()   { printf '    %s\n' "$1"; }
-fail() { printf 'ERROR: %s\n' "$1" >&2; exit 1; }
 
 # -----------------------------------------------------------------------------
 # 1. Verify we are on Linux

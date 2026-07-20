@@ -12,6 +12,7 @@ public class Debtor
 {
 	@XmlElement(name = "Nm")
 	@NotBlank(message = "Name for Debtor is mandatory")
+	@Size(max = 70, message = "Name for Debtor must be at most 70 characters")
 	private String name;
 
 	@XmlTransient

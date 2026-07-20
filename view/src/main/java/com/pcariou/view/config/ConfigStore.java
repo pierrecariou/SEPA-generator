@@ -4,8 +4,16 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
 import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.io.Reader;
+import java.io.Writer;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.AtomicMoveNotSupportedException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -42,7 +50,8 @@ public final class ConfigStore {
         if (!f.exists()) {
             return null;
         }
-        try (FileReader r = new FileReader(f)) {
+        try (Reader r = new InputStreamReader(
+                Files.newInputStream(f.toPath()), StandardCharsets.UTF_8)) {
             return gson.fromJson(r, AppConfig.class);
         } catch (Exception e) {
             LOGGER.log(Level.WARNING, "Failed to read config from " + f.getAbsolutePath(), e);
@@ -50,15 +59,57 @@ public final class ConfigStore {
         }
     }
 
-    /** Writes the given config, overwriting the file. Returns {@code true} on success. */
+    /**
+     * Writes the given config, overwriting the file. Returns {@code true} on success.
+     *
+     * <p>The write is atomic: the complete document is serialized as UTF-8 to a
+     * temporary file in the destination's directory, then moved into place
+     * ({@code ATOMIC_MOVE} when the filesystem supports it, otherwise a plain
+     * {@code REPLACE_EXISTING} move). The destination is therefore never
+     * truncated or partially written: an interrupted or failing write leaves any
+     * previously valid config file completely intact, and the temporary file is
+     * cleaned up.
+     */
     public boolean write(AppConfig config) {
         File f = file();
-        try (FileWriter w = new FileWriter(f)) {
-            gson.toJson(config, w);
+        Path destination = f.toPath();
+        File dir = f.getAbsoluteFile().getParentFile();
+
+        Path tmp;
+        try {
+            tmp = Files.createTempFile(dir != null ? dir.toPath() : destination.getParent(),
+                    DEFAULT_FILE_NAME + ".", ".tmp");
+        } catch (Exception e) {  // e.g. the destination directory does not exist
+            LOGGER.log(Level.WARNING, "Failed to write config to " + f.getAbsolutePath(), e);
+            return false;
+        }
+
+        try {
+            try (Writer w = new OutputStreamWriter(
+                    Files.newOutputStream(tmp), StandardCharsets.UTF_8)) {
+                gson.toJson(config, w);
+            }
+            moveIntoPlace(tmp, destination);
             return true;
         } catch (Exception e) {
             LOGGER.log(Level.WARNING, "Failed to write config to " + f.getAbsolutePath(), e);
             return false;
+        } finally {
+            try {
+                Files.deleteIfExists(tmp);  // no-op after a successful move
+            } catch (IOException ignored) {
+                // A leftover temp file is harmless; nothing to recover here.
+            }
+        }
+    }
+
+    /** Replaces the destination atomically when the filesystem supports it. */
+    private static void moveIntoPlace(Path tmp, Path destination) throws IOException {
+        try {
+            Files.move(tmp, destination,
+                    StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+        } catch (AtomicMoveNotSupportedException e) {
+            Files.move(tmp, destination, StandardCopyOption.REPLACE_EXISTING);
         }
     }
 

@@ -8,9 +8,6 @@ import com.pcariou.model.PaymentInformation;
 import com.pcariou.model.PostalAddress;
 import com.pcariou.model.pain09.Document09;
 
-import javax.xml.bind.JAXBContext;
-import javax.xml.bind.Marshaller;
-import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -37,12 +34,7 @@ public class Pain09Writer implements PainWriter
 	{
 		Document09 document09 = map(document);
 
-		JAXBContext context = JAXBContext.newInstance(Document09.class);
-		Marshaller marshaller = context.createMarshaller();
-		marshaller.setProperty(Marshaller.JAXB_FRAGMENT, true);
-		marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
-		marshaller.setProperty("com.sun.xml.bind.xmlHeaders", "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\" ?>");
-		marshaller.marshal(document09, new File(outputFile));
+		SepaXmlMarshaller.marshal(document09, outputFile);
 	}
 
 	// ── Mapping (shared .02 model -> .09 DTOs) ───────────────────────────────

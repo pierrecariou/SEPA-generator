@@ -7,14 +7,10 @@ import com.pcariou.view.*;
 import com.pcariou.view.main.MainFrame;
 import org.apache.commons.io.FilenameUtils;
 
-import java.io.RandomAccessFile;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.util.Arrays;
-
-import com.aspose.cells.*;
 
 public class Generator implements IGenerator
 {
@@ -114,12 +110,7 @@ public class Generator implements IGenerator
      */
     static String convertExcelToTempCsv(String inputFile) throws Exception
     {
-        Workbook workbook = new Workbook(inputFile);
-        Path tempCsv = Files.createTempFile("sepa-generator-", ".csv");
-        String csvPath = tempCsv.toAbsolutePath().toString();
-        workbook.save(csvPath);
-        eraseNoLicenseMessage(csvPath);
-        return csvPath;
+        return ExcelToCsvConverter.convert(inputFile, "sepa-generator-").toAbsolutePath().toString();
     }
 
     /** Best-effort cleanup of a temporary converted CSV file. */
@@ -129,26 +120,6 @@ public class Generator implements IGenerator
             Files.deleteIfExists(Paths.get(path));
         } catch (Exception ignored) {
             // Temp file cleanup is best-effort; the OS temp dir is reclaimed anyway.
-        }
-    }
-
-    private static void eraseNoLicenseMessage(String inputFile) 
-    {
-        Byte b;
-
-        try {
-            RandomAccessFile f = new RandomAccessFile(inputFile, "rw");
-            long length = f.length() - 1;
-            do {                     
-                length -= 1;
-                f.seek(length);
-                b = f.readByte();
-            } while(b != 10);
-            f.setLength(length+1);
-            f.close();
-        } catch (Exception e) {
-            System.out.println("Error: " + e.getMessage());
-            System.exit(1);
         }
     }
 

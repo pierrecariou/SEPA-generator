@@ -14,6 +14,7 @@ public class Creditor
 {
 	@XmlElement(name = "Nm")
 	@NotBlank(message = "Name for Creditor is mandatory")
+	@Size(max = 70, message = "Name for Creditor must be at most 70 characters")
 	@CsvBindByName()
 	private String name;
 

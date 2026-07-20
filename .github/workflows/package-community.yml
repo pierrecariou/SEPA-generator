@@ -1,18 +1,59 @@
 name: Package Community
 
-# Manual-only for now. This first version just builds and uploads the installers
-# as workflow artifacts; it intentionally does NOT create GitHub releases.
+# Two clearly-separated modes:
 #
-# All packaging logic (jpackage invocation, icon generation, WiX checks) lives in
-# the scripts under packaging/community/. This workflow only calls those scripts
-# so the logic is never duplicated in YAML.
+#   1. Release candidate (RC) — `workflow_dispatch`.
+#      Builds the four native installers and uploads them as workflow artifacts
+#      for inspection. It NEVER creates a GitHub Release. Signing is off unless
+#      the `sign` input is explicitly set to true (and the secrets exist).
+#
+#   2. Final release — push of a `vX.Y.Z` tag.
+#      Verifies the tag matches Maven's ${revision}, runs the full test suite,
+#      builds the four installers, generates + verifies SHA-256 checksums, and
+#      creates/updates a DRAFT GitHub Release for manual review. It never
+#      publishes automatically and never marks the release "latest".
+#
+# All packaging logic (jpackage, icons, WiX checks, signing hooks) lives in the
+# scripts under packaging/community/. This workflow only orchestrates them so
+# the logic is never duplicated in YAML.
+#
+# Ordinary pushes and pull requests do not trigger this workflow, so repository
+# secrets are never exposed to untrusted forks.
+
 on:
+  push:
+    tags:
+      - 'v*'
   workflow_dispatch:
+    inputs:
+      sign:
+        description: 'Enable signing/notarization for this RC build (requires the signing secrets to be configured).'
+        type: boolean
+        default: false
+
+# Least privilege by default: only the final `release` job is granted write.
+permissions:
+  contents: read
+
+concurrency:
+  # Serialize runs for the same ref so reruns update a single draft release
+  # instead of racing. Do not cancel an in-progress packaging run.
+  group: package-community-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
-  windows:
-    name: Windows MSI (x64)
-    runs-on: windows-latest
+  # ---------------------------------------------------------------------------
+  # Preflight: resolve the authoritative Maven version, enforce the tag/version
+  # contract, run the full Community test suite, and decide whether signing is
+  # enabled. Everything downstream depends on this gate.
+  # ---------------------------------------------------------------------------
+  preflight:
+    name: Preflight (version + tests)
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.resolve.outputs.version }}
+      is_release: ${{ steps.resolve.outputs.is_release }}
+      sign_enabled: ${{ steps.resolve.outputs.sign_enabled }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -23,6 +64,87 @@ jobs:
           distribution: temurin
           java-version: '23'
           cache: maven
+
+      - name: Resolve version and release mode
+        id: resolve
+        shell: bash
+        run: |
+          set -euo pipefail
+          source packaging/community/release/release-lib.sh
+
+          MAVEN_VERSION="$(mvn -q -DforceStdout -pl generator \
+            org.apache.maven.plugins:maven-help-plugin:3.5.0:evaluate \
+            -Dexpression=project.version | tail -n1 | tr -d '[:space:]')"
+          case "${MAVEN_VERSION}" in
+            ''|\$*) echo "ERROR: could not resolve a valid Maven version (got '${MAVEN_VERSION}')." >&2; exit 1 ;;
+          esac
+          echo "Maven \${revision} resolves to: ${MAVEN_VERSION}"
+
+          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+            IS_RELEASE=true
+            TAG_VERSION="$(normalize_tag_version "${GITHUB_REF_NAME}")"
+            # Reject malformed tags (e.g. vv1.4.0, v1.4, v1.4.0-beta) before
+            # the Maven comparison so the error message is unambiguous.
+            assert_semver_format "${TAG_VERSION}"
+            assert_version_match "${TAG_VERSION}" "${MAVEN_VERSION}"
+            echo "Tag ${GITHUB_REF_NAME} matches Maven version ${MAVEN_VERSION}."
+          else
+            IS_RELEASE=false
+          fi
+
+          # Signing is a deliberate, separate decision. RC builds read the `sign`
+          # input; tag releases read the COMMUNITY_RELEASE_SIGN repository
+          # variable. Default OFF (unsigned builds succeed).
+          if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ]; then
+            SIGN="${{ inputs.sign }}"
+          else
+            SIGN="${{ vars.COMMUNITY_RELEASE_SIGN }}"
+          fi
+          [ "${SIGN}" = "true" ] || SIGN=false
+
+          {
+            echo "version=${MAVEN_VERSION}"
+            echo "is_release=${IS_RELEASE}"
+            echo "sign_enabled=${SIGN}"
+          } >> "${GITHUB_OUTPUT}"
+
+      - name: Run full Community test suite
+        shell: bash
+        run: mvn -B clean verify
+
+  # ---------------------------------------------------------------------------
+  # Windows x64 MSI
+  # ---------------------------------------------------------------------------
+  windows:
+    name: Windows MSI (x64)
+    needs: preflight
+    runs-on: windows-latest
+    env:
+      # Signing is gated by preflight; the platform script fails closed if
+      # enabled without the required secrets. Secrets are only referenced here
+      # (this workflow never runs on PRs / forks).
+      WINDOWS_SIGN: ${{ needs.preflight.outputs.sign_enabled }}
+      WINDOWS_CERT_PFX_BASE64: ${{ secrets.WINDOWS_CERT_PFX_BASE64 }}
+      WINDOWS_CERT_PASSWORD: ${{ secrets.WINDOWS_CERT_PASSWORD }}
+      WINDOWS_TIMESTAMP_URL: ${{ vars.WINDOWS_TIMESTAMP_URL }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 23 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '23'
+          cache: maven
+
+      - name: Verify signing inputs (only when signing is required)
+        if: needs.preflight.outputs.sign_enabled == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          source packaging/community/release/release-lib.sh
+          assert_signing_ready windows true
 
       - name: Install WiX Toolset (v3, required by jpackage for MSI)
         shell: pwsh
@@ -45,11 +167,23 @@ jobs:
           path: dist/SEPA-Generator-Community-*-windows-x64.msi
           if-no-files-found: error
 
+  # ---------------------------------------------------------------------------
+  # macOS arm64 DMG
+  # ---------------------------------------------------------------------------
   macos-arm64:
     name: macOS DMG (arm64)
+    needs: preflight
     runs-on: macos-26
     env:
       ARCH_LABEL: arm64
+      MAC_SIGN: ${{ needs.preflight.outputs.sign_enabled }}
+      MAC_NOTARIZE: ${{ needs.preflight.outputs.sign_enabled }}
+      MAC_SIGNING_IDENTITY: ${{ vars.MAC_SIGNING_IDENTITY }}
+      MACOS_CERT_P12_BASE64: ${{ secrets.MACOS_CERT_P12_BASE64 }}
+      MACOS_CERT_PASSWORD: ${{ secrets.MACOS_CERT_PASSWORD }}
+      APPLE_ID: ${{ secrets.APPLE_ID }}
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -60,6 +194,14 @@ jobs:
           distribution: temurin
           java-version: '23'
           cache: maven
+
+      - name: Verify signing inputs (only when signing is required)
+        if: needs.preflight.outputs.sign_enabled == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          source packaging/community/release/release-lib.sh
+          assert_signing_ready macos true
 
       - name: Build macOS DMG (arm64)
         run: ./packaging/community/package-macos.sh
@@ -71,11 +213,23 @@ jobs:
           path: dist/SEPA-Generator-Community-*-macos-arm64.dmg
           if-no-files-found: error
 
+  # ---------------------------------------------------------------------------
+  # macOS x64 DMG
+  # ---------------------------------------------------------------------------
   macos-x64:
     name: macOS DMG (x64)
+    needs: preflight
     runs-on: macos-26-intel
     env:
       ARCH_LABEL: x64
+      MAC_SIGN: ${{ needs.preflight.outputs.sign_enabled }}
+      MAC_NOTARIZE: ${{ needs.preflight.outputs.sign_enabled }}
+      MAC_SIGNING_IDENTITY: ${{ vars.MAC_SIGNING_IDENTITY }}
+      MACOS_CERT_P12_BASE64: ${{ secrets.MACOS_CERT_P12_BASE64 }}
+      MACOS_CERT_PASSWORD: ${{ secrets.MACOS_CERT_PASSWORD }}
+      APPLE_ID: ${{ secrets.APPLE_ID }}
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -87,6 +241,14 @@ jobs:
           java-version: '23'
           cache: maven
 
+      - name: Verify signing inputs (only when signing is required)
+        if: needs.preflight.outputs.sign_enabled == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          source packaging/community/release/release-lib.sh
+          assert_signing_ready macos true
+
       - name: Build macOS DMG (x64)
         run: ./packaging/community/package-macos.sh
 
@@ -97,8 +259,12 @@ jobs:
           path: dist/SEPA-Generator-Community-*-macos-x64.dmg
           if-no-files-found: error
 
+  # ---------------------------------------------------------------------------
+  # Linux x64 DEB
+  # ---------------------------------------------------------------------------
   linux:
     name: Linux DEB (x64)
+    needs: preflight
     runs-on: ubuntu-latest
     env:
       ARCH_LABEL: x64
@@ -125,3 +291,122 @@ jobs:
           name: sepa-generator-community-linux-x64-deb
           path: dist/SEPA-Generator-Community-*-linux-x64.deb
           if-no-files-found: error
+
+  # ---------------------------------------------------------------------------
+  # Release: only on a vX.Y.Z tag. Collects the four installers, generates and
+  # verifies SHA-256 checksums, then creates/updates a DRAFT GitHub Release for
+  # manual review. Never publishes and never marks the release latest.
+  # ---------------------------------------------------------------------------
+  release:
+    name: Draft GitHub Release
+    needs: [preflight, windows, macos-arm64, macos-x64, linux]
+    if: needs.preflight.outputs.is_release == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      VERSION: ${{ needs.preflight.outputs.version }}
+      SIGN_ENABLED: ${{ needs.preflight.outputs.sign_enabled }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download all platform artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist-release
+          pattern: sepa-generator-community-*
+          merge-multiple: true
+
+      - name: Verify artifact set and generate checksums
+        shell: bash
+        run: |
+          set -euo pipefail
+          source packaging/community/release/release-lib.sh
+
+          SLUG="$(grep -E '^ARTIFACT_SLUG=' packaging/edition.properties | head -n1 | cut -d= -f2-)"
+          DIR="dist-release"
+
+          echo "== Verifying the collected Community artifact set (version ${VERSION}) =="
+          verify_artifact_set "${DIR}" "${SLUG}" "${VERSION}"
+
+          echo "== Generating SHA256SUMS.txt (after any signing/notarization) =="
+          generate_checksums "${DIR}" "${SLUG}" "${VERSION}"
+
+          echo "== Verifying checksums =="
+          verify_checksums "${DIR}"
+
+          echo "== Final release artifact set =="
+          ( cd "${DIR}" && ls -1 && echo "---" && cat SHA256SUMS.txt )
+
+      - name: Create or update the draft release
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG="${GITHUB_REF_NAME}"
+          TITLE="SEPA Generator Community ${VERSION}"
+          DIR="dist-release"
+
+          if [ "${SIGN_ENABLED}" = "true" ]; then
+            SIGN_LINE="Signing/notarization: ENABLED for this build (verified during packaging)."
+          else
+            SIGN_LINE="Signing/notarization: DISABLED (unsigned build)."
+          fi
+
+          NOTES_FILE="$(mktemp)"
+          cat > "${NOTES_FILE}" <<EOF
+          SEPA Generator Community ${VERSION}
+
+          > DRAFT — review before publishing. Do not mark as "latest" until the
+          > verification checklist has passed.
+
+          ${SIGN_LINE}
+
+          ## Downloads
+          - Windows (x64): \`SEPA-Generator-Community-${VERSION}-windows-x64.msi\`
+          - macOS (Apple Silicon): \`SEPA-Generator-Community-${VERSION}-macos-arm64.dmg\`
+          - macOS (Intel): \`SEPA-Generator-Community-${VERSION}-macos-x64.dmg\`
+          - Linux (x64 .deb): \`SEPA-Generator-Community-${VERSION}-linux-x64.deb\`
+
+          Verify downloads against \`SHA256SUMS.txt\`:
+          \`\`\`
+          sha256sum -c SHA256SUMS.txt
+          \`\`\`
+
+          ## Reviewer checklist
+          - [ ] Filenames show the correct edition + version
+          - [ ] Checksums match
+          - [ ] Signatures/notarization verified (if signing was enabled)
+          - [ ] Manual install smoke test on each platform
+          - [ ] Ready to publish (then update the website update manifest)
+          EOF
+
+          if gh release view "${TAG}" >/dev/null 2>&1; then
+            IS_DRAFT="$(gh release view "${TAG}" --json isDraft --jq '.isDraft')"
+            if [ "${IS_DRAFT}" != "true" ]; then
+              echo "ERROR: release ${TAG} already exists and is PUBLISHED; refusing to modify it." >&2
+              exit 1
+            fi
+            echo "Updating existing draft release ${TAG}."
+            gh release edit "${TAG}" \
+              --title "${TITLE}" \
+              --notes-file "${NOTES_FILE}" \
+              --draft \
+              --latest=false
+            gh release upload "${TAG}" "${DIR}"/* --clobber
+          else
+            echo "Creating new draft release ${TAG}."
+            # --verify-tag: the tag must already exist on the remote; gh cannot
+            #   create it implicitly. The tag was already pushed as the trigger.
+            # --latest=false: draft releases are never made "latest" automatically.
+            gh release create "${TAG}" "${DIR}"/* \
+              --draft \
+              --verify-tag \
+              --latest=false \
+              --title "${TITLE}" \
+              --notes-file "${NOTES_FILE}"
+          fi
+
+          rm -f "${NOTES_FILE}"
+          echo "Draft release ${TAG} is ready for manual review and publication."
