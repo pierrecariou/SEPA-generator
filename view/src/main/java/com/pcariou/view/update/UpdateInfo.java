@@ -13,6 +13,9 @@ import java.util.Map;
  */
 public final class UpdateInfo {
 
+    /** The only edition this Community build will act on. */
+    public static final String EDITION_COMMUNITY = "community";
+
     private int schemaVersion;
     private String edition;
     private String latestVersion;
@@ -68,11 +71,54 @@ public final class UpdateInfo {
     }
 
     /**
-     * A manifest is usable only when it advertises a latest version to compare
-     * against; everything else is optional.
+     * True only when this manifest explicitly declares the Community edition.
+     * A Pro manifest, a missing edition, or an unknown edition all return
+     * {@code false} so a foreign manifest can never drive a Community update.
+     */
+    public boolean isCommunityEdition() {
+        return edition != null && EDITION_COMMUNITY.equalsIgnoreCase(edition.trim());
+    }
+
+    /** True when {@link #latestVersion} is a real dotted numeric release. */
+    public boolean hasUsableVersion() {
+        return VersionComparator.hasNumericVersion(latestVersion);
+    }
+
+    /**
+     * True when there is at least one absolute {@code http(s)} URL to send the
+     * user to: a platform-specific download or, failing that, the download page.
+     * A manifest with no usable destination is treated as unusable.
+     */
+    public boolean hasUsableDownloadUrl() {
+        if (isUsableUrl(downloadPageUrl)) {
+            return true;
+        }
+        if (downloads != null) {
+            for (UpdateDownload download : downloads.values()) {
+                if (download != null && isUsableUrl(download.getUrl())) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * A manifest is usable only when it is a Community manifest, advertises a
+     * real version to compare against, and offers a usable download URL. This is
+     * the edition-safe contract: any other manifest is rejected rather than
+     * offered as an update.
      */
     public boolean isValid() {
-        return latestVersion != null && !latestVersion.trim().isEmpty();
+        return isCommunityEdition() && hasUsableVersion() && hasUsableDownloadUrl();
+    }
+
+    private static boolean isUsableUrl(String url) {
+        if (url == null) {
+            return false;
+        }
+        String u = url.trim();
+        return u.startsWith("https://") || u.startsWith("http://");
     }
 
     /**

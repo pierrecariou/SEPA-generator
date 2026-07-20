@@ -45,6 +45,24 @@ public final class VersionComparator implements Comparator<String> {
         return compareVersions(candidate, current) > 0;
     }
 
+    /**
+     * True when {@code version} looks like a real dotted numeric release
+     * (optionally {@code v}-prefixed), i.e. its first segment starts with a
+     * digit. Values such as {@code null}, {@code ""}, {@code "unknown"} or
+     * {@code "latest"} are rejected so a manifest carrying a non-version string
+     * is never treated as an actual release to compare against.
+     */
+    public static boolean hasNumericVersion(String version) {
+        if (version == null) {
+            return false;
+        }
+        String v = version.trim();
+        if (!v.isEmpty() && (v.charAt(0) == 'v' || v.charAt(0) == 'V')) {
+            v = v.substring(1);
+        }
+        return !v.isEmpty() && Character.isDigit(v.charAt(0));
+    }
+
     private static int[] parse(String version) {
         if (version == null) {
             return new int[0];

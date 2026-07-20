@@ -58,4 +58,20 @@ public class VersionComparatorTest {
         assertTrue(VersionComparator.isNewer("1.10.0", "1.9.0"));
         assertTrue(VersionComparator.isNewer("2.0.0", "1.99.99"));
     }
+
+    @Test
+    public void hasNumericVersionAcceptsRealReleases() {
+        assertTrue(VersionComparator.hasNumericVersion("1.3.1"));
+        assertTrue(VersionComparator.hasNumericVersion("v2.0.0"));
+        assertTrue(VersionComparator.hasNumericVersion(" 10.20.300 "));
+    }
+
+    @Test
+    public void hasNumericVersionRejectsNonVersions() {
+        assertFalse(VersionComparator.hasNumericVersion(null));
+        assertFalse(VersionComparator.hasNumericVersion(""));
+        assertFalse(VersionComparator.hasNumericVersion("unknown"));
+        assertFalse(VersionComparator.hasNumericVersion("latest"));
+        assertFalse(VersionComparator.hasNumericVersion("v"));
+    }
 }

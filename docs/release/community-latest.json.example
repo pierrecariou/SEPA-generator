@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "edition": "community",
+  "latestVersion": "X.Y.Z",
+  "releaseDate": "YYYY-MM-DD",
+  "critical": false,
+  "downloadPageUrl": "https://sepa-xml-generator.com/download/",
+  "releaseNotesUrl": "https://sepa-xml-generator.com/download/",
+  "downloads": {
+    "windows-x64": {
+      "label": "Windows x64 MSI",
+      "url": "https://github.com/pierrecariou/SEPA-generator/releases/download/vX.Y.Z/SEPA-Generator-Community-X.Y.Z-windows-x64.msi"
+    },
+    "macos-arm64": {
+      "label": "macOS (Apple Silicon) DMG",
+      "url": "https://github.com/pierrecariou/SEPA-generator/releases/download/vX.Y.Z/SEPA-Generator-Community-X.Y.Z-macos-arm64.dmg"
+    },
+    "macos-x64": {
+      "label": "macOS (Intel) DMG",
+      "url": "https://github.com/pierrecariou/SEPA-generator/releases/download/vX.Y.Z/SEPA-Generator-Community-X.Y.Z-macos-x64.dmg"
+    },
+    "linux-x64": {
+      "label": "Linux x64 DEB",
+      "url": "https://github.com/pierrecariou/SEPA-generator/releases/download/vX.Y.Z/SEPA-Generator-Community-X.Y.Z-linux-x64.deb"
+    }
+  }
+}

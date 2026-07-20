@@ -86,4 +86,74 @@ public class UpdateManifestClientTest {
             // ok
         }
     }
+
+    private static final String DOWNLOAD =
+            "\"downloadPageUrl\":\"https://sepa-xml-generator.com/download/\"";
+
+    @Test
+    public void communityManifestIsAccepted() throws IOException {
+        UpdateInfo info = client.parse(
+                "{\"edition\":\"community\",\"latestVersion\":\"2.0.0\"," + DOWNLOAD + "}");
+        assertEquals("community", info.getEdition());
+        assertTrue(info.isValid());
+    }
+
+    @Test
+    public void proManifestIsRejected() {
+        try {
+            client.parse("{\"edition\":\"pro\",\"latestVersion\":\"2.0.0\"," + DOWNLOAD + "}");
+            fail("Expected IOException: a Pro manifest must never drive a Community update");
+        } catch (IOException expected) {
+            // ok
+        }
+    }
+
+    @Test
+    public void missingEditionIsRejected() {
+        try {
+            client.parse("{\"latestVersion\":\"2.0.0\"," + DOWNLOAD + "}");
+            fail("Expected IOException for missing edition");
+        } catch (IOException expected) {
+            // ok
+        }
+    }
+
+    @Test
+    public void unknownEditionIsRejected() {
+        try {
+            client.parse("{\"edition\":\"enterprise\",\"latestVersion\":\"2.0.0\"," + DOWNLOAD + "}");
+            fail("Expected IOException for unknown edition");
+        } catch (IOException expected) {
+            // ok
+        }
+    }
+
+    @Test
+    public void manifestWithoutUsableDownloadUrlIsRejected() {
+        try {
+            client.parse("{\"edition\":\"community\",\"latestVersion\":\"2.0.0\"}");
+            fail("Expected IOException for missing download URL");
+        } catch (IOException expected) {
+            // ok
+        }
+    }
+
+    @Test
+    public void nonNumericVersionIsRejected() {
+        try {
+            client.parse("{\"edition\":\"community\",\"latestVersion\":\"latest\"," + DOWNLOAD + "}");
+            fail("Expected IOException for a non-numeric version");
+        } catch (IOException expected) {
+            // ok
+        }
+    }
+
+    @Test
+    public void platformDownloadUrlSatisfiesUsabilityWithoutDownloadPage() throws IOException {
+        UpdateInfo info = client.parse(
+                "{\"edition\":\"community\",\"latestVersion\":\"2.0.0\",\"downloads\":{"
+                        + "\"windows-x64\":{\"label\":\"Windows\",\"url\":\"https://example.com/app.msi\"}}}");
+        assertTrue(info.isValid());
+        assertEquals("https://example.com/app.msi", info.downloadUrlFor("windows-x64"));
+    }
 }

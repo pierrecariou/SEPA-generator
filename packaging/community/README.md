@@ -387,6 +387,15 @@ artifact is added later, add it to `expected_artifacts` in
 [`release-lib.sh`](release/release-lib.sh) so completeness/checksum checks cover
 it.
 
+### Update manifest & full runbook
+
+Publishing a release also involves the **update manifest** that tells installed
+copies a newer version exists. The complete, ordered procedure — version bump,
+tests, tag, build, verify, manual publish, website links, and publishing the
+manifest last — is the [Community release runbook](../../docs/release/RELEASE.md).
+The manifest schema (edition-safe, `"edition": "community"`) is illustrated by
+[`community-latest.json.example`](../../docs/release/community-latest.json.example).
+
 ---
 
 ## Signing & notarization (optional, cross-platform)
