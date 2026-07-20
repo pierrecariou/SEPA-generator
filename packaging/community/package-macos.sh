@@ -15,26 +15,60 @@
 set -euo pipefail
 
 # -----------------------------------------------------------------------------
-# Configuration (centralized - edit here)
+# Helpers
 # -----------------------------------------------------------------------------
-APP_NAME="SEPA Generator Community"
-APP_VERSION="1.3.1"
-VENDOR="Niryosys"
-DESCRIPTION="Generate SEPA payment XML files from spreadsheet inputs."
-COPYRIGHT="Copyright (c) $(date +%Y) ${VENDOR}"
+step() { printf '==> %s\n' "$1"; }
+ok()   { printf '    %s\n' "$1"; }
+fail() { printf 'ERROR: %s\n' "$1" >&2; exit 1; }
 
-# macOS bundle identifier (reverse-DNS) and short menu-bar name (<= 16 chars).
-MAC_PACKAGE_IDENTIFIER="com.pcariou.sepa.community"
-MAC_MENU_NAME="SEPA Generator"
+# Read a required KEY=VALUE from edition.properties (value taken verbatim after
+# the first '='). Blank lines and '#' comments are ignored by the '^KEY=' match.
+prop() {
+  local key="$1" val
+  val="$(grep -E "^${key}=" "${EDITION_PROPS}" | head -n1 | cut -d= -f2-)"
+  [ -n "${val}" ] || fail "Required key '${key}' missing from ${EDITION_PROPS}."
+  printf '%s' "${val}"
+}
 
-# Runnable fat JAR produced by the Maven build (generator module, shaded).
-MAIN_JAR_NAME="generator-${APP_VERSION}.jar"
-MAIN_CLASS="com.pcariou.generator.Generator"
+# Derive the authoritative application version from the Maven generator module,
+# so the packaging version can never drift from the POM.
+derive_app_version() {
+  command -v mvn >/dev/null 2>&1 || fail "Maven (mvn) was not found on PATH; it is required to derive the application version."
+  local v
+  v="$(cd "${REPO_ROOT}" && mvn -q -DforceStdout -pl generator \
+        org.apache.maven.plugins:maven-help-plugin:3.5.0:evaluate -Dexpression=project.version)" \
+    || fail "Failed to derive the application version from Maven (help:evaluate)."
+  v="$(printf '%s' "${v}" | tail -n1 | tr -d '[:space:]')"
+  case "${v}" in
+    ''|\$*) fail "Maven returned an invalid application version: '${v}'." ;;
+  esac
+  printf '%s' "${v}"
+}
 
+# -----------------------------------------------------------------------------
+# Configuration (from packaging/edition.properties + authoritative Maven version)
+# -----------------------------------------------------------------------------
 # Paths are resolved relative to the repository root (two levels above this
 # script: <repo>/packaging/community/package-macos.sh).
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+EDITION_PROPS="${REPO_ROOT}/packaging/edition.properties"
+[ -f "${EDITION_PROPS}" ] || fail "Edition properties file not found: ${EDITION_PROPS}"
+
+APP_NAME="$(prop APP_NAME)"
+ARTIFACT_SLUG="$(prop ARTIFACT_SLUG)"
+VENDOR="$(prop VENDOR)"
+DESCRIPTION="$(prop DESCRIPTION)"
+MAIN_CLASS="$(prop MAIN_CLASS)"
+MAC_PACKAGE_IDENTIFIER="$(prop MAC_PACKAGE_IDENTIFIER)"
+MAC_MENU_NAME="$(prop MAC_MENU_NAME)"
+COPYRIGHT="Copyright (c) $(date +%Y) ${VENDOR}"
+
+# Authoritative application version (derived from Maven, never hardcoded).
+APP_VERSION="$(derive_app_version)"
+
+# Runnable fat JAR produced by the Maven build (generator module, shaded).
+MAIN_JAR_NAME="generator-${APP_VERSION}.jar"
 MAIN_JAR_PATH="${REPO_ROOT}/generator/target/${MAIN_JAR_NAME}"
 
 # macOS icon. Resolution order (handled later, after the Maven build):
@@ -60,13 +94,13 @@ JP_DEST_DIR="${STAGE_ROOT}/out"
 # "arm64" or "x64"). It does NOT affect the build itself - jpackage always
 # produces a DMG for the architecture of the macOS runner this script runs on;
 # the label simply makes the artifact name explicit for release distribution.
-# When unset, the canonical name "SEPA-Generator-Community-<ver>-macos.dmg" is
-# used (preserving the original default behavior).
+# When unset, the canonical name "<slug>-<ver>-macos.dmg" is used (preserving
+# the original default behavior).
 ARCH_LABEL="${ARCH_LABEL:-}"
 if [ -n "${ARCH_LABEL}" ]; then
-  FINAL_ARTIFACT="SEPA-Generator-Community-${APP_VERSION}-macos-${ARCH_LABEL}.dmg"
+  FINAL_ARTIFACT="${ARTIFACT_SLUG}-${APP_VERSION}-macos-${ARCH_LABEL}.dmg"
 else
-  FINAL_ARTIFACT="SEPA-Generator-Community-${APP_VERSION}-macos.dmg"
+  FINAL_ARTIFACT="${ARTIFACT_SLUG}-${APP_VERSION}-macos.dmg"
 fi
 
 # -----------------------------------------------------------------------------
@@ -95,12 +129,8 @@ SKIP_BUILD="${SKIP_BUILD:-false}"
 RELEASE="${RELEASE:-true}"
 
 # -----------------------------------------------------------------------------
-# Helpers
+# Helpers (icon generation)
 # -----------------------------------------------------------------------------
-step() { printf '==> %s\n' "$1"; }
-ok()   { printf '    %s\n' "$1"; }
-fail() { printf 'ERROR: %s\n' "$1" >&2; exit 1; }
-
 # Generate a macOS .icns from a single high-resolution PNG using the native
 # macOS tools `sips` and `iconutil`. Writes an intermediate .iconset next to the
 # output .icns. Both tools ship with macOS.
