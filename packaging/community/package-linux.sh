@@ -77,6 +77,17 @@ LINUX_DEB_MAINTAINER="$(prop DEB_MAINTAINER)"
 # Authoritative application version (derived from Maven, never hardcoded).
 APP_VERSION="$(derive_app_version)"
 
+# -----------------------------------------------------------------------------
+# Package signing: intentionally NOT implemented for Linux.
+#
+# DEB repository (dpkg-sig / Release-file GPG) signing is only meaningful when
+# distributing through an APT repository. The Community release model is direct
+# download of a standalone .deb, whose integrity is covered by the published
+# SHA-256 checksums (release workflow stage). Adding a GPG signing system here
+# would be unused infrastructure, so it is deferred. No Linux signing existed
+# previously, so there is nothing to preserve.
+# -----------------------------------------------------------------------------
+
 # Runnable fat JAR produced by the Maven build (generator module, shaded).
 MAIN_JAR_NAME="generator-${APP_VERSION}.jar"
 MAIN_JAR_PATH="${REPO_ROOT}/generator/target/${MAIN_JAR_NAME}"

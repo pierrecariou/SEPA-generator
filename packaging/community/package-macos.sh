@@ -104,21 +104,21 @@ else
 fi
 
 # -----------------------------------------------------------------------------
-# Code signing / notarization (DISABLED by default)
+# Code signing / notarization (OPTIONAL; DISABLED by default)
 #
 # A basic DMG build does NOT require an Apple Developer account. Unsigned macOS
-# builds are perfectly usable for testing and direct distribution, but Gatekeeper
-# will warn on first launch ("cannot be opened because the developer cannot be
-# verified"); users must right-click -> Open, or allow it in System Settings ->
-# Privacy & Security. Proper signing + notarization is a FUTURE step for a more
-# polished distribution and is intentionally left off here.
-#
-# To enable signing later: set SIGN=true and MAC_SIGNING_IDENTITY to your
-# "Developer ID Application: ..." identity. Notarization is a separate step
-# (xcrun notarytool) and is NOT performed by this script.
+# builds are usable for testing/direct distribution, but Gatekeeper warns on
+# first launch; users must right-click -> Open. Signing + notarization is opt-in
+# and fail-closed (see packaging/community/macos-signing.sh). Enable via:
+#   MAC_SIGN=true       and MAC_SIGNING_IDENTITY="Developer ID Application: ..."
+#   MAC_NOTARIZE=true   and APPLE_ID / APPLE_TEAM_ID / APPLE_APP_PASSWORD
+# Optionally import the certificate from MACOS_CERT_P12_BASE64 (+ MACOS_CERT_PASSWORD)
+# into a temporary keychain. Notarization requires signing.
 # -----------------------------------------------------------------------------
-SIGN="${SIGN:-false}"
-MAC_SIGNING_IDENTITY="${MAC_SIGNING_IDENTITY:-}"
+ENTITLEMENTS_PLIST="${REPO_ROOT}/packaging/macos/entitlements.plist"
+# shellcheck source=./macos-signing.sh
+source "${SCRIPT_DIR}/macos-signing.sh"
+resolve_macos_signing_plan || fail "Invalid macOS signing configuration (see error above)."
 
 # Skip the Maven build (use the jar already present in target/).
 SKIP_BUILD="${SKIP_BUILD:-false}"
@@ -272,15 +272,18 @@ if [ -n "${RESOLVED_ICON}" ]; then
   ok "Using icon: ${RESOLVED_ICON}"
 fi
 
-# Optional code signing (disabled by default; see notes above).
-if [ "${SIGN}" = "true" ]; then
-  if [ -z "${MAC_SIGNING_IDENTITY}" ]; then
-    fail "SIGN=true but MAC_SIGNING_IDENTITY is empty. Set it to your 'Developer ID Application: ...' identity."
-  fi
+# Optional Developer ID signing. jpackage signs the .app AND its nested Java
+# runtime; --mac-entitlements applies the hardened-runtime entitlements needed
+# by the bundled JVM. The signing identity value is not echoed.
+if [ "${MAC_DO_SIGN}" = "true" ]; then
+  setup_macos_keychain
   JP_ARGS+=( --mac-sign --mac-signing-key-user-name "${MAC_SIGNING_IDENTITY}" )
-  ok "Code signing enabled with identity: ${MAC_SIGNING_IDENTITY}"
+  if [ -f "${ENTITLEMENTS_PLIST}" ]; then
+    JP_ARGS+=( --mac-entitlements "${ENTITLEMENTS_PLIST}" )
+  fi
+  ok "Code signing ENABLED (Developer ID; hardened-runtime entitlements applied)."
 else
-  ok "Code signing disabled (unsigned build; Gatekeeper will warn on first launch)."
+  ok "Code signing DISABLED (unsigned build; Gatekeeper will warn on first launch)."
 fi
 
 "${JPACKAGE}" "${JP_ARGS[@]}" || fail "jpackage failed. See the output above for the exact cause."
@@ -296,6 +299,25 @@ rm -f "${FINAL_PATH}"
 mv "${PRODUCED}" "${FINAL_PATH}"
 ok "DMG: ${FINAL_PATH}"
 
+# -----------------------------------------------------------------------------
+# 7. Optional notarization + stapling (requires a signed app)
+# -----------------------------------------------------------------------------
+NOTARIZED=false
+if [ "${MAC_DO_NOTARIZE}" = "true" ]; then
+  notarize_and_staple "${FINAL_PATH}" || fail "Notarization/stapling failed; the DMG is NOT notarized."
+  NOTARIZED=true
+  ok "DMG notarized, stapled and validated."
+elif [ "${MAC_DO_SIGN}" = "true" ]; then
+  ok "App is signed but the DMG was NOT notarized (MAC_NOTARIZE not set)."
+fi
+
 printf '\n'
-printf 'SUCCESS: %s %s packaged.\n' "${APP_NAME}" "${APP_VERSION}"
+if [ "${NOTARIZED}" = "true" ]; then
+  SIGN_STATE="signed + notarized + stapled"
+elif [ "${MAC_DO_SIGN}" = "true" ]; then
+  SIGN_STATE="signed (not notarized)"
+else
+  SIGN_STATE="unsigned"
+fi
+printf 'SUCCESS: %s %s packaged (%s).\n' "${APP_NAME}" "${APP_VERSION}" "${SIGN_STATE}"
 printf 'Output : %s\n' "${FINAL_PATH}"

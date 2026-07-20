@@ -174,23 +174,33 @@ becomes `…-macos-arm64.dmg` or `…-macos-x64.dmg`. The CI workflow builds bot
 3. Launch it from Launchpad/Finder and confirm it opens (no separate Java
    install needed) and shows the correct icon.
 
-### Signing & notarization (future step)
+### Signing & notarization (optional)
 
 The basic DMG build is **unsigned** and does **not** require an Apple Developer
 account. Because it is unsigned, Gatekeeper warns on first launch
 ("…cannot be opened because the developer cannot be verified"); users must
 right-click → **Open**, or allow it under *System Settings → Privacy & Security*.
 
-Signing is cleanly optional and **off by default**. To enable it later:
+Signing and notarization are **optional, off by default, and fail-closed**: if
+you explicitly request them but required inputs are missing, packaging aborts
+rather than producing an artifact mislabeled as signed. See the dedicated
+[Signing & notarization](#signing--notarization-optional-cross-platform)
+section below for the full environment-variable contract.
+
+Quick reference (see below for the full list of secrets):
 
 ```bash
-SIGN=true MAC_SIGNING_IDENTITY="Developer ID Application: Your Name (TEAMID)" \
+# Sign the .app + bundled runtime with a Developer ID identity already present
+# in an available keychain:
+MAC_SIGN=true MAC_SIGNING_IDENTITY="Developer ID Application: Your Name (TEAMID)" \
+  ./packaging/community/package-macos.sh
+
+# Sign AND notarize + staple (requires Apple credentials):
+MAC_SIGN=true MAC_SIGNING_IDENTITY="Developer ID Application: Your Name (TEAMID)" \
+MAC_NOTARIZE=true APPLE_ID="you@example.com" APPLE_TEAM_ID="TEAMID" \
+APPLE_APP_PASSWORD="app-specific-password" \
   ./packaging/community/package-macos.sh
 ```
-
-Full **notarization** (`xcrun notarytool` + stapling) is a separate, future step
-for a more professional macOS distribution and is intentionally not performed by
-this script yet.
 
 ---
 
@@ -266,6 +276,90 @@ sudo apt-get remove -y sepa-generator-community
 #   - or -
 sudo dpkg -r sepa-generator-community
 ```
+
+### Package signing (not applicable)
+
+DEB **signing is intentionally not implemented**. Repository signing
+(`dpkg-sig` / GPG-signed APT `Release` files) is only meaningful when
+distributing through an APT repository. The Community release model is direct
+download of a standalone `.deb`, whose integrity is covered by the published
+**SHA-256 checksums** (added in the release-workflow stage). No Linux signing
+system existed previously, so there is nothing to preserve.
+
+---
+
+## Signing & notarization (optional, cross-platform)
+
+Signing is **infrastructure only**: the hooks below let a signed/notarized build
+happen when credentials are supplied, but their presence does **not** mean any
+current artifact is signed. Unsigned development builds always work with no
+secrets.
+
+Key properties:
+
+- **Disabled by default.** A normal build (and any ordinary pull request) needs
+  no secrets and produces an unsigned installer.
+- **Explicit opt-in.** Signing activates only when you set the enable flag
+  (`WINDOWS_SIGN=true` / `-Sign` on Windows, `MAC_SIGN=true` on macOS).
+- **Fail-closed.** If you request signing but a required input is missing,
+  packaging **aborts** instead of emitting an unsigned artifact under a "signed"
+  label. A single stray partial credential can never silently switch signing on.
+- **No secret leakage.** Passwords are never echoed; command previews redact
+  them. Temporary certificates/keychains are always cleaned up.
+
+> Enabling these hooks is a **separate release gate**. Actually signing,
+> notarizing, and verifying artifacts is decided and performed outside these
+> packaging steps. This document does **not** claim any artifact is signed.
+
+### Windows (Authenticode)
+
+| Variable                  | Secret? | Purpose                                                        |
+| ------------------------- | ------- | -------------------------------------------------------------- |
+| `WINDOWS_SIGN` / `-Sign`  | no      | Enable signing (`true`). Off by default.                       |
+| `WINDOWS_CERT_PFX_BASE64` | **yes** | Base64 of the code-signing `.pfx` (PKCS#12).                   |
+| `WINDOWS_CERT_PASSWORD`   | **yes** | Password for the `.pfx`.                                       |
+| `WINDOWS_TIMESTAMP_URL`   | no      | RFC3161 timestamp URL. Default `http://timestamp.digicert.com`.|
+
+Requires `signtool.exe` (Windows SDK). The MSI is signed with
+`/fd SHA256 /tr <url> /td SHA256` and then **verified** (`signtool verify /pa`);
+verification failure aborts packaging. The decoded `.pfx` is written to a unique
+temp file that is always deleted.
+
+```powershell
+$env:WINDOWS_CERT_PFX_BASE64 = [Convert]::ToBase64String([IO.File]::ReadAllBytes("cert.pfx"))
+$env:WINDOWS_CERT_PASSWORD   = "…"
+.\packaging\community\package-windows.ps1 -Sign
+```
+
+### macOS (Developer ID + notarization)
+
+| Variable               | Secret? | Purpose                                                            |
+| ---------------------- | ------- | ------------------------------------------------------------------ |
+| `MAC_SIGN`             | no      | Enable Developer ID signing (`true`). Off by default.              |
+| `MAC_SIGNING_IDENTITY` | no*     | e.g. `Developer ID Application: Name (TEAMID)`. Required if signing.|
+| `MACOS_CERT_P12_BASE64`| **yes** | Optional: base64 `.p12` imported into a temporary keychain.        |
+| `MACOS_CERT_PASSWORD`  | **yes** | Password for the `.p12` (required if `MACOS_CERT_P12_BASE64` set). |
+| `MAC_NOTARIZE`         | no      | Enable notarization + stapling (`true`). Requires `MAC_SIGN=true`. |
+| `APPLE_ID`             | **yes** | Apple ID for `notarytool`. Required if notarizing.                 |
+| `APPLE_TEAM_ID`        | **yes** | Apple Developer Team ID. Required if notarizing.                   |
+| `APPLE_APP_PASSWORD`   | **yes** | App-specific password for `notarytool`. Required if notarizing.    |
+
+\*Not a secret, but signing fails closed if it is empty.
+
+`jpackage` signs the `.app` and its bundled Java runtime, applying the
+hardened-runtime entitlements in `packaging/macos/entitlements.plist`. When
+`MACOS_CERT_P12_BASE64` is supplied the certificate is imported into a
+**temporary keychain** that is removed on exit; otherwise the identity is taken
+from an existing keychain. Notarization requires signing — `notarytool submit
+--wait`, `stapler staple`, `stapler validate` and a `spctl` Gatekeeper check all
+must pass or packaging aborts.
+
+### Local vs GitHub Actions
+
+These variables can be exported locally for a one-off signed build. Wiring them
+as encrypted CI secrets in the release workflow is handled in a **later release
+stage** (release workflow), not here, to avoid accidental activation. No secret
+is stored in the repository, and no placeholder credential is committed.
 
 ---
 

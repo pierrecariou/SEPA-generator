@@ -62,7 +62,16 @@ param(
     # affect the build - jpackage produces an installer for the architecture of
     # the Windows runner; the label only makes the release artifact name explicit
     # (SEPA-Generator-Community-<ver>-windows-<arch>.<type>).
-    [string]$ArchLabel = 'x64'
+    [string]$ArchLabel = 'x64',
+
+    # Explicitly enable optional Authenticode signing of the produced installer.
+    # Signing is OFF by default. It can also be enabled by setting the
+    # environment variable WINDOWS_SIGN=true (useful in CI). When enabled, the
+    # required secret inputs must be present or packaging fails (fail-closed):
+    #   WINDOWS_CERT_PFX_BASE64  base64 of the .pfx code-signing certificate
+    #   WINDOWS_CERT_PASSWORD    password for that .pfx
+    #   WINDOWS_TIMESTAMP_URL    optional RFC3161 timestamp URL (has a default)
+    [switch]$Sign
 )
 
 # -----------------------------------------------------------------------------
@@ -151,6 +160,35 @@ $JpDestDir   = Join-Path $StageRoot 'out'
 
 # Final installer name placed in dist/.
 $FinalArtifact = "$ArtifactSlug-$AppVersion-windows-$ArchLabel.$Type"
+
+# -----------------------------------------------------------------------------
+# Signing configuration (optional; DISABLED unless explicitly requested)
+# -----------------------------------------------------------------------------
+# Signing logic lives in the sibling windows-signing.ps1 so its decision logic
+# is unit-testable. Signing never activates just because a partial credential is
+# present: it requires an explicit request (-Sign or WINDOWS_SIGN=true) AND all
+# secret inputs, otherwise packaging fails closed.
+. (Join-Path $PSScriptRoot 'windows-signing.ps1')
+$SignRequested = $Sign.IsPresent -or ($env:WINDOWS_SIGN -eq 'true')
+try {
+    $SigningPlan = Resolve-WindowsSigningPlan `
+        -SignRequested $SignRequested `
+        -PfxBase64 $env:WINDOWS_CERT_PFX_BASE64 `
+        -PfxPassword $env:WINDOWS_CERT_PASSWORD `
+        -TimestampUrl $env:WINDOWS_TIMESTAMP_URL
+} catch {
+    Fail $_.Exception.Message
+}
+if ($SigningPlan.Enabled) {
+    if ($Type -eq 'app-image') {
+        Fail 'Signing is supported for msi/exe installers only, not -Type app-image.'
+    }
+    try { $SigntoolPath = Resolve-Signtool } catch { Fail $_.Exception.Message }
+    Write-Ok 'Signing hook: ENABLED (installer will be Authenticode-signed and its signature verified).'
+} else {
+    $SigntoolPath = $null
+    Write-Ok 'Signing hook: DISABLED (unsigned build; this is the default).'
+}
 
 # -----------------------------------------------------------------------------
 # 1. Verify we are on Windows
@@ -324,6 +362,27 @@ if ($Type -eq 'app-image') {
     Write-Ok "Installer: $finalPath"
 }
 
+# -----------------------------------------------------------------------------
+# 8. Optional Authenticode signing of the produced installer (+ verify)
+# -----------------------------------------------------------------------------
+$Signed = $false
+if ($SigningPlan.Enabled -and $Type -ne 'app-image') {
+    Write-Step 'Signing installer (Authenticode) and verifying the signature'
+    try {
+        Invoke-WindowsAuthenticodeSign `
+            -FilePath $finalPath `
+            -PfxBase64 $env:WINDOWS_CERT_PFX_BASE64 `
+            -PfxPassword $env:WINDOWS_CERT_PASSWORD `
+            -TimestampUrl $SigningPlan.TimestampUrl `
+            -SigntoolPath $SigntoolPath
+    } catch {
+        Fail $_.Exception.Message
+    }
+    $Signed = $true
+    Write-Ok 'Installer signed and signature verified.'
+}
+
 Write-Host ''
-Write-Host "SUCCESS: $AppName $AppVersion packaged." -ForegroundColor Green
+$signState = if ($Signed) { 'signed + verified' } else { 'unsigned' }
+Write-Host "SUCCESS: $AppName $AppVersion packaged ($signState)." -ForegroundColor Green
 Write-Host "Output : $finalPath" -ForegroundColor Green
