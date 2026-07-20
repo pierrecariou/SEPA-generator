@@ -20,9 +20,8 @@ application into a platform installer.
 ### Final v1.4.0 release artifacts
 
 The [`Package Community`](../../.github/workflows/package-community.yml) workflow
-(manual `workflow_dispatch`) builds four architecture-specific packages, each on
-a native runner, by calling the scripts in this folder (no jpackage/icon logic is
-duplicated in YAML):
+builds four architecture-specific packages, each on a native runner, by calling
+the scripts in this folder (no jpackage/icon logic is duplicated in YAML):
 
 | Artifact                                            | Runner            | Arch label |
 | --------------------------------------------------- | ----------------- | ---------- |
@@ -30,6 +29,11 @@ duplicated in YAML):
 | `SEPA-Generator-Community-1.4.0-macos-arm64.dmg`    | `macos-26`        | `arm64`    |
 | `SEPA-Generator-Community-1.4.0-macos-x64.dmg`      | `macos-26-intel`  | `x64`      |
 | `SEPA-Generator-Community-1.4.0-linux-x64.deb`      | `ubuntu-latest`   | `x64`      |
+
+The workflow has **two clearly-separated modes** — a manual **release
+candidate** and a tag-driven **final release** that produces a reviewable draft
+GitHub Release with checksums. See
+[Release workflow (RC & final)](#release-workflow-rc--final) below.
 
 Shared packaging identity (app name, artifact slug, vendor, description, main
 class, and the permanent Windows/macOS/Linux package identifiers) lives in a
@@ -288,6 +292,103 @@ system existed previously, so there is nothing to preserve.
 
 ---
 
+## Release workflow (RC & final)
+
+The `Package Community` workflow orchestrates the per-platform scripts. It runs
+in **two deliberately separated modes** and **never publishes a release
+automatically** — final publication is always a manual action.
+
+### Mode 1 — Release candidate (manual)
+
+Trigger: **Actions → Package Community → Run workflow** (`workflow_dispatch`).
+
+- Builds all four installers on native runners and uploads them as **workflow
+  artifacts** (downloadable from the run page).
+- **Creates no GitHub Release** and generates no checksums file.
+- Unsigned by default. Tick the **`sign`** input to attempt a signed build (only
+  succeeds if the signing secrets are configured; otherwise it fails closed).
+
+Use RC builds to smoke-test packaging on any branch without touching releases.
+
+### Mode 2 — Final release (tag)
+
+Trigger: pushing an annotated **`vX.Y.Z`** tag whose version exactly matches
+Maven's `${revision}` (currently `1.4.0`).
+
+```bash
+# From a clean, green checkout of the exact release commit:
+mvn clean verify                     # full suite must pass
+git tag -a v1.4.0 -m "Community 1.4.0"
+git push origin v1.4.0               # <-- this triggers the release run
+```
+
+The run then:
+
+1. **Preflight** — resolves the Maven version, asserts the tag matches it
+   (mismatch fails **before** any packaging), and runs the full test suite.
+2. **Build** — produces the four installers from the immutable tagged commit.
+3. **Release** — downloads the four artifacts, writes **`SHA256SUMS.txt`**
+   (after any signing/notarization), **verifies** it, and creates/updates a
+   **draft** GitHub Release titled `SEPA Generator Community <version>` with the
+   installers, the checksum file, and a reviewer checklist.
+
+The draft is **not** published and **not** marked *latest*. A maintainer reviews
+it (see the checklist in the generated notes) and clicks **Publish** manually.
+
+Ordinary pushes and pull requests do **not** trigger this workflow, so secrets
+are never exposed to forks.
+
+### Version contract
+
+The tag version and Maven `${revision}` must be identical. To ship a new
+version, bump the Maven `<revision>` (root POM) — never edit installer names or
+script versions by hand — then tag the matching `vX.Y.Z`.
+
+### Checksums
+
+`SHA256SUMS.txt` lists one SHA-256 per distributed installer (basenames only)
+and is verified in CI before the draft is created. Users verify a download with:
+
+```bash
+sha256sum -c SHA256SUMS.txt          # from the folder containing the installers
+```
+
+### Signing in the release
+
+Signing is a **separate, deliberate release gate** (see the next section):
+
+- **RC:** the `sign` input (default off).
+- **Final release:** the repository variable `COMMUNITY_RELEASE_SIGN` (`true`
+  to enable; default off). When enabled, the build **fails closed** if the
+  required signing secrets are missing, and signatures are verified during
+  packaging. Unsigned artifacts are never described as signed.
+
+### Rerun / retry behavior
+
+- Reruns for the same tag **update the single existing draft** (assets are
+  re-uploaded with `--clobber`) rather than creating duplicates; a `concurrency`
+  group serializes runs for the same ref.
+- If a release for the tag already exists and is **published**, the workflow
+  **refuses to modify it** and fails — publish is final.
+- To redo a botched draft: delete the draft release (and, if needed, the tag),
+  fix the issue, then re-tag/re-push.
+
+### Least-privilege permissions
+
+The workflow default is `contents: read`. Only the `release` job is granted
+`contents: write` (to create the draft), using the built-in `GITHUB_TOKEN`.
+
+### Secondary artifacts
+
+Community ships **only** the four native installers above (MSI, two DMGs, DEB).
+There is **no** portable ZIP, standalone JAR, RPM, AppImage, or ARM Linux
+deliverable, and none is removed by this change — none existed. If a secondary
+artifact is added later, add it to `expected_artifacts` in
+[`release-lib.sh`](release/release-lib.sh) so completeness/checksum checks cover
+it.
+
+---
+
 ## Signing & notarization (optional, cross-platform)
 
 Signing is **infrastructure only**: the hooks below let a signed/notarized build
@@ -356,10 +457,24 @@ must pass or packaging aborts.
 
 ### Local vs GitHub Actions
 
-These variables can be exported locally for a one-off signed build. Wiring them
-as encrypted CI secrets in the release workflow is handled in a **later release
-stage** (release workflow), not here, to avoid accidental activation. No secret
-is stored in the repository, and no placeholder credential is committed.
+These variables can be exported locally for a one-off signed build. In CI they
+are wired as encrypted **GitHub Actions secrets/variables** consumed by the
+`Package Community` release workflow (see
+[Release workflow](#release-workflow-rc--final)):
+
+| Name                                                | Kind     | Used by            |
+| --------------------------------------------------- | -------- | ------------------ |
+| `WINDOWS_CERT_PFX_BASE64`, `WINDOWS_CERT_PASSWORD`  | secret   | Windows job        |
+| `WINDOWS_TIMESTAMP_URL`                             | variable | Windows job (opt.) |
+| `MACOS_CERT_P12_BASE64`, `MACOS_CERT_PASSWORD`      | secret   | macOS jobs         |
+| `APPLE_ID`, `APPLE_TEAM_ID`, `APPLE_APP_PASSWORD`   | secret   | macOS jobs         |
+| `MAC_SIGNING_IDENTITY`                              | variable | macOS jobs         |
+| `COMMUNITY_RELEASE_SIGN`                            | variable | enables tag-release signing |
+
+Signing stays **off** unless explicitly enabled (RC `sign` input, or the
+`COMMUNITY_RELEASE_SIGN` variable for tag releases). No secret is stored in the
+repository, and no placeholder credential is committed. Because the workflow
+never runs on pull requests, secrets are not exposed to forks.
 
 ---
 
