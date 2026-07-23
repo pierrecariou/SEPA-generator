@@ -106,7 +106,7 @@ public class FormPanel extends JPanel implements Scrollable {
         JLabel title = new JLabel("Create SEPA payment file");
         title.setFont(title.getFont().deriveFont(Font.BOLD, 16f));
 
-        JLabel subtitle = new JLabel("Select an input file, execution date, and output format.");
+        JLabel subtitle = new JLabel("Generate Credit Transfer XML from CSV or Excel.");
         subtitle.setForeground(UIManager.getColor("Label.disabledForeground"));
 
         p.add(title, "wrap");
