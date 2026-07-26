@@ -1,7 +1,6 @@
 package com.pcariou.view.main;
 
 import com.formdev.flatlaf.FlatClientProperties;
-import com.pcariou.view.AppEdition;
 import com.pcariou.view.AppLinks;
 import com.pcariou.view.ExternalLinks;
 import com.pcariou.view.SvgIcons;
@@ -17,10 +16,10 @@ public class FooterPanel extends JPanel {
     private final JLabel statusLabel;
     private final JProgressBar progressBar;
 
-    public FooterPanel(MainFrame owner, FormPanel formPanel, String version) {
+    public FooterPanel(MainFrame owner, FormPanel formPanel) {
         super(new MigLayout(
                 "insets 3 16 3 16, fillx, hidemode 3",
-                "[grow][][right][][][]",
+                "[grow][][][][][]",
                 "[]"
         ));
 
@@ -33,18 +32,16 @@ public class FooterPanel extends JPanel {
         progress.putClientProperty(FlatClientProperties.STYLE, "arc: 999;");
         progress.setPreferredSize(new Dimension(120, 6));
 
-        JLabel edition = new JLabel(AppEdition.LABEL + "  •  v" + version);
-        edition.putClientProperty(FlatClientProperties.STYLE, "font: -1; foreground: $Label.disabledForeground;");
-
         JButton website = linkButton("Website", AppLinks.WEBSITE);
+        JButton guides = linkButton("Guides", AppLinks.GUIDES);
         JButton privacy = linkButton("Privacy", AppLinks.PRIVACY);
         JButton contact = linkButton("Contact", AppLinks.CONTACT);
 
         setOpaque(false);
         add(status,   "growx");
         add(progress, "w 120!, gapright 12");
-        add(edition,  "gapright 12");
         add(website);
+        add(guides);
         add(privacy);
         add(contact);
 

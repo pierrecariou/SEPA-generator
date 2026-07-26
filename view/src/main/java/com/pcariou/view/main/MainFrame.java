@@ -75,7 +75,7 @@ public class MainFrame extends JFrame {
         contentScroll.getVerticalScrollBar().setUnitIncrement(16);
         add(contentScroll, BorderLayout.CENTER);
 
-        footerPanel = new FooterPanel(this, formPanel, version);
+        footerPanel = new FooterPanel(this, formPanel);
         add(footerPanel, BorderLayout.SOUTH);
 
         applyInitialSize();
