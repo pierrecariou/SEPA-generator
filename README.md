@@ -38,9 +38,6 @@ entirely locally. **SEPA Generator Pro** is
 validation, detailed HTML reports, validation of existing XML, XML migration,
 and reusable profiles and mappings.
 
-> Need SEPA Direct Debit, `pain.008`, advanced validation, or XML migration?
-> [Explore SEPA Generator Pro](https://sepa-xml-generator.com/pro/).
-
 It is designed to generate standards-based ISO 20022 SEPA credit transfer XML in two formats (see the [pain.001 generator guide](https://sepa-xml-generator.com/pain-001-generator/) for choosing the right one for your bank):
 
 * `pain.001.001.02` (classic)
