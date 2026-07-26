@@ -10,14 +10,18 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/license-Apache--2.0-blue" alt="License: Apache 2.0" />
-  <img src="https://img.shields.io/badge/release-v1.4.0-teal" alt="Release v1.4.0" />
+  <img src="https://img.shields.io/github/v/release/pierrecariou/SEPA-generator?label=release&color=teal" alt="Latest release" />
   <img src="https://img.shields.io/badge/format-pain.001.001.02%20%7C%20.09-lightgrey" alt="pain.001.001.02 and pain.001.001.09" />
 </p>
 
 <p align="center">
-  <a href="https://sepa-xml-generator.com"><strong>Official website</strong></a>
+  <a href="https://sepa-xml-generator.com/"><strong>Official website</strong></a>
   ·
-  <a href="https://github.com/pierrecariou/SEPA-generator/releases/latest"><strong>Download latest release</strong></a>
+  <a href="https://sepa-xml-generator.com/download/"><strong>Download Community</strong></a>
+  ·
+  <a href="https://sepa-xml-generator.com/pro/"><strong>Explore Pro</strong></a>
+  ·
+  <a href="https://sepa-xml-generator.com/guides/"><strong>Guides</strong></a>
 </p>
 
 ---
@@ -26,7 +30,18 @@
 
 **SEPA Generator** is a local desktop application that generates **SEPA Credit Transfer Initiation XML** files from a CSV or Excel input file.
 
-It is designed to generate standards-based ISO 20022 SEPA credit transfer XML in two formats:
+**SEPA Generator Community** (this repository) is free and open source. It
+generates **SEPA Credit Transfer** (`pain.001`) files from CSV and Excel,
+entirely locally. **SEPA Generator Pro** is
+[preparing for public launch](https://sepa-xml-generator.com/pro/) and adds
+**SEPA Direct Debit** (`pain.008.001.08`, CORE and B2B), official XSD
+validation, detailed HTML reports, validation of existing XML, XML migration,
+and reusable profiles and mappings.
+
+> Need SEPA Direct Debit, `pain.008`, advanced validation, or XML migration?
+> [Explore SEPA Generator Pro](https://sepa-xml-generator.com/pro/).
+
+It is designed to generate standards-based ISO 20022 SEPA credit transfer XML in two formats (see the [pain.001 generator guide](https://sepa-xml-generator.com/pain-001-generator/) for choosing the right one for your bank):
 
 * `pain.001.001.02` (classic)
 * `pain.001.001.09` (modern ISO 20022)
@@ -105,7 +120,7 @@ All processing is local: payment files are read, validated, and generated entire
   it opens the download page in your browser. No automatic download or install.
 * Light and dark themes.
 * Command-line mode for simple batch usage.
-* Fully local Community Edition focused on credit transfers (not direct debits).
+* Fully local Community Edition focused on SEPA Credit Transfer (`pain.001`); SEPA Direct Debit (`pain.008`) is available in [SEPA Generator Pro](https://sepa-xml-generator.com/pro/), which is preparing for public launch.
 
 ---
 
@@ -123,18 +138,20 @@ To **build from source** you need:
 
 ## Downloads
 
-Pre-built desktop packages for the final Community **v1.4.0** release:
+Pre-built desktop packages are published for each Community release:
 
-| Platform                   | Package                                            |
-| -------------------------- | ------------------------------------------------- |
-| Windows x64                | `SEPA-Generator-Community-1.4.0-windows-x64.msi`  |
-| macOS (Apple Silicon)      | `SEPA-Generator-Community-1.4.0-macos-arm64.dmg`  |
-| macOS (Intel)              | `SEPA-Generator-Community-1.4.0-macos-x64.dmg`    |
-| Linux x64 (Debian/Ubuntu)  | `SEPA-Generator-Community-1.4.0-linux-x64.deb`    |
+| Platform                   | Package                                             |
+| --------------------------- | --------------------------------------------------- |
+| Windows x64                | `SEPA-Generator-Community-<version>-windows-x64.msi` |
+| macOS (Apple Silicon)      | `SEPA-Generator-Community-<version>-macos-arm64.dmg` |
+| macOS (Intel)              | `SEPA-Generator-Community-<version>-macos-x64.dmg`   |
+| Linux x64 (Debian/Ubuntu)  | `SEPA-Generator-Community-<version>-linux-x64.deb`   |
 
 Each packaged download **bundles its own Java runtime**, so you do not need to
-install Java separately. Get the latest builds from the
-[official download page](https://sepa-xml-generator.com/download). See
+install Java separately. Get the current build and version number from the
+[official download page](https://sepa-xml-generator.com/download/) or the
+[GitHub releases page](https://github.com/pierrecariou/SEPA-generator/releases/latest),
+which always reflect the latest published Community release. See
 [`packaging/community/README.md`](packaging/community/README.md) for how the
 packages are built and how to install/uninstall them.
 
@@ -186,7 +203,7 @@ Default config location:
 
 ### 2. Prepare your input file
 
-The input file can be a CSV or Excel spreadsheet.
+The input file can be a CSV or Excel spreadsheet. See the [CSV to SEPA XML](https://sepa-xml-generator.com/csv-to-sepa-xml/) and [Excel to SEPA XML](https://sepa-xml-generator.com/excel-to-sepa-xml/) guides for common source-file patterns.
 
 > **Tip:** You don't have to start from scratch. In the main window, use **"Get input template..."** directly under the *Input file* field to save a ready-to-edit template. A small menu offers a *Basic CSV template*, *Basic Excel template*, or a *CSV / Excel + optional addresses (.09)* template. The address columns are optional and are only used for `pain.001.001.09` output (they are ignored for `pain.001.001.02`). Each template contains the expected header row and one example row you can replace with your own payments.
 
@@ -293,7 +310,7 @@ SEPA Generator produces SEPA Credit Transfer Initiation documents in two ISO 200
 
 `pain.001.001.09` uses the modern ISO 20022 structure (for example `BICFI` and `ReqdExctnDt/Dt`) and supports optional structured postal addresses.
 
-Some banks may require a specific `pain.001` version or apply bank-specific rules. Always check with your bank before using generated files in production.
+Some banks may require a specific `pain.001` version or apply bank-specific rules. Always check with your bank before using generated files in production. See the [pain.001 generator guide](https://sepa-xml-generator.com/pain-001-generator/) for help choosing a version, and the [SEPA XML validation guide](https://sepa-xml-generator.com/sepa-xml-validation/) for what Community checks during generation (and what Pro adds on top).
 
 ---
 
@@ -316,12 +333,13 @@ For more detailed instructions, see:
 
 ## Links
 
-* Website: [sepa-xml-generator.com](https://sepa-xml-generator.com)
-* Download: [sepa-xml-generator.com/download](https://sepa-xml-generator.com/download)
-* Privacy: [sepa-xml-generator.com/privacy](https://sepa-xml-generator.com/privacy)
+* Website: [sepa-xml-generator.com](https://sepa-xml-generator.com/)
+* Download Community: [sepa-xml-generator.com/download](https://sepa-xml-generator.com/download/)
+* Guides: [sepa-xml-generator.com/guides](https://sepa-xml-generator.com/guides/)
+* Explore Pro: [sepa-xml-generator.com/pro](https://sepa-xml-generator.com/pro/)
+* Privacy: [sepa-xml-generator.com/privacy](https://sepa-xml-generator.com/privacy/)
 * Contact: [contact@sepa-xml-generator.com](mailto:contact@sepa-xml-generator.com)
 * Releases: [GitHub releases](https://github.com/pierrecariou/SEPA-generator/releases/latest)
-* SEPA Generator Pro: [sepa-xml-generator.com/pro](https://sepa-xml-generator.com/pro)
 
 ---
 
@@ -341,23 +359,34 @@ mvn clean package
 
 ---
 
-## Community Edition and Future Professional Features
+## Community Edition and SEPA Generator Pro
 
 This repository contains the **Community Edition** of SEPA Generator.
 
-The Community Edition is free and open source. It is intended to remain a useful local tool for generating SEPA credit transfer XML files from CSV or Excel input files.
+The Community Edition is free and open source under the Apache-2.0 license. It
+is a fully usable, unrestricted tool — not a trial or a crippled version — for
+generating SEPA Credit Transfer XML files from CSV or Excel input files,
+locally on your machine.
 
-The Community Edition focuses on SEPA credit transfers and does not generate direct debits.
+The Community Edition focuses on SEPA credit transfers and does not generate
+direct debits.
 
-Possible future professional features may be explored separately, such as:
+[**SEPA Generator Pro**](https://sepa-xml-generator.com/pro/) is a separate
+desktop edition that builds on the same local, privacy-first design and adds:
 
-* advanced SEPA validation reports
-* multiple debtor/company profiles
-* batch workflows
-* accountant-oriented features
-* paid support
+* SEPA Direct Debit generation (`pain.008.001.08`, CORE and B2B)
+* validation against the bundled official SEPA XSD schemas
+* detailed HTML validation and rejection reports
+* validation of existing SEPA XML files
+* SEPA message-version migration
+* multiple payment profiles and saved import mappings
+* Address Readiness checks
 
-These professional features are not part of the Community Edition.
+These Pro capabilities are implemented, and **SEPA Generator Pro is preparing
+for launch**: signed production installers and public sales are not live yet.
+See the [Pro page](https://sepa-xml-generator.com/pro/) for current details.
+Pro is not required to use the Community Edition, and Community will keep
+receiving fixes and improvements independently of Pro.
 
 ---
 
