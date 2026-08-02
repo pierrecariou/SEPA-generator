@@ -172,6 +172,51 @@ else
   failc "entitlements plist exists"
 fi
 
+# -----------------------------------------------------------------------------
+# 10. JAR-embedded native libraries must be signed too.
+#     Apple's notary service inspects binaries inside JARs; jpackage does not
+#     sign them. An unsigned Mach-O there is a critical notarization error.
+# -----------------------------------------------------------------------------
+if declare -f sign_jar_native_binaries >/dev/null; then
+  pass "sign_jar_native_binaries is defined"
+else
+  failc "sign_jar_native_binaries is defined"
+fi
+
+# Fails closed when the JAR does not exist.
+if sign_jar_native_binaries "${HERE}/definitely-missing.jar" >/dev/null 2>&1; then
+  failc "missing JAR should be rejected"
+else
+  pass "missing JAR rejected"
+fi
+
+# A JAR with no native libraries is a no-op, not a failure.
+if command -v unzip >/dev/null 2>&1 && command -v jar >/dev/null 2>&1; then
+  nat_tmp="$(mktemp -d)"
+  ( cd "${nat_tmp}" && mkdir -p pkg && echo 'x' > pkg/Plain.txt && jar cf empty.jar pkg ) >/dev/null 2>&1
+  if sign_jar_native_binaries "${nat_tmp}/empty.jar" >/dev/null 2>&1; then
+    pass "JAR without native libraries is a no-op"
+  else
+    failc "JAR without native libraries is a no-op"
+  fi
+  rm -rf "${nat_tmp}"
+fi
+
+# The packaging script must sign the embedded natives BEFORE invoking jpackage,
+# otherwise the signed libraries never reach the .app.
+PKG_SCRIPT="${HERE}/../package-macos.sh"
+if [ -f "${PKG_SCRIPT}" ]; then
+  call_line="$(grep -n 'sign_jar_native_binaries' "${PKG_SCRIPT}" | head -1 | cut -d: -f1)"
+  jp_line="$(grep -n '^"\${JPACKAGE}"' "${PKG_SCRIPT}" | head -1 | cut -d: -f1)"
+  if [ -n "${call_line}" ] && [ -n "${jp_line}" ] && [ "${call_line}" -lt "${jp_line}" ]; then
+    pass "package-macos.sh signs embedded natives before running jpackage"
+  else
+    failc "package-macos.sh signs embedded natives before running jpackage"
+  fi
+else
+  failc "package-macos.sh is present"
+fi
+
 if [ "${fails}" -gt 0 ]; then
   printf '%d macOS signing-plan test(s) failed.\n' "${fails}"
   exit 1

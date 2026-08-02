@@ -225,6 +225,81 @@ assert_macos_signing_identity() {
 }
 
 # -----------------------------------------------------------------------------
+# Sign the Mach-O binaries that ship *inside* an application JAR.
+#
+# jpackage signs the .app, its launcher and the bundled Java runtime, but it
+# does not look inside JAR files. Apple's notary service does: any unsigned
+# Mach-O binary anywhere in the archive is a critical error
+# ("The binary is not signed with a valid Developer ID certificate"), e.g.
+# FlatLaf's com/formdev/flatlaf/natives/libflatlaf-macos-*.dylib.
+#
+# Each embedded Mach-O binary is therefore extracted, signed with the same
+# Developer ID identity and hardened runtime, verified, and written back into
+# the JAR at its original path. Non-Mach-O natives (Linux .so, Windows .dll)
+# are deliberately left untouched. Fails closed.
+# -----------------------------------------------------------------------------
+sign_jar_native_binaries() {
+  local jar="$1"
+  [ -f "${jar}" ] || { echo "ERROR: JAR not found for native-library signing: ${jar}" >&2; return 1; }
+
+  command -v unzip >/dev/null 2>&1 || { echo "ERROR: 'unzip' not found; cannot sign JAR-embedded native libraries." >&2; return 1; }
+
+  local jar_abs
+  jar_abs="$(cd "$(dirname "${jar}")" && pwd)/$(basename "${jar}")"
+
+  local candidates
+  candidates="$(unzip -Z1 "${jar_abs}" 2>/dev/null | grep -Ei '\.(dylib|jnilib|so)$' || true)"
+  if [ -z "${candidates}" ]; then
+    ok "No embedded native libraries found in $(basename "${jar_abs}")."
+    return 0
+  fi
+
+  command -v zip >/dev/null 2>&1 || { echo "ERROR: 'zip' not found; cannot sign JAR-embedded native libraries." >&2; return 1; }
+
+  local work
+  work="$(mktemp -d "${TMPDIR:-/tmp}/sepa-jarsign-XXXXXX")" \
+    || { echo "ERROR: could not create a temporary directory for JAR signing." >&2; return 1; }
+
+  local entry signed=0 skipped=0
+  while IFS= read -r entry; do
+    [ -n "${entry}" ] || continue
+    rm -rf "${work:?}/"*
+    unzip -o -q "${jar_abs}" "${entry}" -d "${work}" \
+      || { echo "ERROR: could not extract ${entry} from the application JAR." >&2; rm -rf "${work}"; return 1; }
+
+    # Only Mach-O binaries are signable; Linux/Windows natives are left alone.
+    if ! file -b "${work}/${entry}" | grep -q 'Mach-O'; then
+      skipped=$((skipped + 1))
+      continue
+    fi
+
+    local cs_args=( --force --sign "${MAC_SIGNING_IDENTITY}" --timestamp --options runtime )
+    [ -n "${MAC_TEMP_KEYCHAIN:-}" ] && cs_args+=( --keychain "${MAC_TEMP_KEYCHAIN}" )
+    codesign "${cs_args[@]}" "${work}/${entry}" \
+      || { echo "ERROR: failed to sign the embedded native library ${entry}." >&2; rm -rf "${work}"; return 1; }
+    codesign --verify --strict "${work}/${entry}" \
+      || { echo "ERROR: signature verification failed for the embedded native library ${entry}." >&2; rm -rf "${work}"; return 1; }
+
+    # Write it back at exactly the same path inside the JAR.
+    ( cd "${work}" && zip -q "${jar_abs}" "${entry}" ) \
+      || { echo "ERROR: could not write the signed ${entry} back into the application JAR." >&2; rm -rf "${work}"; return 1; }
+
+    ok "Signed embedded native library: ${entry}"
+    signed=$((signed + 1))
+  done <<EOF
+${candidates}
+EOF
+
+  rm -rf "${work}"
+
+  if [ "${signed}" -eq 0 ]; then
+    ok "No macOS native libraries embedded in $(basename "${jar_abs}") (${skipped} non-Mach-O left untouched)."
+  else
+    ok "Signed ${signed} embedded macOS native library/libraries (${skipped} non-Mach-O left untouched)."
+  fi
+}
+
+# -----------------------------------------------------------------------------
 # Post-jpackage verification. Mounts the produced DMG read-only, then proves the
 # bundled application really carries a Developer ID signature from the expected
 # team, with the hardened runtime enabled, and that the nested launcher and the

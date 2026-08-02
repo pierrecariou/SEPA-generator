@@ -289,6 +289,11 @@ if [ "${MAC_DO_SIGN}" = "true" ]; then
     JP_ARGS+=( --mac-signing-keychain "${MAC_TEMP_KEYCHAIN}" )
   fi
   ok "Code signing ENABLED (Developer ID; hardened-runtime entitlements applied)."
+  # jpackage does not look inside JARs, but Apple's notary service does: every
+  # embedded Mach-O binary must carry a Developer ID signature. Sign them in
+  # the staged JAR before jpackage copies it into the .app.
+  sign_jar_native_binaries "${INPUT_DIR}/${MAIN_JAR_NAME}" \
+    || fail "Failed to sign the native libraries embedded in ${MAIN_JAR_NAME}."
 else
   ok "Code signing DISABLED (unsigned build; Gatekeeper will warn on first launch)."
 fi

@@ -469,9 +469,23 @@ applying the hardened-runtime entitlements in `packaging/macos/entitlements.plis
 all required by a bundled JVM). That file must contain **no XML comments**:
 Apple's entitlements parser (`AMFIUnserializeXML`) rejects them with
 `syntax error`, which fails the build.
+
+`jpackage` does **not** look inside JAR files, but Apple's notary service does.
+Any unsigned Mach-O binary embedded in the application JAR — currently FlatLaf's
+`com/formdev/flatlaf/natives/libflatlaf-macos-{arm64,x86_64}.dylib` — is a
+critical notarization error. The build therefore signs those binaries in the
+staged JAR *before* jpackage runs (`sign_jar_native_binaries`), using the same
+Developer ID identity and hardened runtime. Non-Mach-O natives (the Linux `.so`
+and the Windows `.dll`s) are deliberately left untouched.
+
 When `MACOS_CERT_P12_BASE64` is supplied the certificate is imported into a
 **temporary keychain** that is removed on exit (including after a failure);
 otherwise the identity is taken from an existing keychain.
+
+The `.p12` must use a **SHA-1 MAC**. macOS `security import` cannot read the
+SHA-256 MAC that OpenSSL 3 produces by default and misreports it as
+`MAC verification failed during PKCS12 import (wrong password?)`. Export with
+`-macalg sha1 -certpbe PBE-SHA1-3DES -keypbe PBE-SHA1-3DES`.
 
 Every step fails closed, in this order:
 
