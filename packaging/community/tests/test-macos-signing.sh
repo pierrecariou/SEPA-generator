@@ -134,6 +134,44 @@ else
   pass "no API key leak in error output"
 fi
 
+# -----------------------------------------------------------------------------
+# 9. Entitlements plist must stay parseable by Apple's AMFIUnserializeXML.
+#    That parser rejects XML comments outright ("syntax error"), which fails
+#    codesign and therefore the whole build. Regression guard.
+# -----------------------------------------------------------------------------
+ENTITLEMENTS="${HERE}/../../macos/entitlements.plist"
+if [ -f "${ENTITLEMENTS}" ]; then
+  pass "entitlements plist exists"
+
+  if grep -q '<!--' "${ENTITLEMENTS}"; then
+    failc "entitlements plist must not contain XML comments (AMFI rejects them)"
+  else
+    pass "entitlements plist contains no XML comments"
+  fi
+
+  missing=""
+  for key in com.apple.security.cs.allow-jit \
+             com.apple.security.cs.allow-unsigned-executable-memory \
+             com.apple.security.cs.disable-library-validation; do
+    grep -q "<key>${key}</key>" "${ENTITLEMENTS}" || missing="${missing} ${key}"
+  done
+  if [ -n "${missing}" ]; then
+    failc "entitlements plist is missing required JVM entitlement(s):${missing}"
+  else
+    pass "entitlements plist declares the required JVM entitlements"
+  fi
+
+  if command -v plutil >/dev/null 2>&1; then
+    if plutil -lint "${ENTITLEMENTS}" >/dev/null 2>&1; then
+      pass "entitlements plist passes plutil -lint"
+    else
+      failc "entitlements plist passes plutil -lint"
+    fi
+  fi
+else
+  failc "entitlements plist exists"
+fi
+
 if [ "${fails}" -gt 0 ]; then
   printf '%d macOS signing-plan test(s) failed.\n' "${fails}"
   exit 1

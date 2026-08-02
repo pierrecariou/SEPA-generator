@@ -464,7 +464,11 @@ interactive 2FA and is the credential Apple recommends for automated builds.
 Apple-ID + app-specific-password authentication is **not** used.
 
 `jpackage` signs the `.app`, its native launcher and its bundled Java runtime,
-applying the hardened-runtime entitlements in `packaging/macos/entitlements.plist`.
+applying the hardened-runtime entitlements in `packaging/macos/entitlements.plist`
+(`allow-jit`, `allow-unsigned-executable-memory` and `disable-library-validation`,
+all required by a bundled JVM). That file must contain **no XML comments**:
+Apple's entitlements parser (`AMFIUnserializeXML`) rejects them with
+`syntax error`, which fails the build.
 When `MACOS_CERT_P12_BASE64` is supplied the certificate is imported into a
 **temporary keychain** that is removed on exit (including after a failure);
 otherwise the identity is taken from an existing keychain.
