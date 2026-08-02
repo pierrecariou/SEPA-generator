@@ -199,10 +199,11 @@ Quick reference (see below for the full list of secrets):
 MAC_SIGN=true MAC_SIGNING_IDENTITY="Developer ID Application: Your Name (TEAMID)" \
   ./packaging/community/package-macos.sh
 
-# Sign AND notarize + staple (requires Apple credentials):
+# Sign AND notarize + staple (requires an App Store Connect API key):
 MAC_SIGN=true MAC_SIGNING_IDENTITY="Developer ID Application: Your Name (TEAMID)" \
-MAC_NOTARIZE=true APPLE_ID="you@example.com" APPLE_TEAM_ID="TEAMID" \
-APPLE_APP_PASSWORD="app-specific-password" \
+MAC_NOTARIZE=true APPLE_API_KEY_ID="XXXXXXXXXX" \
+APPLE_API_ISSUER_ID="00000000-0000-0000-0000-000000000000" \
+APPLE_API_KEY_P8_BASE64="$(base64 < AuthKey_XXXXXXXXXX.p8)" \
   ./packaging/community/package-macos.sh
 ```
 
@@ -443,26 +444,51 @@ $env:WINDOWS_CERT_PASSWORD   = "…"
 
 ### macOS (Developer ID + notarization)
 
-| Variable               | Secret? | Purpose                                                            |
-| ---------------------- | ------- | ------------------------------------------------------------------ |
-| `MAC_SIGN`             | no      | Enable Developer ID signing (`true`). Off by default.              |
-| `MAC_SIGNING_IDENTITY` | no*     | e.g. `Developer ID Application: Name (TEAMID)`. Required if signing.|
-| `MACOS_CERT_P12_BASE64`| **yes** | Optional: base64 `.p12` imported into a temporary keychain.        |
-| `MACOS_CERT_PASSWORD`  | **yes** | Password for the `.p12` (required if `MACOS_CERT_P12_BASE64` set). |
-| `MAC_NOTARIZE`         | no      | Enable notarization + stapling (`true`). Requires `MAC_SIGN=true`. |
-| `APPLE_ID`             | **yes** | Apple ID for `notarytool`. Required if notarizing.                 |
-| `APPLE_TEAM_ID`        | **yes** | Apple Developer Team ID. Required if notarizing.                   |
-| `APPLE_APP_PASSWORD`   | **yes** | App-specific password for `notarytool`. Required if notarizing.    |
+| Variable                  | Secret? | Purpose                                                            |
+| ------------------------- | ------- | ------------------------------------------------------------------ |
+| `MAC_SIGN`                | no      | Enable Developer ID signing (`true`). Off by default.              |
+| `MAC_SIGNING_IDENTITY`    | no*     | e.g. `Developer ID Application: Name (TEAMID)`. Required if signing. Must end with the Team ID in parentheses. |
+| `MACOS_CERT_P12_BASE64`   | **yes** | Optional: base64 `.p12` imported into a temporary keychain.        |
+| `MACOS_CERT_PASSWORD`     | **yes** | Password for the `.p12` (required if `MACOS_CERT_P12_BASE64` set). |
+| `MAC_NOTARIZE`            | no      | Enable notarization + stapling (`true`). Requires `MAC_SIGN=true`. |
+| `APPLE_API_KEY_P8_BASE64` | **yes** | Base64 of the App Store Connect API key `AuthKey_<KEYID>.p8`.      |
+| `APPLE_API_KEY_ID`        | **yes** | App Store Connect API Key ID. Required if notarizing.              |
+| `APPLE_API_ISSUER_ID`     | **yes** | App Store Connect Issuer ID (UUID). Required if notarizing.        |
 
 \*Not a secret, but signing fails closed if it is empty.
 
-`jpackage` signs the `.app` and its bundled Java runtime, applying the
-hardened-runtime entitlements in `packaging/macos/entitlements.plist`. When
-`MACOS_CERT_P12_BASE64` is supplied the certificate is imported into a
-**temporary keychain** that is removed on exit; otherwise the identity is taken
-from an existing keychain. Notarization requires signing — `notarytool submit
---wait`, `stapler staple`, `stapler validate` and a `spctl` Gatekeeper check all
-must pass or packaging aborts.
+Notarization authenticates with an **App Store Connect API key** (Users and
+Access → Integrations → App Store Connect API → *Team Keys*, role **Developer**).
+An API key is scoped to App Store Connect, is revocable on its own, needs no
+interactive 2FA and is the credential Apple recommends for automated builds.
+Apple-ID + app-specific-password authentication is **not** used.
+
+`jpackage` signs the `.app`, its native launcher and its bundled Java runtime,
+applying the hardened-runtime entitlements in `packaging/macos/entitlements.plist`.
+When `MACOS_CERT_P12_BASE64` is supplied the certificate is imported into a
+**temporary keychain** that is removed on exit (including after a failure);
+otherwise the identity is taken from an existing keychain.
+
+Every step fails closed, in this order:
+
+1. the requested identity must exist, be valid for code signing and be
+   unambiguous (`security find-identity`) — the identity actually used is
+   printed;
+2. `codesign --verify --deep --strict` must pass for the whole `.app` tree, and
+   explicitly for the native launcher and the bundled Java runtime
+   (`--deep` is used for **verification only**, never for signing);
+3. the signature must chain `Developer ID Application → Developer ID
+   Certification Authority → Apple Root CA`, carry the expected Team ID, and
+   have the hardened runtime flag set;
+4. the DMG container itself must be signed — it is signed once, explicitly,
+   only if `jpackage` did not already sign it;
+5. `notarytool submit --wait` must return `Accepted` (on any other status the
+   full Apple notarization log is retrieved and printed);
+6. `stapler staple`, `stapler validate` and the `spctl` Gatekeeper assessment
+   must all pass.
+
+Checksums are generated **after** signing and stapling, and an artifact that
+fails any of the above never reaches the upload or release step.
 
 ### Local vs GitHub Actions
 
@@ -476,7 +502,7 @@ are wired as encrypted **GitHub Actions secrets/variables** consumed by the
 | `WINDOWS_CERT_PFX_BASE64`, `WINDOWS_CERT_PASSWORD`  | secret   | Windows job        |
 | `WINDOWS_TIMESTAMP_URL`                             | variable | Windows job (opt.) |
 | `MACOS_CERT_P12_BASE64`, `MACOS_CERT_PASSWORD`      | secret   | macOS jobs         |
-| `APPLE_ID`, `APPLE_TEAM_ID`, `APPLE_APP_PASSWORD`   | secret   | macOS jobs         |
+| `APPLE_API_KEY_P8_BASE64`, `APPLE_API_KEY_ID`, `APPLE_API_ISSUER_ID` | secret | macOS jobs |
 | `MAC_SIGNING_IDENTITY`                              | variable | macOS jobs         |
 | `COMMUNITY_RELEASE_SIGN`                            | variable | enables tag-release signing |
 

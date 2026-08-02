@@ -111,7 +111,7 @@ fi
 # first launch; users must right-click -> Open. Signing + notarization is opt-in
 # and fail-closed (see packaging/community/macos-signing.sh). Enable via:
 #   MAC_SIGN=true       and MAC_SIGNING_IDENTITY="Developer ID Application: ..."
-#   MAC_NOTARIZE=true   and APPLE_ID / APPLE_TEAM_ID / APPLE_APP_PASSWORD
+#   MAC_NOTARIZE=true   and APPLE_API_KEY_P8_BASE64 / APPLE_API_KEY_ID / APPLE_API_ISSUER_ID
 # Optionally import the certificate from MACOS_CERT_P12_BASE64 (+ MACOS_CERT_PASSWORD)
 # into a temporary keychain. Notarization requires signing.
 # -----------------------------------------------------------------------------
@@ -277,9 +277,16 @@ fi
 # by the bundled JVM. The signing identity value is not echoed.
 if [ "${MAC_DO_SIGN}" = "true" ]; then
   setup_macos_keychain
+  # Fail immediately if the requested Developer ID identity is not usable, and
+  # print the non-sensitive identity that will actually be used.
+  assert_macos_signing_identity
   JP_ARGS+=( --mac-sign --mac-signing-key-user-name "${MAC_SIGNING_IDENTITY}" )
   if [ -f "${ENTITLEMENTS_PLIST}" ]; then
     JP_ARGS+=( --mac-entitlements "${ENTITLEMENTS_PLIST}" )
+  fi
+  # jpackage must be able to find the identity in the temporary keychain.
+  if [ -n "${MAC_TEMP_KEYCHAIN:-}" ]; then
+    JP_ARGS+=( --mac-signing-keychain "${MAC_TEMP_KEYCHAIN}" )
   fi
   ok "Code signing ENABLED (Developer ID; hardened-runtime entitlements applied)."
 else
@@ -298,6 +305,16 @@ FINAL_PATH="${OUTPUT_DIR}/${FINAL_ARTIFACT}"
 rm -f "${FINAL_PATH}"
 mv "${PRODUCED}" "${FINAL_PATH}"
 ok "DMG: ${FINAL_PATH}"
+
+# -----------------------------------------------------------------------------
+# 6b. Verify the signature before anything is notarized or published. Every
+# check fails closed, so an unsigned or wrongly-signed DMG can never reach the
+# notarization step, the artifact upload, or a release.
+# -----------------------------------------------------------------------------
+if [ "${MAC_DO_SIGN}" = "true" ]; then
+  verify_signed_app "${FINAL_PATH}" || fail "Code-signing verification failed; the DMG will not be notarized or published."
+  sign_dmg_if_needed "${FINAL_PATH}" || fail "Failed to sign the DMG container."
+fi
 
 # -----------------------------------------------------------------------------
 # 7. Optional notarization + stapling (requires a signed app)

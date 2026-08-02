@@ -167,12 +167,13 @@ assert_signing_ready() {
       [ -n "${WINDOWS_CERT_PASSWORD:-}" ]   || missing="${missing} WINDOWS_CERT_PASSWORD"
       ;;
     macos)
-      [ -n "${MAC_SIGNING_IDENTITY:-}" ]  || missing="${missing} MAC_SIGNING_IDENTITY"
-      [ -n "${MACOS_CERT_P12_BASE64:-}" ] || missing="${missing} MACOS_CERT_P12_BASE64"
-      [ -n "${MACOS_CERT_PASSWORD:-}" ]   || missing="${missing} MACOS_CERT_PASSWORD"
-      [ -n "${APPLE_ID:-}" ]              || missing="${missing} APPLE_ID"
-      [ -n "${APPLE_TEAM_ID:-}" ]         || missing="${missing} APPLE_TEAM_ID"
-      [ -n "${APPLE_APP_PASSWORD:-}" ]    || missing="${missing} APPLE_APP_PASSWORD"
+      [ -n "${MAC_SIGNING_IDENTITY:-}" ]     || missing="${missing} MAC_SIGNING_IDENTITY"
+      [ -n "${MACOS_CERT_P12_BASE64:-}" ]    || missing="${missing} MACOS_CERT_P12_BASE64"
+      [ -n "${MACOS_CERT_PASSWORD:-}" ]      || missing="${missing} MACOS_CERT_PASSWORD"
+      # Notarization authenticates with an App Store Connect API key.
+      [ -n "${APPLE_API_KEY_P8_BASE64:-}" ]  || missing="${missing} APPLE_API_KEY_P8_BASE64"
+      [ -n "${APPLE_API_KEY_ID:-}" ]         || missing="${missing} APPLE_API_KEY_ID"
+      [ -n "${APPLE_API_ISSUER_ID:-}" ]      || missing="${missing} APPLE_API_ISSUER_ID"
       ;;
     *)
       echo "ERROR: assert_signing_ready: unknown platform '${platform}'." >&2

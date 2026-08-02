@@ -72,6 +72,27 @@ version source.
    closed if required secrets are missing and verifies signatures during
    packaging. Never describe an unsigned artifact as signed.
 
+   macOS signing uses the Niryosys **Developer ID Application** identity and
+   notarizes with an **App Store Connect API key** (secrets
+   `MACOS_CERT_P12_BASE64`, `MACOS_CERT_PASSWORD`, `APPLE_API_KEY_P8_BASE64`,
+   `APPLE_API_KEY_ID`, `APPLE_API_ISSUER_ID`; variable `MAC_SIGNING_IDENTITY`).
+   The macOS job log must show, for **both** arm64 and x64:
+
+   - the signing identity that was used, and its Apple Team ID;
+   - `codesign --verify --deep --strict` passing for the `.app`, the native
+     launcher and the bundled Java runtime;
+   - the `Developer ID Application → Developer ID Certification Authority →
+     Apple Root CA` chain, the expected `TeamIdentifier`, and the hardened
+     runtime flag;
+   - a signed DMG container;
+   - `Notarization status: Accepted` with its submission id;
+   - `stapler validate` and the `spctl` Gatekeeper assessment passing.
+
+   If notarization is rejected the job prints Apple's full notarization log and
+   fails; no artifact is uploaded. Enabling `COMMUNITY_RELEASE_SIGN` is a
+   deliberate, separate decision taken only after a signed
+   `workflow_dispatch` RC has passed all of the above.
+
 6. **Verify artifact names and checksums.** Confirm the four installers are named
    `SEPA-Generator-Community-X.Y.Z-<os>-<arch>.<ext>` and that the workflow's
    `SHA256SUMS.txt` verifies. Locally a user checks a download with:

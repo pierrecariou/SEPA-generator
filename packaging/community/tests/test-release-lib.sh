@@ -120,7 +120,7 @@ rm -rf "${d5}"
 # --- assert_signing_ready ---------------------------------------------------
 unset WINDOWS_CERT_PFX_BASE64 WINDOWS_CERT_PASSWORD \
       MAC_SIGNING_IDENTITY MACOS_CERT_P12_BASE64 MACOS_CERT_PASSWORD \
-      APPLE_ID APPLE_TEAM_ID APPLE_APP_PASSWORD
+      APPLE_API_KEY_P8_BASE64 APPLE_API_KEY_ID APPLE_API_ISSUER_ID
 
 # Not required -> no-op success even with no inputs (unsigned RC allowed).
 if assert_signing_ready windows false 2>/dev/null; then pass "signing not required is a no-op"; else failc "signing not required is a no-op"; fi
@@ -132,6 +132,16 @@ if assert_signing_ready macos true 2>/dev/null; then failc "macos signing requir
 # Required and complete -> pass.
 WINDOWS_CERT_PFX_BASE64="QUJD" WINDOWS_CERT_PASSWORD="pw"
 if assert_signing_ready windows true 2>/dev/null; then pass "windows signing required+complete accepted"; else failc "windows signing required+complete accepted"; fi
+
+# macOS: the App Store Connect API key inputs must all be present. A partial
+# set (identity + certificate but no notarization key) must still be rejected.
+MAC_SIGNING_IDENTITY="Developer ID Application: NIRYOSYS (233LH9G5PD)"
+MACOS_CERT_P12_BASE64="QUJD" MACOS_CERT_PASSWORD="pw"
+if assert_signing_ready macos true 2>/dev/null; then failc "macos signing without the API key should fail"; else pass "macos signing without the API key rejected"; fi
+
+APPLE_API_KEY_P8_BASE64="QUJD" APPLE_API_KEY_ID="KEYID12345"
+APPLE_API_ISSUER_ID="11111111-2222-3333-4444-555555555555"
+if assert_signing_ready macos true 2>/dev/null; then pass "macos signing required+complete accepted"; else failc "macos signing required+complete accepted"; fi
 
 # Required+complete must not leak the password value in any output.
 out="$(assert_signing_ready windows true 2>&1 || true)"
