@@ -1,4 +1,4 @@
-﻿# Community release runbook
+# Community release runbook
 
 The authoritative, step-by-step procedure for publishing a **SEPA Generator
 Community** release. It ties together the Maven version authority, the packaging
@@ -6,7 +6,7 @@ scripts, the tag-driven GitHub Actions workflow, and the update manifest that
 tells installed copies a newer version exists.
 
 Substitute the real version for `X.Y.Z` throughout. There is exactly **one**
-production source of truth for the version â€” the root Maven `<revision>`
+production source of truth for the version — the root Maven `<revision>`
 property. Never hand-edit a version into installer names, scripts, or the
 manifest.
 
@@ -23,7 +23,7 @@ https://sepa-xml-generator.com/releases/community/latest.json
 - The manifest must declare `"edition": "community"`. The checker **rejects**
   (and never offers an update for) a Pro manifest, a missing/unknown edition,
   malformed JSON, a missing/non-numeric version, or a manifest with no usable
-  `http(s)` download URL. A rejected manifest is silently ignored â€” startup and
+  `http(s)` download URL. A rejected manifest is silently ignored — startup and
   generation are never disrupted.
 - Because the checker requires `edition: community`, a Community build can never
   offer a Pro artifact or Pro download page.
@@ -34,7 +34,7 @@ https://sepa-xml-generator.com/releases/community/latest.json
 
 The manifest schema is illustrated by
 [`community-latest.json.example`](community-latest.json.example). It is an
-example only â€” the published manifest's `latestVersion` and download URLs are
+example only — the published manifest's `latestVersion` and download URLs are
 produced from the release version (below), so the example is not a second
 version source.
 
@@ -45,6 +45,25 @@ and never affects update detection. "View full release notes" is offered only
 when `releaseNotesUrl` is an absolute `http(s)` URL. Neither field replaces the
 release notes bundled with the application, which remain the source of truth.
 
+`releaseNotesUrl` points at the public, version-specific page on the product
+website, following the Community version route:
+
+```
+https://sepa-xml-generator.com/releases/community/X.Y.Z/
+```
+
+For the current release that page is:
+
+```
+https://sepa-xml-generator.com/releases/community/1.4.0/
+```
+
+That page must be deployed and confirmed reachable **before** the `latest.json`
+manifest that references it is published. If the page is not ready, omit
+`releaseNotesUrl` entirely rather than publishing a dead link: omitting it only
+hides the "View full release notes" link in the update dialog, and the bundled
+offline notes reached from **Help → What's new…** remain fully available.
+
 ## Release steps
 
 1. **Bump the version.** Edit the root POM `<revision>` to `X.Y.Z`. This is the
@@ -54,7 +73,7 @@ release notes bundled with the application, which remain the source of truth.
 2. **Write the release notes** for `X.Y.Z` in
    `view/src/main/resources/help/release-notes-X.Y.Z.html`. Every release version
    must have matching bundled notes: they are the single source of truth for what
-   changed, they are shown offline by **Help â†’ Release notesâ€¦**, and
+   changed, they are shown offline by **Help → What's new…**, and
    `ReleaseNotesAvailabilityTest` fails the build if they are missing. Describe
    only verified, user-visible Community changes; never claim a Pro-only
    capability, and never describe an unsigned artifact as signed. The file is a
@@ -97,7 +116,7 @@ release notes bundled with the application, which remain the source of truth.
    - the signing identity that was used, and its Apple Team ID;
    - `codesign --verify --deep --strict` passing for the `.app`, the native
      launcher and the bundled Java runtime;
-   - the `Developer ID Application â†’ Developer ID Certification Authority â†’
+   - the `Developer ID Application → Developer ID Certification Authority →
      Apple Root CA` chain, the expected `TeamIdentifier`, and the hardened
      runtime flag;
    - a signed DMG container;
@@ -125,19 +144,22 @@ release notes bundled with the application, which remain the source of truth.
    installers, `SHA256SUMS.txt`, and a reviewer checklist. Review it, then click
    **Publish** in the GitHub UI. Publication is the deliberate final action.
 
-10. **Update the website download links** to point at the newly published assets.
+10. **Update the website download links** to point at the newly published assets,
+    and deploy the version-specific release page at
+    `https://sepa-xml-generator.com/releases/community/X.Y.Z/`. Open it and
+    confirm it is reachable; a page that is not live must not be referenced.
 
 11. **Publish the update manifest last.** Only after the release notes are
-    approved and the release page is public with working download links, publish
-    the manifest at `releases/community/latest.json` with `latestVersion: X.Y.Z`
-    and the final asset URLs (shape per the `.example` file). Add `highlights`
-    (at most five concise lines) and a `releaseNotesUrl` only if a public page
-    for this release really exists. Publishing the manifest last guarantees it
-    never advertises a version whose downloads are not yet live.
-
-    A permanent per-version release archive on the website, and the real
-    `releaseNotesUrl` it would make possible, are separate follow-up work: until
-    then `releaseNotesUrl` may point at the download page or be omitted.
+    approved, the release page is public with working download links, and every
+    URL the manifest references has been confirmed live, publish the manifest at
+    `releases/community/latest.json` with `latestVersion: X.Y.Z` and the final
+    asset URLs (shape per the `.example` file). Add `highlights` (at most five
+    concise lines), and add `releaseNotesUrl` **only** once
+    `https://sepa-xml-generator.com/releases/community/X.Y.Z/` is confirmed
+    reachable — otherwise omit the field rather than publishing a dead link.
+    Omitting it only hides "View full release notes"; the bundled offline notes
+    are unaffected. Publishing the manifest last guarantees it never advertises
+    a version whose downloads or referenced pages are not yet live.
 
 12. **Verify discovery from an older install.** Launch a previous Community
     version and confirm it detects `X.Y.Z` and links to the correct download.
@@ -147,7 +169,7 @@ release notes bundled with the application, which remain the source of truth.
 - **Bad manifest** (wrong version, dead URL, wrong edition): revert
   `latest.json` to the previous good manifest, or remove it. Clients that fail
   to fetch or that reject an invalid manifest simply keep running on the current
-  version â€” no update is offered, nothing breaks. This is the safest and fastest
+  version — no update is offered, nothing breaks. This is the safest and fastest
   lever because it is a single static file.
 - **Bad release artifact** discovered after publishing: unpublish (or delete)
   the GitHub Release and revert the website links first, then fix and re-run.

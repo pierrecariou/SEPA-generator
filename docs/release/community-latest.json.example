@@ -5,7 +5,7 @@
   "releaseDate": "YYYY-MM-DD",
   "critical": false,
   "downloadPageUrl": "https://sepa-xml-generator.com/download/",
-  "releaseNotesUrl": "https://sepa-xml-generator.com/download/",
+  "releaseNotesUrl": "https://sepa-xml-generator.com/releases/community/X.Y.Z/",
   "highlights": [
     "Optional: at most five short plain-text lines",
     "Shown under \"What's new\" in the update dialog",
