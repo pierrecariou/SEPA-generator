@@ -1,11 +1,17 @@
 package com.pcariou.view.help;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+
+import com.pcariou.view.AppLinks;
 
 import org.junit.Test;
 
+import javax.swing.AbstractButton;
 import javax.swing.JPanel;
+import java.awt.Cursor;
 
 /**
  * Tests for {@link AboutDialog}: it states the product, the installed version
@@ -55,5 +61,42 @@ public class AboutDialogTest {
 
         assertFalse("Community About must not advertise Pro", text.contains("pro edition"));
         assertFalse(text.contains("pain.008"));
+    }
+
+    /**
+     * About points at the product homepage on purpose. It must not drift to the
+     * releases archive (that is the release-notes dialog's destination) nor to a
+     * publisher site.
+     */
+    @Test
+    public void websiteStillPointsAtTheProductHomepage() {
+        assertEquals("https://sepa-xml-generator.com", AppLinks.WEBSITE);
+
+        String text = HelpDialogText.of(AboutDialog.buildContent(null, null, "1.4.0"));
+        assertTrue("The About action stays labelled Website", text.contains("Website"));
+        assertFalse("About must not adopt the release-notes destination",
+                text.contains(ReleaseNotesDialog.VIEW_ONLINE));
+    }
+
+    @Test
+    public void websiteLooksAndBehavesLikeALink() {
+        JPanel content = AboutDialog.buildContent(null, null, "1.4.0");
+        AbstractButton website = HelpDialogText.button(content, "Website");
+
+        assertNotNull(website);
+        assertEquals("A link must show the hand cursor",
+                Cursor.HAND_CURSOR, website.getCursor().getType());
+        assertTrue("Keyboard focus must stay visible", website.isFocusPainted());
+        assertTrue(website.isFocusable());
+    }
+
+    @Test
+    public void ordinaryButtonsAreNotStyledAsLinks() {
+        JPanel content = AboutDialog.buildContent(null, null, "1.4.0");
+        AbstractButton close = HelpDialogText.button(content, "Close");
+
+        assertNotNull(close);
+        assertFalse("Close is an ordinary button, not a hyperlink",
+                close.getCursor().getType() == Cursor.HAND_CURSOR);
     }
 }

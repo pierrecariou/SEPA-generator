@@ -1,6 +1,7 @@
 package com.pcariou.view.help;
 
 import javax.swing.AbstractButton;
+import javax.swing.JEditorPane;
 import javax.swing.JLabel;
 import javax.swing.JScrollPane;
 import javax.swing.text.JTextComponent;
@@ -47,6 +48,39 @@ final class HelpDialogText {
     /** Whether a scroll pane exists anywhere under {@code root}. */
     static boolean containsScrollPane(Component root) {
         return firstScrollPane(root) != null;
+    }
+
+    /** The first button whose text equals {@code text}, or {@code null}. */
+    static AbstractButton button(Component component, String text) {
+        if (component instanceof AbstractButton
+                && text.equals(((AbstractButton) component).getText())) {
+            return (AbstractButton) component;
+        }
+        if (component instanceof Container) {
+            for (Component child : ((Container) component).getComponents()) {
+                AbstractButton found = button(child, text);
+                if (found != null) {
+                    return found;
+                }
+            }
+        }
+        return null;
+    }
+
+    /** The first {@link JEditorPane} under {@code root}, or {@code null}. */
+    static JEditorPane editorPane(Component component) {
+        if (component instanceof JEditorPane) {
+            return (JEditorPane) component;
+        }
+        if (component instanceof Container) {
+            for (Component child : ((Container) component).getComponents()) {
+                JEditorPane found = editorPane(child);
+                if (found != null) {
+                    return found;
+                }
+            }
+        }
+        return null;
     }
 
     /** Every {@link JLabel} under {@code root}, in tree order. */

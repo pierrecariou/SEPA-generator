@@ -3,11 +3,19 @@ package com.pcariou.view.help;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import org.junit.Assume;
 import org.junit.Test;
 
+import javax.swing.JComponent;
+import javax.swing.JDialog;
+import javax.swing.JEditorPane;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.swing.KeyStroke;
+import java.awt.GraphicsEnvironment;
+import java.awt.Window;
+import java.awt.event.KeyEvent;
 
 /**
  * Tests for {@link ReleaseNotesDialog}: the bundled notes of the installed
@@ -50,7 +58,8 @@ public class ReleaseNotesDialogTest {
 
         assertTrue("The user must be told why nothing is shown",
                 text.contains("Release notes are not available in this build."));
-        assertTrue("The website must remain reachable", text.contains("Website"));
+        assertTrue("The notes must stay reachable online",
+                text.contains(ReleaseNotesDialog.VIEW_ONLINE));
         assertFalse("No scrollable notes area when there is nothing to show",
                 HelpDialogText.containsScrollPane(content));
     }
@@ -61,7 +70,8 @@ public class ReleaseNotesDialogTest {
         String text = HelpDialogText.of(content);
 
         assertTrue(text.contains("Release notes are not available in this build."));
-        assertTrue("The website must remain reachable", text.contains("Website"));
+        assertTrue("The notes must stay reachable online",
+                text.contains(ReleaseNotesDialog.VIEW_ONLINE));
     }
 
     @Test
@@ -88,5 +98,43 @@ public class ReleaseNotesDialogTest {
         assertFalse(notes.contains("payment profiles"));
         assertFalse("macOS packages are unsigned by default on this branch",
                 notes.contains("notariz"));
+    }
+
+    /**
+     * Links inside the notes must keep opening in the browser. The read-only
+     * caret hides the insertion bar only; it must not cost the pane its
+     * hyperlink handling.
+     */
+    @Test
+    public void notesKeepTheirHyperlinkHandling() {
+        JPanel content = ReleaseNotesDialog.buildContent(null, null, "1.4.0");
+        JEditorPane pane = HelpDialogText.editorPane(content);
+
+        assertTrue("The notes must still be rendered as HTML",
+                "text/html".equals(pane.getContentType()));
+        assertTrue("An activated link must still reach the browser helper",
+                pane.getHyperlinkListeners().length > 0);
+    }
+
+    /** Esc must still close the dialog after the button rework. */
+    @Test
+    public void escapeStillClosesTheDialog() {
+        Assume.assumeFalse("A real dialog is needed to inspect the root pane bindings",
+                GraphicsEnvironment.isHeadless());
+
+        JDialog dialog = new JDialog((Window) null, ReleaseNotesDialog.TITLE);
+        try {
+            dialog.setContentPane(ReleaseNotesDialog.buildContent(dialog, null, "1.4.0"));
+            HelpDialogs.closeOnEscape(dialog);
+
+            JComponent root = dialog.getRootPane();
+            Object binding = root.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
+                    .get(KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0));
+
+            assertTrue("Esc must be bound", binding != null);
+            assertTrue("Esc must have an action", root.getActionMap().get(binding) != null);
+        } finally {
+            dialog.dispose();
+        }
     }
 }

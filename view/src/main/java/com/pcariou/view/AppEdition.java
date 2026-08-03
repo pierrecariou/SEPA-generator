@@ -30,7 +30,24 @@ public final class AppEdition {
     /** Tooltip of the Community "Upgrade to Pro" action. */
     public static final String UPGRADE_TOOLTIP = "Discover SEPA Generator Pro";
 
+    /** Root of this edition's public release archive on the product website. */
+    private static final String RELEASES_BASE = "https://sepa-xml-generator.com/releases/community/";
+
     private AppEdition() {
+    }
+
+    /**
+     * Public website page of one release of this edition, for example
+     * {@code https://sepa-xml-generator.com/releases/community/1.4.0/}.
+     *
+     * <p>Derived from the installed version rather than hard-coded, so a release
+     * never has to remember to update a link. {@code release} is expected to be
+     * an already-normalised dotted release number; callers that hold a raw
+     * application version should normalise it first (see
+     * {@code ReleaseNotes.onlineUrl}).</p>
+     */
+    public static String releasePageUrl(String release) {
+        return RELEASES_BASE + release + "/";
     }
 
     /** Whether the Community "Upgrade to Pro" action should be shown. */

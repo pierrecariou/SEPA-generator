@@ -1,7 +1,6 @@
 package com.pcariou.view.help;
 
 import com.formdev.flatlaf.FlatClientProperties;
-import com.pcariou.view.AppLinks;
 import com.pcariou.view.ExternalLinks;
 import net.miginfocom.swing.MigLayout;
 
@@ -15,6 +14,8 @@ import javax.swing.JScrollPane;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.event.HyperlinkEvent;
+import javax.swing.text.Caret;
+import javax.swing.text.DefaultCaret;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
@@ -38,6 +39,9 @@ public final class ReleaseNotesDialog {
     static final String UNAVAILABLE =
             "Release notes are not available in this build.\n"
                     + "You can read them on the product website.";
+
+    /** Label of the action opening the release page of the installed version. */
+    static final String VIEW_ONLINE = "View online";
 
     private static final int CONTENT_WIDTH_PX = 520;
     private static final int CONTENT_HEIGHT_PX = 420;
@@ -79,7 +83,7 @@ public final class ReleaseNotesDialog {
             content.add(notesScrollPane(notes, owner), "grow, push");
         }
 
-        content.add(buttons(dialog, owner), "growx");
+        content.add(buttons(dialog, owner, version), "growx");
         return content;
     }
 
@@ -88,6 +92,7 @@ public final class ReleaseNotesDialog {
         pane.setEditable(false);
         pane.setOpaque(false);
         pane.setBorder(BorderFactory.createEmptyBorder());
+        pane.setCaret(readOnlyCaret());
         pane.setCaretPosition(0);
         // Follow the current theme instead of the Swing HTML defaults.
         pane.putClientProperty(JEditorPane.HONOR_DISPLAY_PROPERTIES, Boolean.TRUE);
@@ -113,18 +118,36 @@ public final class ReleaseNotesDialog {
         return scroll;
     }
 
-    private static JPanel buttons(final JDialog dialog, final Window owner) {
+    /**
+     * A caret that is never painted, for a document the user may read and copy
+     * but not edit.
+     *
+     * <p>Suppressing only the painted caret - rather than disabling the caret or
+     * the component's focusability - keeps everything that makes the notes
+     * usable: mouse selection, {@code Ctrl+C}, {@code Shift}+arrow selection,
+     * {@code Tab} focus and keyboard scrolling all still work, because they are
+     * driven by the caret's position and by the component being focusable. Only
+     * the blinking insertion bar, which would suggest the text can be typed
+     * into, is hidden. The blink timer is switched off as well, so an invisible
+     * caret costs nothing.</p>
+     */
+    static Caret readOnlyCaret() {
+        DefaultCaret caret = new DefaultCaret() {
+            @Override
+            public void setVisible(boolean visible) {
+                // Focus gain would otherwise show the insertion bar.
+                super.setVisible(false);
+            }
+        };
+        caret.setBlinkRate(0);
+        return caret;
+    }
+
+    private static JPanel buttons(final JDialog dialog, final Window owner, String version) {
         JPanel buttons = new JPanel(new MigLayout("insets 0, fillx", "[grow][]", "[]"));
         buttons.setOpaque(false);
 
-        JButton website = new JButton("Website");
-        website.setBorderPainted(false);
-        website.setContentAreaFilled(false);
-        website.setFocusPainted(false);
-        website.setOpaque(false);
-        website.putClientProperty(FlatClientProperties.STYLE,
-                "foreground: $Component.accentColor; font: -1;");
-        website.addActionListener(e -> ExternalLinks.open(AppLinks.WEBSITE, owner));
+        JButton viewOnline = HelpDialogs.linkButton(VIEW_ONLINE, ReleaseNotes.onlineUrl(version), owner);
 
         JButton close = new JButton("Close");
         close.addActionListener(e -> {
@@ -133,7 +156,7 @@ public final class ReleaseNotesDialog {
             }
         });
 
-        buttons.add(website);
+        buttons.add(viewOnline);
         buttons.add(close, "gapleft push");
 
         if (dialog != null) {

@@ -1,5 +1,8 @@
 package com.pcariou.view.help;
 
+import com.pcariou.view.AppEdition;
+import com.pcariou.view.AppLinks;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -88,6 +91,22 @@ public final class ReleaseNotes {
         } catch (IOException failure) {
             return "";
         }
+    }
+
+    /**
+     * Public website page presenting the notes of {@code version} online, for
+     * example {@code https://sepa-xml-generator.com/releases/community/1.4.0/}.
+     *
+     * <p>The page is derived from the installed version through the same
+     * normalisation used to select the bundled notes, so a development build
+     * such as {@code 1.4.0-SNAPSHOT} links to the page of the release it is
+     * based on rather than to a page that cannot exist. When the version cannot
+     * be resolved at all the product website is used, which always exists - the
+     * action therefore never leads nowhere.</p>
+     */
+    public static String onlineUrl(String version) {
+        String release = normalizeVersion(version);
+        return release == null ? AppLinks.WEBSITE : AppEdition.releasePageUrl(release);
     }
 
     private static String read(InputStream in) throws IOException {

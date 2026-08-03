@@ -4,7 +4,6 @@ import com.formdev.flatlaf.FlatClientProperties;
 import com.pcariou.view.AppEdition;
 import com.pcariou.view.AppLinks;
 import com.pcariou.view.AppResources;
-import com.pcariou.view.ExternalLinks;
 import net.miginfocom.swing.MigLayout;
 
 import javax.swing.BorderFactory;
@@ -91,14 +90,9 @@ public final class AboutDialog {
         JPanel buttons = new JPanel(new MigLayout("insets 0, fillx", "[grow][]", "[]"));
         buttons.setOpaque(false);
 
-        JButton website = new JButton("Website");
-        website.setBorderPainted(false);
-        website.setContentAreaFilled(false);
-        website.setFocusPainted(false);
-        website.setOpaque(false);
-        website.putClientProperty(FlatClientProperties.STYLE,
-                "foreground: $Component.accentColor; font: -1;");
-        website.addActionListener(e -> ExternalLinks.open(AppLinks.WEBSITE, owner));
+        // Deliberately the product homepage, not a releases archive or the
+        // publisher site: About is about the product.
+        JButton website = HelpDialogs.linkButton("Website", AppLinks.WEBSITE, owner);
 
         JButton close = new JButton("Close");
         close.addActionListener(e -> {
