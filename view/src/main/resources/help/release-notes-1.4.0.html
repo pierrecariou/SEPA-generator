@@ -1,0 +1,82 @@
+<html>
+<body>
+<h2>SEPA Generator Community 1.4.0</h2>
+
+<p>This release focuses on the correctness of the files you generate, clearer
+feedback when something is wrong, and a calmer interface. Payment files are
+processed locally on your computer: they are read, validated and written on your
+machine, and are never uploaded by SEPA Generator.</p>
+<h3>Generation correctness</h3>
+<ul>
+  <li>CSV files are now read as <b>UTF-8</b>, with a byte order mark handled
+      transparently. Accented and non-Latin characters are also preserved when
+      importing XLS and XLSX files.</li>
+  <li>IBANs are checked against the registered country list, the country's
+      official IBAN length and the checksum, and are normalised so the value
+      that is validated is exactly the value that is written.</li>
+  <li>Amounts, batch totals and the control sum are computed with exact decimal
+      arithmetic, so the totals in the file always match the sum of its
+      transactions.</li>
+  <li>Amount and text-length limits follow the SEPA rules for party names and
+      structured address fields.</li>
+  <li>Characters that are not legal in XML 1.0 are detected before anything is
+      written: generation stops with a clear message instead of producing
+      invalid XML.</li>
+  <li>Corrected XML structure and field mapping for <b>pain.001.001.02</b> and
+      <b>pain.001.001.09</b>.</li>
+</ul>
+
+<h3>Clearer errors</h3>
+<ul>
+  <li>All problems in an input file are now reported together, each naming the
+      row and the field it comes from, instead of stopping at the first one.</li>
+  <li>The generation failure window was redesigned: a clear summary and the full
+      list of validation issues in a compact, scrollable area.</li>
+</ul>
+
+<h3>Import</h3>
+<ul>
+  <li>Hardened CSV, XLS and XLSX reading, including spreadsheet cells that
+      contain commas or other separator characters.</li>
+</ul>
+
+<h3>Update notification</h3>
+<ul>
+  <li>The application checks once a day whether a newer Community version is
+      available and shows a discreet indicator in the header when there is
+      one.</li>
+  <li><b>Help &gt; Check for updates</b> lets you check whenever you want.</li>
+  <li>Updating stays in your hands: the application opens the download page in
+      your browser and never downloads or installs anything by itself. If the
+      update service cannot be reached, the check does not interrupt your
+      work.</li>
+</ul>
+
+<h3>Interface</h3>
+<ul>
+  <li>The main window is organised in clearer sections, with a more readable
+      generation summary once a file has been produced.</li>
+  <li>The window now opens at a size that fits the available screen.</li>
+  <li>A new <b>Help</b> menu gathers what's new, the update check, contact and
+      product information.</li>
+  <li>Continued light and dark theme polish, and a simplified footer.</li>
+</ul>
+
+<h3>Reliability</h3>
+<ul>
+  <li>An interrupted or failed save leaves your previously saved settings
+      intact.</li>
+</ul>
+
+<h3>Installation</h3>
+<ul>
+  <li>Packaged downloads for Windows (MSI), macOS on Apple Silicon and Intel
+      (DMG) and Linux (DEB). Each package bundles its own Java runtime, so no
+      separate Java installation is required.</li>
+  <li>SEPA Generator Community generates SEPA Credit Transfers; it does not
+      generate direct debits.</li>
+</ul>
+
+<p>Questions or feedback? Use <b>Help &gt; Contact</b>.</p>
+</body>
+</html>

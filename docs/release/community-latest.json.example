@@ -6,6 +6,11 @@
   "critical": false,
   "downloadPageUrl": "https://sepa-xml-generator.com/download/",
   "releaseNotesUrl": "https://sepa-xml-generator.com/download/",
+  "highlights": [
+    "Optional: at most five short plain-text lines",
+    "Shown under \"What's new\" in the update dialog",
+    "Omit the field entirely when there is nothing to summarise"
+  ],
   "downloads": {
     "windows-x64": {
       "label": "Windows x64 MSI",

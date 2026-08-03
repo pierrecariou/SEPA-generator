@@ -11,6 +11,7 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 import java.awt.Component;
+import java.awt.Cursor;
 import java.awt.Font;
 import java.awt.Window;
 
@@ -24,6 +25,15 @@ import java.awt.Window;
  */
 public final class UpdateDialog {
 
+    /** Heading of the optional curated summary block. */
+    static final String HIGHLIGHTS_HEADING = "What's new";
+
+    /** Label of the optional link to the published release notes. */
+    static final String FULL_RELEASE_NOTES = "View full release notes";
+
+    /** Wrap width for a highlight line, keeping the dialog compact. */
+    private static final int HIGHLIGHT_WIDTH_PX = 380;
+
     private UpdateDialog() {
     }
 
@@ -32,6 +42,21 @@ public final class UpdateDialog {
         Window owner = parent == null ? null : SwingUtilities.getWindowAncestor(parent);
         final JDialog dialog = new JDialog(owner, "Update available", JDialog.ModalityType.APPLICATION_MODAL);
 
+        dialog.setContentPane(buildContent(dialog, owner, info, currentVersion));
+        dialog.setResizable(false);
+        dialog.pack();
+        dialog.setLocationRelativeTo(owner);
+        dialog.setVisible(true);
+    }
+
+    /**
+     * Builds the dialog content. Package-visible and free of any modal call so
+     * the presentation can be asserted headlessly.
+     *
+     * @param dialog the dialog the actions close, may be {@code null}
+     */
+    static JPanel buildContent(final JDialog dialog, final Window owner,
+            final UpdateInfo info, String currentVersion) {
         JPanel content = new JPanel(new MigLayout(
                 "insets 20 24 16 24, wrap 1, fillx",
                 "[grow]",
@@ -54,33 +79,82 @@ public final class UpdateDialog {
             content.add(critical, "growx");
         }
 
+        // Optional curated summary. A manifest without highlights renders exactly
+        // as before, so the dialog never depends on this being published.
+        if (info.hasHighlights()) {
+            content.add(highlights(info), "growx");
+        }
+
         JPanel buttons = new JPanel(new MigLayout("insets 0, fillx", "[grow][][]", "[]"));
         JButton later = new JButton("Not now");
         later.putClientProperty(FlatClientProperties.STYLE,
-                "hoverBorderColor: darken($Button.borderColor,22%);"
-                        + " pressedBorderColor: darken($Button.borderColor,30%);");
-        later.addActionListener(e -> dialog.dispose());
+                "hoverBorderColor: darken($Button.borderColor,22%);");
+        later.addActionListener(e -> dispose(dialog));
 
         JButton download = new JButton("Download update");
         download.putClientProperty(FlatClientProperties.STYLE,
                 "background: $Component.accentColor; foreground: #ffffff;");
         download.addActionListener(e -> {
             String url = info.downloadUrlFor(PlatformDetector.currentKey());
-            dialog.dispose();
+            dispose(dialog);
             ExternalLinks.open(url, owner);
         });
 
-        buttons.add(new JLabel(), "growx");
+        // Only offered when the manifest actually points somewhere usable.
+        if (info.hasUsableReleaseNotesUrl()) {
+            buttons.add(fullNotesLink(info.getReleaseNotesUrl(), owner));
+        } else {
+            buttons.add(new JLabel(), "growx");
+        }
         buttons.add(later);
         buttons.add(download);
         content.add(buttons, "growx");
 
-        dialog.setContentPane(content);
-        dialog.getRootPane().setDefaultButton(download);
-        dialog.setResizable(false);
-        dialog.pack();
-        dialog.setLocationRelativeTo(owner);
-        dialog.setVisible(true);
+        if (dialog != null) {
+            dialog.getRootPane().setDefaultButton(download);
+        }
+        return content;
+    }
+
+    /** The "What's new" block: a heading plus the curated lines as plain text. */
+    private static JPanel highlights(UpdateInfo info) {
+        JPanel panel = new JPanel(new MigLayout("insets 0, wrap 1, fillx", "[grow]", "[]4[]"));
+        panel.setOpaque(false);
+
+        JLabel heading = new JLabel(HIGHLIGHTS_HEADING);
+        heading.putClientProperty(FlatClientProperties.STYLE, "font: bold;");
+        panel.add(heading, "growx");
+
+        for (String highlight : info.getHighlights()) {
+            JLabel line = new JLabel("<html>&#8226;&nbsp;" + escape(highlight) + "</html>");
+            line.putClientProperty(FlatClientProperties.STYLE, "font: -1;");
+            panel.add(line, "growx, w ::" + HIGHLIGHT_WIDTH_PX);
+        }
+        return panel;
+    }
+
+    private static JButton fullNotesLink(final String url, final Window owner) {
+        JButton link = new JButton(FULL_RELEASE_NOTES);
+        link.setBorderPainted(false);
+        link.setContentAreaFilled(false);
+        link.setFocusPainted(false);
+        link.setOpaque(false);
+        link.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        link.putClientProperty(FlatClientProperties.STYLE,
+                "foreground: $Component.accentColor; font: -1;");
+        link.addActionListener(e -> ExternalLinks.open(url, owner));
+        return link;
+    }
+
+    private static void dispose(JDialog dialog) {
+        if (dialog != null) {
+            dialog.dispose();
+        }
+    }
+
+    /** Keeps manifest-supplied text literal inside the HTML-rendered label. */
+    private static String escape(String text) {
+        return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
     }
 
     private static JPanel versionRow(String label, String value) {

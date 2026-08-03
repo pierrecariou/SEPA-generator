@@ -1,4 +1,4 @@
-# Community release runbook
+﻿# Community release runbook
 
 The authoritative, step-by-step procedure for publishing a **SEPA Generator
 Community** release. It ties together the Maven version authority, the packaging
@@ -6,7 +6,7 @@ scripts, the tag-driven GitHub Actions workflow, and the update manifest that
 tells installed copies a newer version exists.
 
 Substitute the real version for `X.Y.Z` throughout. There is exactly **one**
-production source of truth for the version — the root Maven `<revision>`
+production source of truth for the version â€” the root Maven `<revision>`
 property. Never hand-edit a version into installer names, scripts, or the
 manifest.
 
@@ -23,7 +23,7 @@ https://sepa-xml-generator.com/releases/community/latest.json
 - The manifest must declare `"edition": "community"`. The checker **rejects**
   (and never offers an update for) a Pro manifest, a missing/unknown edition,
   malformed JSON, a missing/non-numeric version, or a manifest with no usable
-  `http(s)` download URL. A rejected manifest is silently ignored — startup and
+  `http(s)` download URL. A rejected manifest is silently ignored â€” startup and
   generation are never disrupted.
 - Because the checker requires `edition: community`, a Community build can never
   offer a Pro artifact or Pro download page.
@@ -34,9 +34,16 @@ https://sepa-xml-generator.com/releases/community/latest.json
 
 The manifest schema is illustrated by
 [`community-latest.json.example`](community-latest.json.example). It is an
-example only — the published manifest's `latestVersion` and download URLs are
+example only â€” the published manifest's `latestVersion` and download URLs are
 produced from the release version (below), so the example is not a second
 version source.
+
+`highlights` and `releaseNotesUrl` are optional. When `highlights` is present the
+update dialog shows at most **five** plain-text lines under "What's new"; a
+missing, empty or malformed value simply falls back to the version-only dialog
+and never affects update detection. "View full release notes" is offered only
+when `releaseNotesUrl` is an absolute `http(s)` URL. Neither field replaces the
+release notes bundled with the application, which remain the source of truth.
 
 ## Release steps
 
@@ -44,7 +51,16 @@ version source.
    only place the release number is defined; all four modules and the packaging
    scripts derive it via Maven.
 
-2. **Run the full test suite** from a clean checkout:
+2. **Write the release notes** for `X.Y.Z` in
+   `view/src/main/resources/help/release-notes-X.Y.Z.html`. Every release version
+   must have matching bundled notes: they are the single source of truth for what
+   changed, they are shown offline by **Help â†’ Release notesâ€¦**, and
+   `ReleaseNotesAvailabilityTest` fails the build if they are missing. Describe
+   only verified, user-visible Community changes; never claim a Pro-only
+   capability, and never describe an unsigned artifact as signed. The file is a
+   filtered Maven resource, so it must contain no `${...}` or `@token@` sequence.
+
+3. **Run the full test suite** from a clean checkout:
 
    ```bash
    mvn -B clean verify
@@ -52,7 +68,7 @@ version source.
 
    All modules must pass before going further.
 
-3. **Commit and tag** the exact release commit:
+4. **Commit and tag** the exact release commit:
 
    ```bash
    git commit -am "Community X.Y.Z"
@@ -61,13 +77,13 @@ version source.
    git push origin vX.Y.Z          # pushing the tag triggers the release run
    ```
 
-4. **Build native packages.** Pushing the `vX.Y.Z` tag runs the
+5. **Build native packages.** Pushing the `vX.Y.Z` tag runs the
    `Package Community` workflow in **final-release** mode: it preflights that the
    tag equals Maven `${revision}`, re-runs the suite, and builds the Windows x64
    MSI, macOS arm64/x64 DMGs, and Linux x64 DEB on native runners. (Use the
    manual `workflow_dispatch` RC mode to smoke-test packaging without releasing.)
 
-5. **Verify signatures / notarization when enabled.** Signing is off by default.
+6. **Verify signatures / notarization when enabled.** Signing is off by default.
    When the repository variable `COMMUNITY_RELEASE_SIGN=true`, the build fails
    closed if required secrets are missing and verifies signatures during
    packaging. Never describe an unsigned artifact as signed.
@@ -81,7 +97,7 @@ version source.
    - the signing identity that was used, and its Apple Team ID;
    - `codesign --verify --deep --strict` passing for the `.app`, the native
      launcher and the bundled Java runtime;
-   - the `Developer ID Application → Developer ID Certification Authority →
+   - the `Developer ID Application â†’ Developer ID Certification Authority â†’
      Apple Root CA` chain, the expected `TeamIdentifier`, and the hardened
      runtime flag;
    - a signed DMG container;
@@ -93,7 +109,7 @@ version source.
    deliberate, separate decision taken only after a signed
    `workflow_dispatch` RC has passed all of the above.
 
-6. **Verify artifact names and checksums.** Confirm the four installers are named
+7. **Verify artifact names and checksums.** Confirm the four installers are named
    `SEPA-Generator-Community-X.Y.Z-<os>-<arch>.<ext>` and that the workflow's
    `SHA256SUMS.txt` verifies. Locally a user checks a download with:
 
@@ -101,23 +117,29 @@ version source.
    sha256sum -c SHA256SUMS.txt
    ```
 
-7. **Test installation / upgrade** on each platform, in particular that the new
+8. **Test installation / upgrade** on each platform, in particular that the new
    Windows MSI upgrades a previous Community installation in place.
 
-8. **Review and manually publish the draft.** The workflow creates/updates a
+9. **Review and manually publish the draft.** The workflow creates/updates a
    **draft** GitHub Release (never auto-published, not marked *latest*) with the
    installers, `SHA256SUMS.txt`, and a reviewer checklist. Review it, then click
    **Publish** in the GitHub UI. Publication is the deliberate final action.
 
-9. **Update the website download links** to point at the newly published assets.
+10. **Update the website download links** to point at the newly published assets.
 
-10. **Publish the update manifest last.** Only after the release is public and
-    the download links work, publish the manifest at
-    `releases/community/latest.json` with `latestVersion: X.Y.Z` and the final
-    asset URLs (shape per the `.example` file). Publishing it last guarantees the
-    manifest never advertises a version whose downloads are not yet live.
+11. **Publish the update manifest last.** Only after the release notes are
+    approved and the release page is public with working download links, publish
+    the manifest at `releases/community/latest.json` with `latestVersion: X.Y.Z`
+    and the final asset URLs (shape per the `.example` file). Add `highlights`
+    (at most five concise lines) and a `releaseNotesUrl` only if a public page
+    for this release really exists. Publishing the manifest last guarantees it
+    never advertises a version whose downloads are not yet live.
 
-11. **Verify discovery from an older install.** Launch a previous Community
+    A permanent per-version release archive on the website, and the real
+    `releaseNotesUrl` it would make possible, are separate follow-up work: until
+    then `releaseNotesUrl` may point at the download page or be omitted.
+
+12. **Verify discovery from an older install.** Launch a previous Community
     version and confirm it detects `X.Y.Z` and links to the correct download.
 
 ## Rollback
@@ -125,7 +147,7 @@ version source.
 - **Bad manifest** (wrong version, dead URL, wrong edition): revert
   `latest.json` to the previous good manifest, or remove it. Clients that fail
   to fetch or that reject an invalid manifest simply keep running on the current
-  version — no update is offered, nothing breaks. This is the safest and fastest
+  version â€” no update is offered, nothing breaks. This is the safest and fastest
   lever because it is a single static file.
 - **Bad release artifact** discovered after publishing: unpublish (or delete)
   the GitHub Release and revert the website links first, then fix and re-run.

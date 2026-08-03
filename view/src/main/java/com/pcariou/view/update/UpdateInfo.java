@@ -1,5 +1,8 @@
 package com.pcariou.view.update;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -16,6 +19,13 @@ public final class UpdateInfo {
     /** The only edition this Community build will act on. */
     public static final String EDITION_COMMUNITY = "community";
 
+    /**
+     * Most highlights shown in the update dialog. The dialog is a short summary,
+     * not the release notes: anything beyond this belongs on the release-notes
+     * page.
+     */
+    public static final int MAX_HIGHLIGHTS = 5;
+
     private int schemaVersion;
     private String edition;
     private String latestVersion;
@@ -23,6 +33,13 @@ public final class UpdateInfo {
     private boolean critical;
     private String downloadPageUrl;
     private String releaseNotesUrl;
+    /**
+     * Raw manifest value, kept untyped on purpose: a future or hand-edited
+     * manifest could carry something other than an array here, and a strict type
+     * would make the whole manifest unparseable and silently disable update
+     * detection. {@link #getHighlights()} interprets it defensively.
+     */
+    private Object highlights;
     private Map<String, UpdateDownload> downloads;
 
     /** Manifest schema version, used to stay forward-compatible. */
@@ -58,6 +75,47 @@ public final class UpdateInfo {
     /** Where to read more about the release (may point to the download page). */
     public String getReleaseNotesUrl() {
         return releaseNotesUrl;
+    }
+
+    /**
+     * Short, curated summary of what changed, as plain text lines. Optional: a
+     * manifest without it (or with a malformed value) simply yields an empty
+     * list, and the update dialog then shows the versions only. Blank entries are
+     * dropped and at most {@link #MAX_HIGHLIGHTS} lines are returned, so a
+     * manifest can never turn the dialog into a changelog.
+     */
+    public List<String> getHighlights() {
+        if (!(highlights instanceof Iterable)) {
+            return Collections.emptyList();
+        }
+        List<String> usable = new ArrayList<>();
+        for (Object highlight : (Iterable<?>) highlights) {
+            if (!(highlight instanceof CharSequence)) {
+                continue;
+            }
+            String text = highlight.toString().trim();
+            if (text.isEmpty()) {
+                continue;
+            }
+            usable.add(text);
+            if (usable.size() == MAX_HIGHLIGHTS) {
+                break;
+            }
+        }
+        return Collections.unmodifiableList(usable);
+    }
+
+    /** True when the manifest offers at least one usable highlight. */
+    public boolean hasHighlights() {
+        return !getHighlights().isEmpty();
+    }
+
+    /**
+     * True when {@link #getReleaseNotesUrl()} is an absolute {@code http(s)} URL
+     * the dialog can safely offer as "View full release notes".
+     */
+    public boolean hasUsableReleaseNotesUrl() {
+        return isUsableUrl(releaseNotesUrl);
     }
 
     /** Platform-specific downloads keyed by platform (e.g. {@code "windows-x64"}). */
