@@ -41,7 +41,7 @@ public final class AboutDialog {
     private static final int ICON_SIZE_PX = 48;
 
     /** Publisher mark beside the publisher line. */
-    private static final int COMPANY_ICON_SIZE_PX = 32;
+    private static final int COMPANY_ICON_SIZE_PX = 20;
 
     private AboutDialog() {
     }
@@ -92,7 +92,7 @@ public final class AboutDialog {
         JButton publisher = HelpDialogs.linkButton(PUBLISHER, AppLinks.COMPANY, owner);
         publisher.setHorizontalAlignment(SwingConstants.LEADING);
         publisher.setIcon(companyIcon());
-        publisher.setIconTextGap(8);
+        publisher.setIconTextGap(6);
         publisher.putClientProperty(FlatClientProperties.STYLE,
                 "foreground: $Component.accentColor; font: -1; margin: 0,0,0,0;");
         content.add(publisher, "growx, wrap");

@@ -120,7 +120,7 @@ public class AboutDialogTest {
         assertNotNull("The publisher mark must be shown", publisher.getIcon());
         assertEquals("The mark must stay square",
                 publisher.getIcon().getIconWidth(), publisher.getIcon().getIconHeight());
-        assertEquals("A restrained 32px mark", 32, publisher.getIcon().getIconWidth());
+        assertEquals("A restrained 20px mark", 20, publisher.getIcon().getIconWidth());
 
         String text = HelpDialogText.of(content);
         int from = text.indexOf("Niryosys");
