@@ -1,12 +1,15 @@
 package com.pcariou.view.help;
 
 import com.formdev.flatlaf.FlatClientProperties;
+import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.pcariou.view.AppEdition;
 import com.pcariou.view.AppLinks;
 import com.pcariou.view.AppResources;
+import com.pcariou.view.AppTheme;
 import net.miginfocom.swing.MigLayout;
 
 import javax.swing.BorderFactory;
+import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JDialog;
@@ -36,6 +39,9 @@ public final class AboutDialog {
     public static final String PUBLISHER = "Published by Niryosys";
 
     private static final int ICON_SIZE_PX = 48;
+
+    /** Publisher mark beside the publisher line. */
+    private static final int COMPANY_ICON_SIZE_PX = 32;
 
     private AboutDialog() {
     }
@@ -80,9 +86,13 @@ public final class AboutDialog {
         content.add(versionLabel, "growx, wrap");
 
         // Publisher: the wording stays a statement of fact; only the line itself
-        // becomes actionable so users can reach the company site from About.
+        // becomes actionable so users can reach the company site from About. The
+        // company mark rides on the same link, so no extra row, panel or second
+        // mention of Niryosys is introduced.
         JButton publisher = HelpDialogs.linkButton(PUBLISHER, AppLinks.COMPANY, owner);
         publisher.setHorizontalAlignment(SwingConstants.LEADING);
+        publisher.setIcon(companyIcon());
+        publisher.setIconTextGap(8);
         publisher.putClientProperty(FlatClientProperties.STYLE,
                 "foreground: $Component.accentColor; font: -1; margin: 0,0,0,0;");
         content.add(publisher, "growx, wrap");
@@ -113,6 +123,18 @@ public final class AboutDialog {
             dialog.getRootPane().setDefaultButton(close);
         }
         return buttons;
+    }
+
+    /**
+     * The Niryosys mark at the About-dialog size, in the variant that suits the
+     * current theme. Rendered from the canonical SVG through the icon
+     * infrastructure the UI already uses, so it stays sharp on high-DPI displays
+     * and needs no raster derivatives.
+     */
+    private static Icon companyIcon() {
+        boolean dark = AppTheme.getCurrentMode() == AppTheme.Mode.DARK;
+        return new FlatSVGIcon(AppResources.companyIcon(dark).substring(1),
+                COMPANY_ICON_SIZE_PX, COMPANY_ICON_SIZE_PX);
     }
 
     private static String displayVersion(String version) {

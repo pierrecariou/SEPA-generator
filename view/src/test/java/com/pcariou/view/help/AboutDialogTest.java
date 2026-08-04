@@ -108,6 +108,26 @@ public class AboutDialogTest {
         assertTrue(publisher.isFocusable());
     }
 
+    /**
+     * The company mark rides on the existing publisher link: no extra row, no
+     * second mention of Niryosys and no stretching.
+     */
+    @Test
+    public void publisherLineCarriesTheCompanyMarkExactlyOnce() {
+        JPanel content = AboutDialog.buildContent(null, null, "1.4.0");
+        AbstractButton publisher = HelpDialogText.button(content, AboutDialog.PUBLISHER);
+
+        assertNotNull("The publisher mark must be shown", publisher.getIcon());
+        assertEquals("The mark must stay square",
+                publisher.getIcon().getIconWidth(), publisher.getIcon().getIconHeight());
+        assertEquals("A restrained 32px mark", 32, publisher.getIcon().getIconWidth());
+
+        String text = HelpDialogText.of(content);
+        int from = text.indexOf("Niryosys");
+        assertTrue("Niryosys is named once, on the publisher line",
+                from >= 0 && text.indexOf("Niryosys", from + 1) < 0);
+    }
+
     @Test
     public void ordinaryButtonsAreNotStyledAsLinks() {
         JPanel content = AboutDialog.buildContent(null, null, "1.4.0");
