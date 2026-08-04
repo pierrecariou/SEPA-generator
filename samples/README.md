@@ -11,7 +11,8 @@ All files use the column layout expected by the application:
 name,IBAN,BIC,amount,end_to_end_id,information
 ```
 
-Optional creditor address columns (used in pain.001.001.09 output only) may be
+Optional creditor address columns (emitted as structured `<PstlAdr>` in
+pain.001.001.03 and pain.001.001.09 output; ignored in pain.001.001.02) may be
 appended:
 
 ```
@@ -25,7 +26,7 @@ street,building_number,postcode,town,country
 | `sepa-valid-sample.csv`  | 5 realistic transactions; generates a SEPA XML successfully (total 5305.34 EUR). |
 | `sepa-valid-sample.xlsx` | Same 5 transactions in Excel (xlsx) format. |
 | `sepa-valid-sample.xls`  | Same 5 transactions in legacy Excel (xls) format. |
-| `sepa-valid-sample-with-addresses.csv` | Same 5 transactions with optional creditor address columns (full, partial and no address). Addresses appear as `<PstlAdr>` in pain.001.001.09 output and are ignored in pain.001.001.02. |
+| `sepa-valid-sample-with-addresses.csv` | Same 5 transactions with optional creditor address columns (full, partial and no address). Addresses appear as `<PstlAdr>` in pain.001.001.03 and pain.001.001.09 output and are ignored in pain.001.001.02. |
 
 The Excel files were produced with the project's Aspose Cells dependency in
 evaluation mode, so they contain an extra "Evaluation Warning" sheet/line.

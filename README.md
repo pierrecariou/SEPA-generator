@@ -11,7 +11,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/license-Apache--2.0-blue" alt="License: Apache 2.0" />
   <img src="https://img.shields.io/badge/release-v1.4.0-teal" alt="Release v1.4.0" />
-  <img src="https://img.shields.io/badge/format-pain.001.001.02%20%7C%20.09-lightgrey" alt="pain.001.001.02 and pain.001.001.09" />
+  <img src="https://img.shields.io/badge/format-pain.001.001.02%20%7C%20.03%20%7C%20.09-lightgrey" alt="pain.001.001.02, pain.001.001.03 and pain.001.001.09" />
 </p>
 
 <p align="center">
@@ -26,12 +26,13 @@
 
 **SEPA Generator** is a local desktop application that generates **SEPA Credit Transfer Initiation XML** files from a CSV or Excel input file.
 
-It is designed to generate standards-based ISO 20022 SEPA credit transfer XML in two formats:
+It is designed to generate standards-based ISO 20022 SEPA credit transfer XML in three formats:
 
 * `pain.001.001.02` (classic)
+* `pain.001.001.03` (legacy bank compatibility)
 * `pain.001.001.09` (modern ISO 20022)
 
-The `pain.001.001.09` format additionally supports optional structured postal addresses for the debtor and creditors.
+The `pain.001.001.09` and `pain.001.001.03` formats additionally support optional structured postal addresses for the debtor and creditors.
 
 The application is designed to stay simple:
 
@@ -70,16 +71,17 @@ All processing is local: payment files are read, validated, and generated entire
 ## Features
 
 * Desktop UI built with Java Swing and FlatLaf.
-* Generate SEPA Credit Transfer XML files in two ISO 20022 formats:
+* Generate SEPA Credit Transfer XML files in three ISO 20022 formats:
 
   * `pain.001.001.02` (classic)
+  * `pain.001.001.03` (legacy bank compatibility)
   * `pain.001.001.09` (modern ISO 20022)
 * Import payments from:
 
   * `.csv`
   * `.xls`
   * `.xlsx`
-* Optional structured postal address support (debtor and creditors) for `pain.001.001.09` output.
+* Optional structured postal address support (debtor and creditors) for `pain.001.001.09` and `pain.001.001.03` output.
 * Configure debtor and initiating party information in the settings panel.
 * Validate key fields before generation:
 
@@ -144,7 +146,7 @@ packages are built and how to install/uninstall them.
 
 This is a multi-module Maven project:
 
-* `model` — JAXB-annotated ISO 20022 `pain.001.001.02` and `pain.001.001.09` models and CSV bindings
+* `model` — JAXB-annotated ISO 20022 `pain.001.001.02`, `pain.001.001.03` and `pain.001.001.09` models and CSV bindings
 * `service` — CSV/Excel reading, validation, and XML generation
 * `view` — Swing desktop user interface
 * `generator` — application entry point and wiring
@@ -188,7 +190,7 @@ Default config location:
 
 The input file can be a CSV or Excel spreadsheet.
 
-> **Tip:** You don't have to start from scratch. In the main window, use **"Get input template..."** directly under the *Input file* field to save a ready-to-edit template. A small menu offers a *Basic CSV template*, *Basic Excel template*, or a *CSV / Excel + optional addresses (.09)* template. The address columns are optional and are only used for `pain.001.001.09` output (they are ignored for `pain.001.001.02`). Each template contains the expected header row and one example row you can replace with your own payments.
+> **Tip:** You don't have to start from scratch. In the main window, use **"Get input template..."** directly under the *Input file* field to save a ready-to-edit template. A small menu offers a *Basic CSV template*, *Basic Excel template*, or a *CSV / Excel + optional addresses (.09)* template. The address columns are optional and are only used for `pain.001.001.09` and `pain.001.001.03` output (they are ignored for `pain.001.001.02`). Each template contains the expected header row and one example row you can replace with your own payments.
 
 Supported formats:
 
@@ -211,7 +213,7 @@ The expected columns are:
 
 The column order does not matter.
 
-For `pain.001.001.09`, you may optionally add structured creditor postal address columns. When provided, at least `town` and `country` (2-letter ISO country code) are required:
+For `pain.001.001.09` and `pain.001.001.03`, you may optionally add structured creditor postal address columns. When provided, at least `town` and `country` (2-letter ISO country code) are required:
 
 | Column            | Description                          |
 | ----------------- | ------------------------------------ |
@@ -237,7 +239,7 @@ In the desktop application:
 
 1. Select the input file.
 2. Select the execution date.
-3. Choose the SEPA output format (`pain.001.001.02` or `pain.001.001.09`).
+3. Choose the SEPA output format (`pain.001.001.02`, `pain.001.001.03` or `pain.001.001.09`).
 4. Click **Generate**.
 5. Review the generated XML file.
 6. Submit the file to your bank only after validation.
@@ -259,13 +261,13 @@ The project also supports command-line generation.
 Syntax:
 
 ```bash
-java -jar generator.jar <input.csv|.xls|.xlsx> <output.xml> <YYYY-MM-DD> [--format=02|09]
+java -jar generator.jar <input.csv|.xls|.xlsx> <output.xml> <YYYY-MM-DD> [--format=02|03|09]
 ```
 
 * `<input>` — payment input file (`.csv`, `.xls`, or `.xlsx`)
 * `<output>` — destination file, must end with `.xml`
 * `<YYYY-MM-DD>` — execution date (must be a future date)
-* `--format=02|09` — optional SEPA format; defaults to `02` (`pain.001.001.02`)
+* `--format=02|03|09` — optional SEPA format; defaults to `02` (`pain.001.001.02`)
 
 > **Note:** the command line defaults to `02` (`pain.001.001.02`) for backward
 > compatibility. The desktop app defaults to `09` (`pain.001.001.09`); pass
@@ -284,14 +286,17 @@ Debtor and initiating party information is read from the local configuration fil
 
 ## ISO 20022 Format
 
-SEPA Generator produces SEPA Credit Transfer Initiation documents in two ISO 20022 formats:
+SEPA Generator produces SEPA Credit Transfer Initiation documents in three ISO 20022 formats:
 
 | Format             | Namespace                                              |
 | ------------------ | ----------------------------------------------------- |
 | `pain.001.001.02`  | `urn:iso:std:iso:20022:tech:xsd:pain.001.001.02`      |
+| `pain.001.001.03`  | `urn:iso:std:iso:20022:tech:xsd:pain.001.001.03`      |
 | `pain.001.001.09`  | `urn:iso:std:iso:20022:tech:xsd:pain.001.001.09`      |
 
-`pain.001.001.09` uses the modern ISO 20022 structure (for example `BICFI` and `ReqdExctnDt/Dt`) and supports optional structured postal addresses.
+`pain.001.001.09` uses the modern ISO 20022 structure (for example `BICFI` and `ReqdExctnDt/Dt`) and supports optional structured postal addresses. It is the recommended format.
+
+`pain.001.001.03` is provided for banks and upload channels that still require the legacy format. Choose it only when your bank explicitly asks for it; it also supports optional structured postal addresses. Successful validation does not guarantee that every bank-specific channel rule is met.
 
 Some banks may require a specific `pain.001` version or apply bank-specific rules. Always check with your bank before using generated files in production.
 

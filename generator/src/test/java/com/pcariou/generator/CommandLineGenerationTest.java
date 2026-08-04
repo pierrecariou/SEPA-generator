@@ -27,7 +27,7 @@ import java.time.LocalDate;
  * generation pipeline, causing a NullPointerException. The CLI now takes the
  * execution date as the third positional argument:
  *
- * <pre>input.csv output.xml 2026-07-01 [--format=02|09]</pre>
+ * <pre>input.csv output.xml 2026-07-01 [--format=02|03|09]</pre>
  *
  * A legacy unused 4th positional argument is still tolerated for backward
  * compatibility with old invocations.
@@ -114,6 +114,40 @@ public class CommandLineGenerationTest {
     }
 
     @Test
+    public void validCliGenerationWithFormat03() throws Exception {
+        File csv = writeCsv();
+        File xml = outputFile("cli-03.xml");
+        String date = futureDate();
+
+        int exit = Generator.runCommandLine(
+                new String[]{csv.getAbsolutePath(), xml.getAbsolutePath(), date, "--format=03"});
+
+        assertEquals("Expected success, output was:\n" + output(), 0, exit);
+        String content = read(xml);
+        assertTrue(content.contains("urn:iso:std:iso:20022:tech:xsd:pain.001.001.03"));
+        assertTrue(content.contains("<CstmrCdtTrfInitn>"));
+        assertTrue("The .03 execution date has no Dt wrapper",
+                content.contains("<ReqdExctnDt>" + date + "</ReqdExctnDt>"));
+        assertTrue(content.contains("<NbOfTxs>1</NbOfTxs>"));
+    }
+
+    @Test
+    public void xlsxInputGeneratesPain03() throws Exception {
+        File xlsx = writeXlsx("xlsx-03-" + System.nanoTime() + ".xlsx");
+        File xml = outputFile("from-xlsx-03.xml");
+
+        int exit = Generator.runCommandLine(
+                new String[]{xlsx.getAbsolutePath(), xml.getAbsolutePath(), futureDate(), "--format=03"});
+
+        assertEquals("Expected success, output was:\n" + output(), 0, exit);
+        String content = read(xml);
+        assertTrue(content.contains("urn:iso:std:iso:20022:tech:xsd:pain.001.001.03"));
+        assertTrue(content.contains("<NbOfTxs>1</NbOfTxs>"));
+        assertTrue(content.contains("<IBAN>DE89370400440532013000</IBAN>"));
+        assertTrue(content.contains("Ccy=\"EUR\">1500.00</InstdAmt>"));
+    }
+
+    @Test
     public void legacyFourthArgumentIsStillTolerated() throws Exception {
         File csv = writeCsv();
         File xml = outputFile("cli-legacy.xml");
@@ -194,6 +228,9 @@ public class CommandLineGenerationTest {
         assertEquals(1, exit);
         assertTrue("Expected unknown-format message, got:\n" + output(),
                 output().contains("Unknown format"));
+        assertTrue("Supported values must list the three credit-transfer versions:\n" + output(),
+                output().contains("--format=02") && output().contains("--format=03")
+                        && output().contains("--format=09"));
         assertFalse(xml.exists());
     }
 

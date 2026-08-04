@@ -124,7 +124,7 @@ public class Generator implements IGenerator
     }
 
     private static final String CLI_USAGE =
-            "Usage: java -jar generator.jar <input file> <output file> <execution date YYYY-MM-DD> [--format=02|09]";
+            "Usage: java -jar generator.jar <input file> <output file> <execution date YYYY-MM-DD> [--format=02|03|09]";
 
     public static void fromCommandLine(String[] args)
     {
@@ -141,14 +141,14 @@ public class Generator implements IGenerator
      */
     static int runCommandLine(String[] args)
     {
-        // Optional --format=02|09 argument (anywhere); defaults to pain.001.001.02.
+        // Optional --format=02|03|09 argument (anywhere); defaults to pain.001.001.02.
         PainVersion version = PainVersion.PAIN_001_001_02;
         java.util.List<String> positional = new java.util.ArrayList<>();
         for (String arg : args) {
             if (arg != null && arg.startsWith("--format=")) {
                 PainVersion parsed = PainVersion.fromCode(arg.substring("--format=".length()));
                 if (parsed == null) {
-                    System.out.println("Unknown format. Supported values: --format=02 (pain.001.001.02), --format=09 (pain.001.001.09)");
+                    System.out.println("Unknown format. Supported values: --format=02 (pain.001.001.02), --format=03 (pain.001.001.03), --format=09 (pain.001.001.09)");
                     return 1;
                 }
                 version = parsed;

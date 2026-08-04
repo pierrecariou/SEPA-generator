@@ -56,7 +56,7 @@ public class Creditor
 	}
 
 	/**
-	 * Optional postal address (pain.001.001.09 only — excluded from the
+	 * Optional postal address (pain.001.001.09 and pain.001.001.03 — excluded from the
 	 * pain.001.001.02 message, hence {@code @XmlTransient}).
 	 */
 	public PostalAddress getPostalAddress()

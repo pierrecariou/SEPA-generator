@@ -25,6 +25,9 @@ public interface PainWriter
 		if (version == PainVersion.PAIN_001_001_09) {
 			return new Pain09Writer();
 		}
+		if (version == PainVersion.PAIN_001_001_03) {
+			return new Pain03Writer();
+		}
 		return new Pain02Writer();
 	}
 }

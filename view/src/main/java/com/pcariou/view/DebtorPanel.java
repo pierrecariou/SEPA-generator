@@ -69,7 +69,7 @@ public class DebtorPanel extends AbstractSettingsPanel {
     }
 
     private JComponent createAddressSectionLabel() {
-        JLabel section = new JLabel("Postal address — optional, used in pain.001.001.09");
+        JLabel section = new JLabel("Postal address — optional, used in pain.001.001.03 and .09");
         section.setFont(section.getFont().deriveFont(Font.PLAIN, 11f));
         section.setForeground(UIManager.getColor("Label.disabledForeground"));
         return section;

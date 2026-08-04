@@ -192,6 +192,7 @@ public class FormPanel extends JPanel implements Scrollable {
     private static String formatLabelFor(PainVersion version) {
         switch (version) {
             case PAIN_001_001_09: return "pain.001.001.09 (modern ISO 20022)";
+            case PAIN_001_001_03: return "pain.001.001.03 (legacy bank compatibility)";
             case PAIN_001_001_02:
             default:              return "pain.001.001.02 (classic)";
         }
