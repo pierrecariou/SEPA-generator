@@ -2,13 +2,22 @@ package com.pcariou.view.main;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import com.pcariou.view.AppLinks;
+import com.pcariou.view.ExternalLinks;
 import com.pcariou.view.help.AboutDialog;
 import com.pcariou.view.help.ReleaseNotesDialog;
 
 import org.junit.Test;
+
+import javax.swing.JMenuItem;
+import javax.swing.JPopupMenu;
+import java.awt.Component;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * Guards the Help menu contract of {@link HeaderPanel}.
@@ -23,25 +32,55 @@ import org.junit.Test;
 public class HeaderHelpMenuTest {
 
     @Test
-    public void exposesTheFourHelpEntriesInOrder() {
-        assertEquals(java.util.Arrays.asList(
+    public void exposesTheFiveHelpEntriesInOrder() {
+        assertEquals(Arrays.asList(
+                        "Online guides",
                         "What\u2019s new\u2026",
                         "Check for updates",
                         "Contact\u2026",
                         "About SEPA Generator Community\u2026"),
-                java.util.Arrays.asList(
-                        HeaderPanel.HELP_RELEASE_NOTES,
-                        HeaderPanel.HELP_CHECK_FOR_UPDATES,
-                        HeaderPanel.HELP_CONTACT,
-                        HeaderPanel.HELP_ABOUT));
+                helpMenuLabels());
     }
 
     @Test
-    public void exposesTheFourHelpEntries() {
+    public void exposesTheFiveHelpEntries() {
+        assertEquals("Online guides", HeaderPanel.HELP_ONLINE_GUIDES);
         assertEquals("What\u2019s new\u2026", HeaderPanel.HELP_RELEASE_NOTES);
         assertEquals("Check for updates", HeaderPanel.HELP_CHECK_FOR_UPDATES);
         assertEquals("Contact\u2026", HeaderPanel.HELP_CONTACT);
         assertEquals("About SEPA Generator Community\u2026", HeaderPanel.HELP_ABOUT);
+    }
+
+    /**
+     * Guides lead the menu: they are what a user reaches for when they need to
+     * understand a format, so they must come before the release notes and About.
+     */
+    @Test
+    public void onlineGuidesComeFirstAndBeforeReleaseNotesAndAbout() {
+        List<String> labels = helpMenuLabels();
+
+        assertEquals(HeaderPanel.HELP_ONLINE_GUIDES, labels.get(0));
+        assertTrue(labels.indexOf(HeaderPanel.HELP_ONLINE_GUIDES)
+                < labels.indexOf(HeaderPanel.HELP_RELEASE_NOTES));
+        assertTrue(labels.indexOf(HeaderPanel.HELP_ONLINE_GUIDES)
+                < labels.indexOf(HeaderPanel.HELP_ABOUT));
+    }
+
+    /**
+     * The action must carry the canonical guides URL and be routed through the
+     * shared external-link helper, so it uses the platform default browser and
+     * the application's existing failure dialog rather than a second mechanism.
+     */
+    @Test
+    public void onlineGuidesOpensTheCanonicalGuidesPage() {
+        assertEquals("https://sepa-xml-generator.com/guides/", AppLinks.GUIDES);
+        assertEquals("The guides live under the product website",
+                ExternalLinks.Kind.BROWSE, ExternalLinks.classify(AppLinks.GUIDES));
+
+        JMenuItem guides = helpMenuItem(HeaderPanel.HELP_ONLINE_GUIDES);
+        assertNotNull(guides);
+        assertTrue("The entry must be actionable", guides.getActionListeners().length > 0);
+        assertTrue("The entry must always be available", guides.isEnabled());
     }
 
     @Test
@@ -57,6 +96,8 @@ public class HeaderHelpMenuTest {
                 HeaderPanel.HELP_CONTACT.endsWith("\u2026"));
         assertFalse("An immediate action must not promise a follow-up step",
                 HeaderPanel.HELP_CHECK_FOR_UPDATES.endsWith("\u2026"));
+        assertFalse("An external link must not promise a dialog",
+                HeaderPanel.HELP_ONLINE_GUIDES.endsWith("\u2026"));
     }
 
     @Test
@@ -82,21 +123,45 @@ public class HeaderHelpMenuTest {
      */
     @Test
     public void promisesNoSupportService() {
-        String entries = HeaderPanel.HELP_RELEASE_NOTES + HeaderPanel.HELP_CHECK_FOR_UPDATES
-                + HeaderPanel.HELP_CONTACT + HeaderPanel.HELP_ABOUT;
+        String entries = String.join("", helpMenuLabels());
 
         assertFalse(entries.contains("Support"));
         assertFalse(entries.contains("support"));
     }
 
-    /** The Help menu stays informational: no duplicated footer navigation. */
+    /**
+     * The Help menu stays informational. Guides are the one deliberate overlap
+     * with the footer: they are the natural place to look for help, and the Help
+     * entry names them explicitly as an external page.
+     */
     @Test
     public void namesNoFooterNavigationEntry() {
-        String entries = HeaderPanel.HELP_RELEASE_NOTES + HeaderPanel.HELP_CHECK_FOR_UPDATES
-                + HeaderPanel.HELP_CONTACT + HeaderPanel.HELP_ABOUT;
+        String entries = String.join("", helpMenuLabels());
 
         assertFalse(entries.contains("Website"));
         assertFalse(entries.contains("Privacy"));
-        assertFalse(entries.contains("Guides"));
+    }
+
+    private static JPopupMenu helpMenu() {
+        return HeaderPanel.buildHelpMenuItems(null, null, "1.4.0", null);
+    }
+
+    private static List<String> helpMenuLabels() {
+        List<String> labels = new ArrayList<>();
+        for (Component item : helpMenu().getComponents()) {
+            if (item instanceof JMenuItem) {
+                labels.add(((JMenuItem) item).getText());
+            }
+        }
+        return labels;
+    }
+
+    private static JMenuItem helpMenuItem(String label) {
+        for (Component item : helpMenu().getComponents()) {
+            if (item instanceof JMenuItem && label.equals(((JMenuItem) item).getText())) {
+                return (JMenuItem) item;
+            }
+        }
+        return null;
     }
 }

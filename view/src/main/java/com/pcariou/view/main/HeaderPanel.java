@@ -22,6 +22,7 @@ public class HeaderPanel extends JPanel {
     private static final int ICON_BUTTON_SIZE = 30;
 
     /** Help menu labels, shared with the tests. */
+    public static final String HELP_ONLINE_GUIDES     = "Online guides";
     public static final String HELP_RELEASE_NOTES     = "What\u2019s new\u2026";
     public static final String HELP_CHECK_FOR_UPDATES = "Check for updates";
     public static final String HELP_CONTACT           = "Contact\u2026";
@@ -113,13 +114,51 @@ public class HeaderPanel extends JPanel {
      * users look for when they need information about the product rather than an
      * action on their data.
      *
-     * <p>"What's new" always works offline (the release notes are bundled with
+     * <p>"Online guides" opens the public guides page in the default browser
+     * through the shared {@link ExternalLinks} helper. "What's new" always works
+     * offline (the release notes are bundled with
      * the application); "Check for updates" delegates to the existing
      * {@link UpdateUi#checkManually()} flow rather than duplicating any update
      * logic, and never installs anything by itself.</p>
      */
     private void buildHelpMenu(MainFrame owner, final UpdateUi updateUi, final String version) {
-        final JPopupMenu menu = new JPopupMenu();
+        final JPopupMenu menu = buildHelpMenuItems(owner, updateUi, version, this);
+
+        // Reused off-screen popup: refresh it on theme changes so it never keeps
+        // stale colors after a live switch.
+        AppTheme.registerThemedComponent(menu);
+
+        helpButton.setText("Help");
+        helpButton.putClientProperty(FlatClientProperties.BUTTON_TYPE,
+                FlatClientProperties.BUTTON_TYPE_TOOLBAR_BUTTON);
+        helpButton.setFocusable(false);
+        helpButton.setToolTipText("What\u2019s new, updates and product information");
+        helpButton.putClientProperty(FlatClientProperties.STYLE, "margin: 4,10,4,10;");
+        helpButton.setHorizontalTextPosition(SwingConstants.LEFT);
+        helpButton.setIconTextGap(6);
+        helpButton.setIcon(caretIcon());
+        helpButton.addActionListener(e -> menu.show(helpButton, 0, helpButton.getHeight()));
+    }
+
+    /**
+     * Populates the Help menu. Package-visible and free of any window-showing
+     * call so the entries and their order can be asserted headlessly; the header
+     * itself needs a full application context and cannot be built in a test.
+     *
+     * <p>"Online guides" leads the menu because it is what a user reaches for
+     * when they need to understand a SEPA format or workflow. It opens the
+     * public guides page through the shared {@link ExternalLinks} helper, so it
+     * uses the platform default browser and the same error dialog as every other
+     * external link, and performs no network access until it is chosen.</p>
+     */
+    static JPopupMenu buildHelpMenuItems(final MainFrame owner, final UpdateUi updateUi,
+                                         final String version, final Component linkParent) {
+        JPopupMenu menu = new JPopupMenu();
+
+        JMenuItem guides = new JMenuItem(HELP_ONLINE_GUIDES);
+        guides.setToolTipText("Open the SEPA Generator guides in your browser");
+        guides.addActionListener(e -> ExternalLinks.open(AppLinks.GUIDES, linkParent));
+        menu.add(guides);
 
         JMenuItem releaseNotes = new JMenuItem(HELP_RELEASE_NOTES);
         releaseNotes.setToolTipText("What is new in this version");
@@ -139,27 +178,14 @@ public class HeaderPanel extends JPanel {
 
         JMenuItem contact = new JMenuItem(HELP_CONTACT);
         contact.setToolTipText("Contact us by email");
-        contact.addActionListener(e -> ExternalLinks.open(AppLinks.CONTACT, this));
+        contact.addActionListener(e -> ExternalLinks.open(AppLinks.CONTACT, linkParent));
         menu.add(contact);
 
         JMenuItem about = new JMenuItem(HELP_ABOUT);
         about.addActionListener(e -> AboutDialog.show(owner, version));
         menu.add(about);
 
-        // Reused off-screen popup: refresh it on theme changes so it never keeps
-        // stale colors after a live switch.
-        AppTheme.registerThemedComponent(menu);
-
-        helpButton.setText("Help");
-        helpButton.putClientProperty(FlatClientProperties.BUTTON_TYPE,
-                FlatClientProperties.BUTTON_TYPE_TOOLBAR_BUTTON);
-        helpButton.setFocusable(false);
-        helpButton.setToolTipText("What\u2019s new, updates and product information");
-        helpButton.putClientProperty(FlatClientProperties.STYLE, "margin: 4,10,4,10;");
-        helpButton.setHorizontalTextPosition(SwingConstants.LEFT);
-        helpButton.setIconTextGap(6);
-        helpButton.setIcon(caretIcon());
-        helpButton.addActionListener(e -> menu.show(helpButton, 0, helpButton.getHeight()));
+        return menu;
     }
 
     /** A small downward caret signalling the Help dropdown, in a calm tone. */
