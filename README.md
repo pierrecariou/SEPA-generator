@@ -354,7 +354,7 @@ mvn clean package
 
 ---
 
-## Community Edition and Future Professional Features
+## Community Edition and SEPA Generator Pro
 
 This repository contains the **Community Edition** of SEPA Generator.
 
@@ -362,13 +362,7 @@ The Community Edition is free and open source. It is intended to remain a useful
 
 The Community Edition focuses on SEPA credit transfers and does not generate direct debits.
 
-Possible future professional features may be explored separately, such as:
-
-* advanced SEPA validation reports
-* multiple debtor/company profiles
-* batch workflows
-* accountant-oriented features
-* paid support
+**SEPA Generator Pro**, published by Niryosys, is a separate paid application built on the same foundation. It adds professional capabilities such as advanced validation diagnostics and exportable HTML reports, SEPA Direct Debit generation, External XML Validation, SEPA XML migration, address readiness reporting, saved import mappings, and multiple debtor/creditor profiles. See [sepa-xml-generator.com/pro](https://sepa-xml-generator.com/pro) for details.
 
 These professional features are not part of the Community Edition.
 
