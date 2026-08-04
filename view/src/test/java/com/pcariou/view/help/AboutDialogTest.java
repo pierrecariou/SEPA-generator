@@ -90,6 +90,24 @@ public class AboutDialogTest {
         assertTrue(website.isFocusable());
     }
 
+    /**
+     * The publisher line is the one company touchpoint in About: it keeps its
+     * factual wording and becomes actionable, pointing at the company site (not
+     * the product homepage, which is the "Website" action).
+     */
+    @Test
+    public void publisherLineLinksToTheCompanySite() {
+        assertEquals("https://niryosys.com", AppLinks.COMPANY);
+
+        JPanel content = AboutDialog.buildContent(null, null, "1.4.0");
+        AbstractButton publisher = HelpDialogText.button(content, AboutDialog.PUBLISHER);
+
+        assertNotNull("The publisher line must be reachable as a link", publisher);
+        assertEquals("A link must show the hand cursor",
+                Cursor.HAND_CURSOR, publisher.getCursor().getType());
+        assertTrue(publisher.isFocusable());
+    }
+
     @Test
     public void ordinaryButtonsAreNotStyledAsLinks() {
         JPanel content = AboutDialog.buildContent(null, null, "1.4.0");

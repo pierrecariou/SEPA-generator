@@ -174,6 +174,28 @@ public class CommandLineGenerationTest {
         assertFalse("No XML must be produced", xml.exists());
     }
 
+    /**
+     * The usage output identifies the product edition, the installed version and
+     * the publisher once, above the usage line. Ordinary responses stay free of
+     * publisher wording.
+     */
+    @Test
+    public void usageOutputCarriesTheProductAndPublisherIdentity() throws Exception {
+        File csv = writeCsv();
+
+        Generator.runCommandLine(new String[]{csv.getAbsolutePath()});
+        String out = output();
+
+        assertTrue("Expected the edition, got:\n" + out,
+                out.contains("SEPA Generator Community"));
+        assertTrue("Expected the publisher byline, got:\n" + out,
+                out.contains("\u2014 by Niryosys"));
+        assertTrue("Expected the installed version, got:\n" + out,
+                out.contains("SEPA Generator Community " + com.pcariou.generator.AppInfo.getVersion()));
+        assertFalse("The product is not renamed after its publisher",
+                out.contains("Niryosys SEPA Generator"));
+    }
+
     @Test
     public void blankExecutionDateFailsClearly() throws Exception {
         File csv = writeCsv();

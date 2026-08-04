@@ -19,7 +19,7 @@ public class FooterPanel extends JPanel {
     public FooterPanel(MainFrame owner, FormPanel formPanel) {
         super(new MigLayout(
                 "insets 3 16 3 16, fillx, hidemode 3",
-                "[grow][][][][][]",
+                "[grow][][][][][][]",
                 "[]"
         ));
 
@@ -36,6 +36,9 @@ public class FooterPanel extends JPanel {
         JButton guides = linkButton("Guides", AppLinks.GUIDES);
         JButton privacy = linkButton("Privacy", AppLinks.PRIVACY);
         JButton contact = linkButton("Contact", AppLinks.CONTACT);
+        // Publisher identity, stated once and quietly: the company site sits at
+        // the end of the existing product/support link group.
+        JButton company = linkButton("Niryosys", AppLinks.COMPANY);
 
         setOpaque(false);
         add(status,   "growx");
@@ -44,6 +47,7 @@ public class FooterPanel extends JPanel {
         add(guides);
         add(privacy);
         add(contact);
+        add(company);
 
         this.statusLabel = status;
         this.progressBar = progress;

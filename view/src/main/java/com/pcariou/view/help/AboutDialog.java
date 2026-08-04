@@ -12,6 +12,7 @@ import javax.swing.JButton;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import java.awt.Component;
 import java.awt.Image;
@@ -78,8 +79,12 @@ public final class AboutDialog {
         JLabel versionLabel = new JLabel(displayVersion(version));
         content.add(versionLabel, "growx, wrap");
 
-        JLabel publisher = new JLabel(PUBLISHER);
-        publisher.putClientProperty(FlatClientProperties.STYLE, "foreground: $Label.disabledForeground;");
+        // Publisher: the wording stays a statement of fact; only the line itself
+        // becomes actionable so users can reach the company site from About.
+        JButton publisher = HelpDialogs.linkButton(PUBLISHER, AppLinks.COMPANY, owner);
+        publisher.setHorizontalAlignment(SwingConstants.LEADING);
+        publisher.putClientProperty(FlatClientProperties.STYLE,
+                "foreground: $Component.accentColor; font: -1; margin: 0,0,0,0;");
         content.add(publisher, "growx, wrap");
 
         content.add(buttons(dialog, owner), "span 2, growx");

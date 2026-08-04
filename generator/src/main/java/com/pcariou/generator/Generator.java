@@ -126,6 +126,19 @@ public class Generator implements IGenerator
     private static final String CLI_USAGE =
             "Usage: java -jar generator.jar <input file> <output file> <execution date YYYY-MM-DD> [--format=02|03|09]";
 
+    /** Publisher of the product. Niryosys is not part of the product name. */
+    private static final String PUBLISHER = "Niryosys";
+
+    /**
+     * Product, edition, installed version and publisher, printed once above the
+     * CLI usage. The edition and version come from the shared application
+     * sources, so the line is correct wherever this code is reused.
+     */
+    private static String cliIdentity()
+    {
+        return AppEdition.PRODUCT_NAME + " " + AppInfo.getVersion() + " \u2014 by " + PUBLISHER;
+    }
+
     public static void fromCommandLine(String[] args)
     {
         int exitCode = runCommandLine(args);
@@ -160,6 +173,7 @@ public class Generator implements IGenerator
         // 3 positional arguments expected; a legacy unused 4th argument is
         // still tolerated for backward compatibility with old invocations.
         if (positional.size() < 3 || positional.size() > 4) {
+            System.out.println(cliIdentity());
             System.out.println(CLI_USAGE);
             return 1;
         }
