@@ -60,6 +60,12 @@ SEPA Generator produces SEPA Credit Transfer Initiation XML in two ISO 20022 for
 
 The files are designed to follow the ISO 20022 standard. Final bank acceptance can depend on your bank, upload channel, account configuration, the required `pain.001` version, and bank-specific rules.
 
+### Payments involving a bank outside the EEA
+
+SEPA also covers countries and territories outside the EEA, such as Switzerland, the United Kingdom, Monaco and San Marino. When the payer's bank or the beneficiary's bank is located in one of them, additional party information becomes mandatory: the payer's (originator's) address is required in the payment file, and BIC or agent information may also be requested depending on your bank and upload channel.
+
+What matters is where each bank is established, which cannot reliably be derived from the IBAN country alone. If any bank involved in a payment is outside the EEA, confirm the exact customer-to-bank requirements with your bank.
+
 ## Command Line
 
 SEPA Generator can also be run from the command line:

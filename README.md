@@ -295,6 +295,14 @@ SEPA Generator produces SEPA Credit Transfer Initiation documents in two ISO 200
 
 Some banks may require a specific `pain.001` version or apply bank-specific rules. Always check with your bank before using generated files in production.
 
+### Payments involving a bank outside the EEA
+
+SEPA also covers countries and territories outside the EEA, such as Switzerland, the United Kingdom, Monaco and San Marino. When the payer's bank or the beneficiary's bank is located in one of them, EPC rules make additional party information mandatory — in particular, the payer's (originator's) address is required in the payment file.
+
+BIC or agent information may also be required for these payments, depending on your bank and upload channel. What matters is where each bank is established, which cannot reliably be derived from the IBAN country alone.
+
+If any bank involved in a payment is outside the EEA, confirm the exact customer-to-bank requirements with your bank before generating the file.
+
 ---
 
 ## Samples
