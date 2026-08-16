@@ -119,6 +119,7 @@ rm -rf "${d5}"
 
 # --- assert_signing_ready ---------------------------------------------------
 unset WINDOWS_CERT_PFX_BASE64 WINDOWS_CERT_PASSWORD \
+      AZURE_CLIENT_ID AZURE_TENANT_ID AZURE_SUBSCRIPTION_ID \
       MAC_SIGNING_IDENTITY MACOS_CERT_P12_BASE64 MACOS_CERT_PASSWORD \
       APPLE_API_KEY_P8_BASE64 APPLE_API_KEY_ID APPLE_API_ISSUER_ID
 
@@ -129,9 +130,23 @@ if assert_signing_ready windows false 2>/dev/null; then pass "signing not requir
 if assert_signing_ready windows true 2>/dev/null; then failc "windows signing required+missing should fail"; else pass "windows signing required+missing rejected"; fi
 if assert_signing_ready macos true 2>/dev/null; then failc "macos signing required+missing should fail"; else pass "macos signing required+missing rejected"; fi
 
-# Required and complete -> pass.
-WINDOWS_CERT_PFX_BASE64="QUJD" WINDOWS_CERT_PASSWORD="pw"
+# Windows is signed by Azure Artifact Signing (OIDC): the PFX secrets must NOT
+# be required, and the diagnostic must name the Azure inputs instead.
+out="$(assert_signing_ready windows true 2>&1 || true)"
+if printf '%s' "${out}" | grep -q 'AZURE_CLIENT_ID'; then pass "windows signing names the Azure OIDC inputs"; else failc "windows signing should name the Azure OIDC inputs; got: ${out}"; fi
+if printf '%s' "${out}" | grep -q 'WINDOWS_CERT_PFX_BASE64'; then failc "windows signing must not require the legacy PFX secrets"; else pass "windows signing does not require the legacy PFX secrets"; fi
+
+# Required and complete -> pass. The legacy PFX secrets stay unset on purpose.
+AZURE_CLIENT_ID="11111111-1111-1111-1111-111111111111"
+AZURE_TENANT_ID="22222222-2222-2222-2222-222222222222"
+AZURE_SUBSCRIPTION_ID="33333333-3333-3333-3333-333333333333"
 if assert_signing_ready windows true 2>/dev/null; then pass "windows signing required+complete accepted"; else failc "windows signing required+complete accepted"; fi
+
+# The legacy PFX path is still supported behind its own explicit platform key.
+if assert_signing_ready windows-legacy-pfx false 2>/dev/null; then pass "legacy PFX signing not requested is a no-op"; else failc "legacy PFX signing not requested is a no-op"; fi
+if assert_signing_ready windows-legacy-pfx true 2>/dev/null; then failc "legacy PFX signing required+missing should fail"; else pass "legacy PFX signing required+missing rejected"; fi
+WINDOWS_CERT_PFX_BASE64="QUJD" WINDOWS_CERT_PASSWORD="pw"
+if assert_signing_ready windows-legacy-pfx true 2>/dev/null; then pass "legacy PFX signing required+complete accepted"; else failc "legacy PFX signing required+complete accepted"; fi
 
 # macOS: the App Store Connect API key inputs must all be present. A partial
 # set (identity + certificate but no notarization key) must still be rejected.
@@ -144,7 +159,7 @@ APPLE_API_ISSUER_ID="11111111-2222-3333-4444-555555555555"
 if assert_signing_ready macos true 2>/dev/null; then pass "macos signing required+complete accepted"; else failc "macos signing required+complete accepted"; fi
 
 # Required+complete must not leak the password value in any output.
-out="$(assert_signing_ready windows true 2>&1 || true)"
+out="$(assert_signing_ready windows-legacy-pfx true 2>&1 || true)"
 if printf '%s' "${out}" | grep -q "pw"; then failc "signing check must not echo secrets"; else pass "signing check does not echo secrets"; fi
 
 if [ "${fails}" -gt 0 ]; then
