@@ -159,10 +159,18 @@ $MainJarPath = Join-Path $RepoRoot "generator\target\$MainJarName"
 $IconPath    = Join-Path $RepoRoot 'packaging\windows\sepa-generator.ico'
 $OutputDir   = Join-Path $RepoRoot 'dist'
 
+# Installer wizard branding (replaces the generic default jpackage/WiX artwork).
+$BrandingDir       = Join-Path $RepoRoot 'packaging\windows\branding'
+$BrandingBanner    = Join-Path $BrandingDir 'banner.bmp'
+$BrandingDialog    = Join-Path $BrandingDir 'dialog.bmp'
+$BrandingMainWxs   = Join-Path $BrandingDir 'main.wxs'
+$BrandingWxsDumper = Join-Path $BrandingDir 'DumpJpackageMainWxs.java'
+
 # jpackage staging directories (kept under generator/target, which is git-ignored).
 $StageRoot   = Join-Path $RepoRoot 'generator\target\jpackage'
 $InputDir    = Join-Path $StageRoot 'input'
 $JpDestDir   = Join-Path $StageRoot 'out'
+$JpResourceDir = Join-Path $StageRoot 'resources'
 
 # Final installer name placed in dist/.
 $FinalArtifact = "$ArtifactSlug-$AppVersion-windows-$ArchLabel.$Type"
@@ -316,6 +324,74 @@ Write-Ok "Staged $MainJarName for packaging."
 if (-not (Test-Path $OutputDir)) { New-Item -ItemType Directory -Path $OutputDir -Force | Out-Null }
 
 # -----------------------------------------------------------------------------
+# 5b. Stage the jpackage resource directory (installer wizard branding)
+# -----------------------------------------------------------------------------
+# jpackage's stock MSI wizard shows WiX's generic default artwork. WiX exposes
+# the two bitmaps through the standard WixUIBannerBmp / WixUIDialogBmp
+# variables, and the only supported way to set them from jpackage is to override
+# its `main.wxs` resource. We therefore ship a copy of the JDK's own main.wxs
+# with a single clearly-marked branding block added, and substitute absolute
+# bitmap paths into it here (arbitrary files placed in --resource-dir are NOT
+# copied to WiX's config directory, so relative names would not resolve).
+#
+# Because that override pins us to one JDK's template, everything outside the
+# marked block is verified against the template of the JDK actually being used.
+# A JDK upgrade that changes main.wxs then fails loudly here instead of silently
+# producing an installer with different upgrade/uninstall semantics.
+function Get-BrandingStrippedWxs ([string]$text) {
+    $noBlock = [regex]::Replace(
+        ($text -replace "`r`n", "`n"),
+        '(?s)[ \t]*<!-- BEGIN SEPA-BRANDING.*?<!-- END SEPA-BRANDING -->[ \t]*\n?',
+        '')
+    # Collapse runs of blank lines so removing the block cannot leave a cosmetic
+    # difference against the pristine template.
+    return ([regex]::Replace($noBlock, '\n{2,}', "`n`n")).Trim()
+}
+
+if ($Type -in @('msi', 'exe')) {
+    Write-Step 'Staging installer branding resources'
+
+    foreach ($f in @($BrandingBanner, $BrandingDialog, $BrandingMainWxs, $BrandingWxsDumper)) {
+        if (-not (Test-Path $f)) { Fail "Installer branding resource not found: $f" }
+    }
+
+    # Compare our override against this JDK's built-in template.
+    $javaExe = Join-Path (Split-Path -Parent (Split-Path -Parent $jpackage)) 'bin\java.exe'
+    if (-not (Test-Path $javaExe)) { $javaExe = (Get-Command java.exe -ErrorAction SilentlyContinue).Source }
+    if (-not $javaExe) { Fail 'java.exe was not found; it is required to verify the WiX main.wxs override.' }
+
+    $jdkWxs = & $javaExe $BrandingWxsDumper 2>&1 | Out-String
+    if ($LASTEXITCODE -ne 0) { Fail "Could not read jpackage's built-in main.wxs template:`n$jdkWxs" }
+
+    $ourWxs = Get-Content -LiteralPath $BrandingMainWxs -Raw
+    if ((Get-BrandingStrippedWxs $ourWxs) -ne (Get-BrandingStrippedWxs $jdkWxs)) {
+        Fail @"
+packaging/windows/branding/main.wxs no longer matches this JDK's jpackage template.
+
+  jpackage: $jpackage
+  This override must stay a verbatim copy of the JDK's main.wxs apart from the
+  block marked BEGIN/END SEPA-BRANDING. Refusing to build an MSI whose installer
+  semantics (upgrade code, install scope, shortcuts, uninstall) could differ from
+  the JDK's.
+
+  Fix: re-generate the override for the current JDK, then re-add the branding block:
+    java packaging/windows/branding/DumpJpackageMainWxs.java > packaging/windows/branding/main.wxs
+"@
+    }
+    Write-Ok 'WiX main.wxs override matches the JDK template (branding block only).'
+
+    New-Item -ItemType Directory -Path $JpResourceDir -Force | Out-Null
+    $stagedWxs = $ourWxs.
+        Replace('@JP_BANNER_BMP@', (Resolve-Path $BrandingBanner).Path).
+        Replace('@JP_DIALOG_BMP@', (Resolve-Path $BrandingDialog).Path)
+    # WiX/candle read this as UTF-8; write without a BOM to match the original.
+    [System.IO.File]::WriteAllText(
+        (Join-Path $JpResourceDir 'main.wxs'), $stagedWxs,
+        (New-Object System.Text.UTF8Encoding $false))
+    Write-Ok "Branded wizard artwork staged in $JpResourceDir."
+}
+
+# -----------------------------------------------------------------------------
 # 6. Run jpackage
 # -----------------------------------------------------------------------------
 Write-Step "Running jpackage (--type $Type)"
@@ -341,7 +417,9 @@ if ($Type -in @('msi', 'exe')) {
         '--win-menu-group', $AppName,
         '--win-shortcut',          # Desktop shortcut
         '--win-dir-chooser',       # let the user pick the install directory
-        '--win-upgrade-uuid', $UpgradeUuid
+        '--win-upgrade-uuid', $UpgradeUuid,
+        # Branded wizard artwork (banner/dialog bitmaps via the main.wxs override).
+        '--resource-dir', $JpResourceDir
     )
 }
 

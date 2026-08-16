@@ -356,13 +356,17 @@ sha256sum -c SHA256SUMS.txt          # from the folder containing the installers
 
 ### Signing in the release
 
-Signing is a **separate, deliberate release gate** (see the next section):
+Signing is a **separate, deliberate release gate** for RC builds, and
+**mandatory** for real releases:
 
-- **RC:** the `sign` input (default off).
-- **Final release:** the repository variable `COMMUNITY_RELEASE_SIGN` (`true`
-  to enable; default off). When enabled, the build **fails closed** if the
-  required signing secrets are missing, and signatures are verified during
-  packaging. Unsigned artifacts are never described as signed.
+- **RC (`workflow_dispatch`):** the `sign` input (default off), so unsigned
+  packaging smoke tests remain possible.
+- **Final release (`vX.Y.Z` tag):** always signed. The workflow resolves
+  `sign_enabled=true` unconditionally in tag mode, **fails closed** if the
+  required signing secrets are missing, verifies every signature during
+  packaging, and the `release` job refuses to create or update the release at
+  all unless signing was enabled. Unsigned artifacts are never described as
+  signed, and a tag can no longer produce one.
 
 ### Rerun / retry behavior
 
@@ -399,20 +403,62 @@ The manifest schema (edition-safe, `"edition": "community"`) is illustrated by
 
 ---
 
-## Signing & notarization (optional, cross-platform)
+## Installer branding
 
-Signing is a deliberate per-run decision: it is enabled by the RC `sign` input or
-the `COMMUNITY_RELEASE_SIGN` variable for tag releases. Unsigned development
-builds always work with no secrets, and an unsigned build is always reported as
-unsigned.
+The stock jpackage/WiX wizard and DMG volume are generic. Restrained SEPA
+Generator Community branding (Niryosys navy `#082B4B` / cream `#FDF6EC`, reusing
+the existing application icon) is applied through jpackage's supported
+`--resource-dir` overrides only — there is no custom installer UI.
+
+| File | Used by | Purpose |
+| ---- | ------- | ------- |
+| [`packaging/windows/branding/banner.bmp`](../windows/branding/banner.bmp) | Windows MSI | 493x58 wizard header strip |
+| [`packaging/windows/branding/dialog.bmp`](../windows/branding/dialog.bmp) | Windows MSI | 493x312 welcome/exit panel |
+| [`packaging/windows/branding/main.wxs`](../windows/branding/main.wxs) | Windows MSI | jpackage's own template plus a marked block setting WiX's `WixUIBannerBmp` / `WixUIDialogBmp` |
+| [`packaging/macos/branding/dmg-background.png`](../macos/branding/dmg-background.png) | macOS DMG | 520x340 volume background, converted to `background_dmg.tiff` with `sips` at build time |
+
+Notes:
+
+- The artwork is committed rather than generated during packaging, so every
+  runner produces an identical installer.
+  [`GenerateInstallerBranding.java`](../branding/GenerateInstallerBranding.java)
+  regenerates it (`java packaging/branding/GenerateInstallerBranding.java` from
+  the repository root).
+- WiX exposes the wizard bitmaps only as WiX variables, so reaching them
+  requires overriding `main.wxs`. That pins the override to one JDK's template,
+  so `package-windows.ps1` compares everything outside the marked branding block
+  against the template of the JDK actually in use and **fails the build** on any
+  drift. Product code, upgrade code, install scope, shortcuts and upgrade
+  behaviour are untouched.
+- The DMG volume icon needs no override: jpackage already reuses the icon passed
+  via `--icon`. jpackage's stock `DMGsetup.scpt` is deliberately **not**
+  overridden; the background is sized to the window layout that script produces.
+- Branding is applied before jpackage runs, therefore before signing and
+  notarization. Nothing modifies a package after it is signed.
+- Linux gets no artwork (a `.deb` has no installer wizard); its branding is the
+  package metadata users actually see. jpackage renders `Maintainer:` as
+  `<vendor> <<maintainer email>>`, so the control file now reads `Maintainer:
+  Niryosys <contact@sepa-xml-generator.com>` and gains a `Homepage:` field,
+  alongside the existing `.desktop` entry, icon and menu category.
+
+---
+
+## Signing & notarization
+
+Signing is mandatory for release tags and a deliberate per-run choice for
+release candidates: it is enabled by the RC `sign` input, and forced on for any
+`vX.Y.Z` tag build. Unsigned development builds always work with no secrets, and
+an unsigned build is always reported as unsigned.
 
 Key properties:
 
-- **Disabled by default.** A normal build (and any ordinary pull request) needs
-  no secrets and produces an unsigned installer.
-- **Explicit opt-in.** Signing activates only when the release signing state is
-  enabled (RC `sign` input / `COMMUNITY_RELEASE_SIGN`), or, for the legacy local
-  hooks, an explicit flag (`-Sign` on Windows, `MAC_SIGN=true` on macOS).
+- **Off by default for development.** A local build (and any ordinary pull
+  request) needs no secrets and produces an unsigned installer.
+- **Forced on for releases.** A release tag cannot resolve to an unsigned build;
+  there is no repository variable or input that can turn it off.
+- **Explicit opt-in for RCs.** Signing activates for a release candidate only
+  via the `sign` input, or, for the legacy local hooks, an explicit flag
+  (`-Sign` on Windows, `MAC_SIGN=true` on macOS).
 - **Fail-closed.** When signing is required, a failed signing, notarization or
   verification step **aborts** the job before upload instead of emitting an
   unsigned artifact under a "signed" label. A single stray partial credential can
@@ -544,10 +590,10 @@ are wired as encrypted **GitHub Actions secrets/variables** consumed by the
 | `MACOS_CERT_P12_BASE64`, `MACOS_CERT_PASSWORD`      | secret   | macOS jobs         |
 | `APPLE_API_KEY_P8_BASE64`, `APPLE_API_KEY_ID`, `APPLE_API_ISSUER_ID` | secret | macOS jobs |
 | `MAC_SIGNING_IDENTITY`                              | variable | macOS jobs         |
-| `COMMUNITY_RELEASE_SIGN`                            | variable | enables tag-release signing |
 
-Signing stays **off** unless explicitly enabled (RC `sign` input, or the
-`COMMUNITY_RELEASE_SIGN` variable for tag releases). No secret is stored in the
+Release-tag signing is **not** configurable: it is always on, so there is no
+signing on/off repository variable. Signing is off only for a release candidate
+that was dispatched without the `sign` input. No secret is stored in the
 repository, and no placeholder credential is committed. Because the workflow
 never runs on pull requests, secrets are not exposed to forks.
 

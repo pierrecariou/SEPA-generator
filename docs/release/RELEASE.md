@@ -102,10 +102,18 @@ offline notes reached from **Help → What's new…** remain fully available.
    MSI, macOS arm64/x64 DMGs, and Linux x64 DEB on native runners. (Use the
    manual `workflow_dispatch` RC mode to smoke-test packaging without releasing.)
 
-6. **Verify signatures / notarization when enabled.** Signing is off by default.
-   When the repository variable `COMMUNITY_RELEASE_SIGN=true`, the build fails
-   closed if required secrets are missing and verifies signatures during
-   packaging. Never describe an unsigned artifact as signed.
+6. **Verify signatures / notarization.** Signing is **mandatory** for a release
+   tag: the workflow resolves `sign_enabled=true` unconditionally in tag mode,
+   fails closed if required secrets are missing, and verifies every signature
+   during packaging. The release job additionally refuses to create or update
+   the release at all unless signing was enabled. Never describe an unsigned
+   artifact as signed.
+
+   Windows is signed with **Microsoft Azure Artifact Signing** over GitHub OIDC
+   (secrets `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`;
+   environment `release-signing`). The Windows job log must show the final MSI
+   passing `Get-AuthenticodeSignature` with `Status: Valid`, a Niryosys signer
+   and a timestamp, before the artifact is uploaded.
 
    macOS signing uses the Niryosys **Developer ID Application** identity and
    notarizes with an **App Store Connect API key** (secrets
@@ -124,9 +132,9 @@ offline notes reached from **Help → What's new…** remain fully available.
    - `stapler validate` and the `spctl` Gatekeeper assessment passing.
 
    If notarization is rejected the job prints Apple's full notarization log and
-   fails; no artifact is uploaded. Enabling `COMMUNITY_RELEASE_SIGN` is a
-   deliberate, separate decision taken only after a signed
-   `workflow_dispatch` RC has passed all of the above.
+   fails; no artifact is uploaded. A signed `workflow_dispatch` RC (`sign: true`)
+   should still be used to rehearse all of the above before tagging, because the
+   tag path no longer offers an unsigned fallback.
 
 7. **Verify artifact names and checksums.** Confirm the four installers are named
    `SEPA-Generator-Community-X.Y.Z-<os>-<arch>.<ext>` and that the workflow's

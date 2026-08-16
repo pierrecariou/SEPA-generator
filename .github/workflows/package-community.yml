@@ -12,6 +12,8 @@ name: Package Community
 #      builds the four installers, generates + verifies SHA-256 checksums, and
 #      creates/updates a DRAFT GitHub Release for manual review. It never
 #      publishes automatically and never marks the release "latest".
+#      Signing/notarization is ALWAYS ON for this mode: a release tag can never
+#      produce an unsigned artifact.
 #
 # All packaging logic (jpackage, icons, WiX checks, signing hooks) lives in the
 # scripts under packaging/community/. This workflow only orchestrates them so
@@ -92,15 +94,29 @@ jobs:
             IS_RELEASE=false
           fi
 
-          # Signing is a deliberate, separate decision. RC builds read the `sign`
-          # input; tag releases read the COMMUNITY_RELEASE_SIGN repository
-          # variable. Default OFF (unsigned builds succeed).
-          if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ]; then
-            SIGN="${{ inputs.sign }}"
+          # Signing is a deliberate, separate decision, but it is NOT optional
+          # for a release tag.
+          #
+          # ROOT CAUSE OF THE UNSIGNED v1.4.0 ASSETS: this used to read the
+          # `COMMUNITY_RELEASE_SIGN` repository variable for tag builds and fall
+          # back to `false` when it was unset. The variable was never created, so
+          # the v1.4.0 tag run silently resolved `sign_enabled=false`, skipped the
+          # Azure Artifact Signing steps (and their verification, which is guarded
+          # by the same condition) and published an unsigned MSI.
+          #
+          # A release tag now always requires signing — it is fail-closed and
+          # cannot be turned off by a missing/absent repository variable. RC
+          # builds (`workflow_dispatch`) keep the explicit opt-in `sign` input so
+          # deliberately unsigned test builds remain possible, and they can never
+          # be confused with the release path because they never create a release.
+          if [ "${IS_RELEASE}" = "true" ]; then
+            SIGN=true
+            echo "Release tag build: signing/notarization is MANDATORY (sign_enabled=true)."
           else
-            SIGN="${{ vars.COMMUNITY_RELEASE_SIGN }}"
+            SIGN="${{ inputs.sign }}"
+            [ "${SIGN}" = "true" ] || SIGN=false
+            echo "Release candidate build: sign_enabled=${SIGN} (explicit 'sign' input)."
           fi
-          [ "${SIGN}" = "true" ] || SIGN=false
 
           {
             echo "version=${MAVEN_VERSION}"
@@ -386,6 +402,22 @@ jobs:
           pattern: sepa-generator-community-*
           merge-multiple: true
 
+      - name: Refuse to publish an unsigned release
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Defence in depth. Preflight already forces signing on for tag builds,
+          # so this can only trip if that gate is ever weakened again. The
+          # per-platform verification (Authenticode on Windows, codesign +
+          # stapler + spctl on macOS) runs inside the packaging jobs; this step
+          # guarantees the release job itself never assembles a release out of
+          # artifacts that were built with signing switched off.
+          if [ "${SIGN_ENABLED}" != "true" ]; then
+            echo "ERROR: refusing to create/update release ${GITHUB_REF_NAME}: the artifacts were built with signing DISABLED." >&2
+            exit 1
+          fi
+          echo "Signing was enabled and verified during packaging for every platform."
+
       - name: Verify artifact set and generate checksums
         shell: bash
         run: |
@@ -416,8 +448,10 @@ jobs:
           DIR="dist-release"
 
           if [ "${SIGN_ENABLED}" = "true" ]; then
-            SIGN_LINE="Signing/notarization: ENABLED for this build (verified during packaging)."
+            SIGN_LINE="Signed release: the Windows MSI is Authenticode-signed by Niryosys (Microsoft Azure Artifact Signing) and the macOS packages are Developer ID signed and notarized. Every signature was verified during packaging."
           else
+            # Unreachable on a release tag (the guard step above fails first);
+            # kept so the body can never silently overstate the signing state.
             SIGN_LINE="Signing/notarization: DISABLED (unsigned build)."
           fi
 

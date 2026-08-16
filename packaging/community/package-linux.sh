@@ -73,6 +73,8 @@ LINUX_MENU_GROUP="$(prop LINUX_MENU_GROUP)"
 LINUX_APP_CATEGORY="$(prop LINUX_APP_CATEGORY)"
 # Debian maintainer (matches the project's official contact in AppLinks.CONTACT).
 LINUX_DEB_MAINTAINER="$(prop DEB_MAINTAINER)"
+# Product homepage, emitted as the Debian "Homepage:" control field.
+HOMEPAGE="$(prop HOMEPAGE)"
 
 # Authoritative application version (derived from Maven, never hardcoded).
 APP_VERSION="$(derive_app_version)"
@@ -238,6 +240,8 @@ JP_ARGS=(
   --linux-menu-group "${LINUX_MENU_GROUP}"
   --linux-deb-maintainer "${LINUX_DEB_MAINTAINER}"
   --linux-shortcut
+  # Populates the Debian "Homepage:" control field, which package managers show.
+  --about-url "${HOMEPAGE}"
 )
 
 # Attach the Linux icon when one was resolved.
