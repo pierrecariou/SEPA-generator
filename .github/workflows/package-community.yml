@@ -119,6 +119,11 @@ jobs:
     name: Windows MSI (x64)
     needs: preflight
     runs-on: windows-latest
+    # Holds the Azure OIDC identity used for Artifact Signing.
+    environment: release-signing
+    permissions:
+      contents: read
+      id-token: write        # required for the Azure OIDC login below
     env:
       # Signing is gated by preflight; the platform script fails closed if
       # enabled without the required secrets. Secrets are only referenced here
@@ -127,6 +132,9 @@ jobs:
       WINDOWS_CERT_PFX_BASE64: ${{ secrets.WINDOWS_CERT_PFX_BASE64 }}
       WINDOWS_CERT_PASSWORD: ${{ secrets.WINDOWS_CERT_PASSWORD }}
       WINDOWS_TIMESTAMP_URL: ${{ vars.WINDOWS_TIMESTAMP_URL }}
+      # The single final installer users download, named by package-windows.ps1
+      # as <ARTIFACT_SLUG>-<version>-windows-<arch>.msi in dist/.
+      MSI_PATH: ${{ github.workspace }}\dist\SEPA-Generator-Community-${{ needs.preflight.outputs.version }}-windows-x64.msi
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -159,6 +167,44 @@ jobs:
       - name: Build Windows MSI
         shell: pwsh
         run: ./packaging/community/package-windows.ps1
+
+      # ---- Azure Artifact Signing -------------------------------------------
+      # Runs after the final MSI exists and before the upload, so the artifact
+      # (and therefore the released installer) is always the signed one.
+      - name: Azure login (OIDC)
+        uses: azure/login@v3
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Sign the MSI with Azure Artifact Signing
+        uses: azure/artifact-signing-action@v2
+        with:
+          endpoint: https://neu.codesigning.azure.net/
+          signing-account-name: niryosyssigning
+          certificate-profile-name: niryosys-public-trust
+          # Only the final installer is signed; the runtime bundled inside the
+          # MSI is not signed separately.
+          files: ${{ env.MSI_PATH }}
+          file-digest: SHA256
+          timestamp-rfc3161: http://timestamp.acs.microsoft.com
+          timestamp-digest: SHA256
+
+      - name: Verify the MSI Authenticode signature
+        shell: pwsh
+        run: |
+          $path = $env:MSI_PATH
+          if (-not (Test-Path -LiteralPath $path)) { throw "Signed MSI not found: $path" }
+          $sig = Get-AuthenticodeSignature -LiteralPath $path
+          Write-Host "File   : $path"
+          Write-Host "Status : $($sig.Status)"
+          Write-Host "Signer : $($sig.SignerCertificate.Subject)"
+          Write-Host "Issuer : $($sig.SignerCertificate.Issuer)"
+          Write-Host "Stamped: $([bool]$sig.TimeStamperCertificate)"
+          if ($sig.Status -ne 'Valid') {
+            throw "MSI Authenticode signature is not valid (status: $($sig.Status)). Refusing to publish this installer."
+          }
 
       - name: Upload MSI artifact
         uses: actions/upload-artifact@v4
