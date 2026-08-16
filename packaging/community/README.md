@@ -436,9 +436,10 @@ Notes:
 - Branding is applied before jpackage runs, therefore before signing and
   notarization. Nothing modifies a package after it is signed.
 - Linux gets no artwork (a `.deb` has no installer wizard); its branding is the
-  package metadata users actually see — `Maintainer: Niryosys
-  <contact@sepa-xml-generator.com>` and `Homepage:`, plus the existing
-  `.desktop` entry, icon and menu category.
+  package metadata users actually see. jpackage renders `Maintainer:` as
+  `<vendor> <<maintainer email>>`, so the control file now reads `Maintainer:
+  Niryosys <contact@sepa-xml-generator.com>` and gains a `Homepage:` field,
+  alongside the existing `.desktop` entry, icon and menu category.
 
 ---
 

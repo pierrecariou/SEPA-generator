@@ -126,8 +126,9 @@ expect_prop() {
 expect_prop APP_NAME 'SEPA Generator Community'
 expect_prop VENDOR   'Niryosys'
 expect_prop HOMEPAGE 'https://sepa-xml-generator.com'
-# Debian shows this verbatim in `apt show`, so it must carry the publisher name.
-expect_prop DEB_MAINTAINER 'Niryosys <contact@sepa-xml-generator.com>'
+# jpackage renders "Maintainer: ${VENDOR} <${DEB_MAINTAINER}>", so putting a
+# name here would produce a doubled "Niryosys <Niryosys <...>>" in apt show.
+expect_prop DEB_MAINTAINER 'contact@sepa-xml-generator.com'
 # Changing this breaks in-place upgrades for every installed Community user.
 expect_prop WIN_UPGRADE_UUID 'b1f8e2a4-3c7d-4e15-9a2b-7c6d5e4f3a21'
 
