@@ -5,3 +5,12 @@
 # GitHub Actions workflows run on Linux/macOS too; keep them LF for safety.
 *.yml text eol=lf
 *.yaml text eol=lf
+
+# Installer branding assets. The WiX override must stay byte-stable across
+# platforms because packaging/community/package-windows.ps1 compares it against
+# the JDK's own template, and the artwork must never be line-ending mangled.
+*.wxs text eol=lf
+*.bmp binary
+*.png binary
+*.ico binary
+*.icns binary

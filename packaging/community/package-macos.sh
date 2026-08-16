@@ -247,6 +247,38 @@ cp "${MAIN_JAR_PATH}" "${INPUT_DIR}/${MAIN_JAR_NAME}"
 ok "Staged ${MAIN_JAR_NAME} for packaging."
 
 # -----------------------------------------------------------------------------
+# 4b. Stage the jpackage resource directory (DMG volume branding)
+# -----------------------------------------------------------------------------
+# jpackage's stock DMG shows a plain empty volume window. Its supported resource
+# override for the volume background is a file literally named
+# "background_dmg.tiff" in the resource directory, so the committed PNG is
+# converted here with the native `sips` tool (no extra build dependency).
+#
+# The artwork is 520x340 to match jpackage's stock DMGsetup.scpt, which sets the
+# Finder window bounds to {400,100,920,440} and positions the .app at (120,130)
+# and the Applications alias at (390,130). That script is deliberately NOT
+# overridden: the layout it produces is already correct, and replacing it would
+# add risk with no visible benefit.
+#
+# The DMG volume icon needs no override either: jpackage already reuses the
+# application icon passed via --icon for it.
+#
+# All of this runs before jpackage, therefore before signing and notarization;
+# nothing touches the package afterwards.
+step "Staging DMG volume branding"
+JP_RESOURCE_DIR="${STAGE_ROOT}/resources"
+mkdir -p "${JP_RESOURCE_DIR}"
+DMG_BACKGROUND_PNG="${REPO_ROOT}/packaging/macos/branding/dmg-background.png"
+if [ ! -f "${DMG_BACKGROUND_PNG}" ]; then
+  fail "DMG background artwork not found: ${DMG_BACKGROUND_PNG}"
+fi
+command -v sips >/dev/null 2>&1 || fail "sips not found; it is required to convert the DMG background and ships with macOS."
+sips -s format tiff "${DMG_BACKGROUND_PNG}" \
+  --out "${JP_RESOURCE_DIR}/background_dmg.tiff" >/dev/null \
+  || fail "Failed to convert ${DMG_BACKGROUND_PNG} to background_dmg.tiff."
+ok "DMG background staged in ${JP_RESOURCE_DIR}."
+
+# -----------------------------------------------------------------------------
 # 5. Run jpackage
 # -----------------------------------------------------------------------------
 step "Running jpackage (--type dmg)"
@@ -264,6 +296,7 @@ JP_ARGS=(
   --dest "${JP_DEST_DIR}"
   --mac-package-identifier "${MAC_PACKAGE_IDENTIFIER}"
   --mac-package-name "${MAC_MENU_NAME}"
+  --resource-dir "${JP_RESOURCE_DIR}"
 )
 
 # Attach the macOS icon when one was resolved (existing or generated).

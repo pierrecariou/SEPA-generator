@@ -136,6 +136,86 @@ else
 fi
 
 # ---------------------------------------------------------------------------
+# Signing must be MANDATORY for release tags.
+#
+# Regression guard for the defect that shipped an unsigned Windows 1.4.0 MSI:
+# the tag path used to read an optional repository variable and fall back to
+# "false" when it was unset, which silently skipped signing AND its verification.
+# ---------------------------------------------------------------------------
+RESOLVE_STEP_RUN="$(${PYTHON} - "${WORKFLOW}" <<'PYEOF'
+import sys, yaml
+d = yaml.safe_load(open(sys.argv[1], encoding='utf-8'))
+for step in d['jobs']['preflight']['steps']:
+    if (step.get('id') or '') == 'resolve':
+        print(step.get('run') or '')
+        break
+PYEOF
+)"
+
+if printf '%s' "${RESOLVE_STEP_RUN}" | grep -Eq 'IS_RELEASE.*=.*"true"'; then
+  pass "signing decision branches on release-tag mode"
+else
+  failc "signing decision must branch on IS_RELEASE so tag builds cannot be unsigned"
+fi
+
+# The tag branch must hard-code SIGN=true rather than read an overridable value.
+if printf '%s' "${RESOLVE_STEP_RUN}" | grep -q 'SIGN=true'; then
+  pass "release tags force sign_enabled=true"
+else
+  failc "release tags must force SIGN=true (found no unconditional 'SIGN=true')"
+fi
+
+# No repository variable may be able to turn release signing off again.
+if printf '%s' "${RESOLVE_STEP_RUN}" | grep -v '^\s*#' | grep -q 'COMMUNITY_RELEASE_SIGN'; then
+  failc "release signing must not depend on the COMMUNITY_RELEASE_SIGN variable (this caused the unsigned v1.4.0 assets)"
+else
+  pass "release signing does not depend on an optional repository variable"
+fi
+
+# ---------------------------------------------------------------------------
+# The release job must refuse to assemble a release from unsigned artifacts.
+# ---------------------------------------------------------------------------
+RELEASE_GUARD="$(${PYTHON} - "${WORKFLOW}" <<'PYEOF'
+import sys, yaml
+d = yaml.safe_load(open(sys.argv[1], encoding='utf-8'))
+for step in d['jobs']['release']['steps']:
+    run = step.get('run') or ''
+    if 'SIGN_ENABLED' in run and 'exit 1' in run:
+        print(run)
+        break
+PYEOF
+)"
+
+if [ -n "${RELEASE_GUARD}" ]; then
+  pass "release job fails closed when SIGN_ENABLED is not true"
+else
+  failc "release job must fail before publication when SIGN_ENABLED is not true"
+fi
+
+# ---------------------------------------------------------------------------
+# The Windows job must sign, then verify, then upload — in that order.
+# ---------------------------------------------------------------------------
+WINDOWS_ORDER="$(${PYTHON} - "${WORKFLOW}" <<'PYEOF'
+import sys, yaml
+d = yaml.safe_load(open(sys.argv[1], encoding='utf-8'))
+for step in d['jobs']['windows']['steps']:
+    uses, name = step.get('uses') or '', step.get('name') or ''
+    if 'artifact-signing-action' in uses:
+        print('sign')
+    elif 'Get-AuthenticodeSignature' in (step.get('run') or ''):
+        print('verify')
+    elif 'upload-artifact' in uses:
+        print('upload')
+PYEOF
+)"
+
+if [ "$(printf '%s' "${WINDOWS_ORDER}" | tr -d '\r' | tr '\n' ' ')" = "sign verify upload" ]; then
+  pass "Windows job order is sign -> Authenticode verify -> upload"
+else
+  failc "Windows job must sign, then verify Authenticode, then upload; got: $(printf '%s' "${WINDOWS_ORDER}" | tr '\n' ' ')"
+fi
+
+# ---------------------------------------------------------------------------
 # Confirm ordinary pushes cannot trigger (no branch filter set).
 # ---------------------------------------------------------------------------
 BRANCH_TRIGGERS="$(${PYTHON} - "${WORKFLOW}" <<'PYEOF'
