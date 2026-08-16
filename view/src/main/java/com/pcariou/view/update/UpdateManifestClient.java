@@ -57,15 +57,26 @@ public class UpdateManifestClient {
 
     /** Parses a manifest JSON document; visible for testing. */
     public UpdateInfo parse(String json) throws IOException {
+        UpdateInfo info;
         try {
-            UpdateInfo info = gson.fromJson(json, UpdateInfo.class);
-            if (info == null || !info.isValid()) {
-                throw new IOException("Manifest is missing a latest version");
-            }
-            return info;
+            info = gson.fromJson(json, UpdateInfo.class);
         } catch (JsonParseException malformed) {
             throw new IOException("Malformed manifest JSON", malformed);
         }
+        if (info == null) {
+            throw new IOException("Manifest is empty");
+        }
+        if (!info.isCommunityEdition()) {
+            throw new IOException("Manifest edition is not \"" + UpdateInfo.EDITION_COMMUNITY
+                    + "\" (was: " + info.getEdition() + ")");
+        }
+        if (!info.hasUsableVersion()) {
+            throw new IOException("Manifest is missing a usable latest version");
+        }
+        if (!info.hasUsableDownloadUrl()) {
+            throw new IOException("Manifest has no usable download URL");
+        }
+        return info;
     }
 
     private static String readBody(InputStream in) throws IOException {

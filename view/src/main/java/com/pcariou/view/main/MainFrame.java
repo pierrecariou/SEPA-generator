@@ -59,7 +59,7 @@ public class MainFrame extends JFrame {
         } catch (Exception ignored) {}
 
         updateUi = new UpdateUi(this, version);
-        add(new HeaderPanel(this, updateUi), BorderLayout.NORTH);
+        add(new HeaderPanel(this, updateUi, version), BorderLayout.NORTH);
 
         // Header and footer stay fixed; the main content scrolls so taller content
         // (e.g. the generation summary or future report panels) stays accessible on
@@ -75,7 +75,7 @@ public class MainFrame extends JFrame {
         contentScroll.getVerticalScrollBar().setUnitIncrement(16);
         add(contentScroll, BorderLayout.CENTER);
 
-        footerPanel = new FooterPanel(this, formPanel, version);
+        footerPanel = new FooterPanel(this, formPanel);
         add(footerPanel, BorderLayout.SOUTH);
 
         applyInitialSize();

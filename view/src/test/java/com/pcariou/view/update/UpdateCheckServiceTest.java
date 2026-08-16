@@ -19,7 +19,8 @@ public class UpdateCheckServiceTest {
 
     private static UpdateInfo manifest(String latestVersion) throws IOException {
         return new UpdateManifestClient().parse(
-                "{\"schemaVersion\":1,\"edition\":\"community\",\"latestVersion\":\"" + latestVersion + "\"}");
+                "{\"schemaVersion\":1,\"edition\":\"community\",\"latestVersion\":\"" + latestVersion + "\","
+                        + "\"downloadPageUrl\":\"https://sepa-xml-generator.com/download/\"}");
     }
 
     /** Client stub returning a fixed manifest. */
@@ -91,7 +92,8 @@ public class UpdateCheckServiceTest {
         Preferences node = Preferences.userRoot().node("com/pcariou/view/update/test-cached-result");
         try {
             UpdatePreferences prefs = new UpdatePreferences(node);
-            prefs.putCachedManifest("{\"schemaVersion\":1,\"latestVersion\":\"1.3.1\"}");
+            prefs.putCachedManifest("{\"schemaVersion\":1,\"edition\":\"community\",\"latestVersion\":\"1.3.1\","
+                    + "\"downloadPageUrl\":\"https://sepa-xml-generator.com/download/\"}");
 
             // Client that would fail if used, proving the cache path avoids the network.
             UpdateCheckService service = new UpdateCheckService(failing(), prefs, "unused");

@@ -42,7 +42,7 @@ public class DebtorInformations {
 	@Pattern(regexp = "^(\\d{4})-(\\d{2})-(\\d{2})$", message = "Execution date is not valid")
 	public String requestedExecutionDate;
 
-	/** Optional debtor postal address (pain.001.001.09 only); null when not configured. */
+	/** Optional debtor postal address (pain.001.001.09 / .03); null when not configured. */
 	@ValidPostalAddress(label = "debtor")
 	public PostalAddress address;
 

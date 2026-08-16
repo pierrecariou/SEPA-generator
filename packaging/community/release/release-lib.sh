@@ -153,8 +153,15 @@ verify_checksums() {
 # Only tests for presence; never echoes secret values. A false/empty 'required'
 # flag is a no-op (unsigned release candidates remain allowed).
 #
-#   assert_signing_ready windows true    # checks Windows Authenticode inputs
-#   assert_signing_ready macos   true    # checks Developer ID + notarization
+#   assert_signing_ready windows true            # Azure Artifact Signing (OIDC)
+#   assert_signing_ready windows-legacy-pfx true # legacy PFX/signtool inputs
+#   assert_signing_ready macos   true            # Developer ID + notarization
+#
+# Windows installers are signed by Azure Artifact Signing, which authenticates
+# with GitHub OIDC (no certificate material in the repository). The legacy
+# PFX/signtool path is still supported by package-windows.ps1 but is opt-in, so
+# its inputs are validated under a separate platform key and never block the
+# Azure path.
 # -----------------------------------------------------------------------------
 assert_signing_ready() {
   local platform="$1" required="${2:-false}"
@@ -163,16 +170,22 @@ assert_signing_ready() {
   local missing=""
   case "${platform}" in
     windows)
+      [ -n "${AZURE_CLIENT_ID:-}" ]       || missing="${missing} AZURE_CLIENT_ID"
+      [ -n "${AZURE_TENANT_ID:-}" ]       || missing="${missing} AZURE_TENANT_ID"
+      [ -n "${AZURE_SUBSCRIPTION_ID:-}" ] || missing="${missing} AZURE_SUBSCRIPTION_ID"
+      ;;
+    windows-legacy-pfx)
       [ -n "${WINDOWS_CERT_PFX_BASE64:-}" ] || missing="${missing} WINDOWS_CERT_PFX_BASE64"
       [ -n "${WINDOWS_CERT_PASSWORD:-}" ]   || missing="${missing} WINDOWS_CERT_PASSWORD"
       ;;
     macos)
-      [ -n "${MAC_SIGNING_IDENTITY:-}" ]  || missing="${missing} MAC_SIGNING_IDENTITY"
-      [ -n "${MACOS_CERT_P12_BASE64:-}" ] || missing="${missing} MACOS_CERT_P12_BASE64"
-      [ -n "${MACOS_CERT_PASSWORD:-}" ]   || missing="${missing} MACOS_CERT_PASSWORD"
-      [ -n "${APPLE_ID:-}" ]              || missing="${missing} APPLE_ID"
-      [ -n "${APPLE_TEAM_ID:-}" ]         || missing="${missing} APPLE_TEAM_ID"
-      [ -n "${APPLE_APP_PASSWORD:-}" ]    || missing="${missing} APPLE_APP_PASSWORD"
+      [ -n "${MAC_SIGNING_IDENTITY:-}" ]     || missing="${missing} MAC_SIGNING_IDENTITY"
+      [ -n "${MACOS_CERT_P12_BASE64:-}" ]    || missing="${missing} MACOS_CERT_P12_BASE64"
+      [ -n "${MACOS_CERT_PASSWORD:-}" ]      || missing="${missing} MACOS_CERT_PASSWORD"
+      # Notarization authenticates with an App Store Connect API key.
+      [ -n "${APPLE_API_KEY_P8_BASE64:-}" ]  || missing="${missing} APPLE_API_KEY_P8_BASE64"
+      [ -n "${APPLE_API_KEY_ID:-}" ]         || missing="${missing} APPLE_API_KEY_ID"
+      [ -n "${APPLE_API_ISSUER_ID:-}" ]      || missing="${missing} APPLE_API_ISSUER_ID"
       ;;
     *)
       echo "ERROR: assert_signing_ready: unknown platform '${platform}'." >&2

@@ -25,11 +25,11 @@ public final class InputTemplates {
                 "/templates/sepa-template-basic.xlsx",
                 "sepa-template-basic.xlsx"),
         CSV_ADDRESS(
-                "CSV + optional addresses (.09)",
+                "CSV + optional addresses (.03/.09)",
                 "/templates/sepa-template-with-optional-address.csv",
                 "sepa-template-with-optional-address.csv"),
         EXCEL_ADDRESS(
-                "Excel + optional addresses (.09)",
+                "Excel + optional addresses (.03/.09)",
                 "/templates/sepa-template-with-optional-address.xlsx",
                 "sepa-template-with-optional-address.xlsx");
 

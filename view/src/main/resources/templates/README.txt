@@ -14,13 +14,13 @@ Required (all formats):
   end_to_end_id    End-to-end identifier
   information      Remittance information
 
-Optional address columns (pain.001.001.09 only):
+Optional address columns (pain.001.001.09 and pain.001.001.03):
   street, building_number, postcode, town, country
 
 The address columns are OPTIONAL. They are only used when generating
-pain.001.001.09 output. For pain.001.001.02 output, the address columns are
-ignored by the current Community Edition, so you can leave them empty or omit
-them entirely (use a "Basic" template).
+pain.001.001.09 or pain.001.001.03 output. For pain.001.001.02 output, the
+address columns are ignored, so you can leave them empty or omit them entirely
+(use a "Basic" template).
 
 Files
 -----
@@ -28,4 +28,5 @@ Files
       Required columns only.
 
   sepa-template-with-optional-address.csv / .xlsx
-      Required columns plus the optional address columns for pain.001.001.09.
+      Required columns plus the optional address columns for pain.001.001.09
+      and pain.001.001.03.

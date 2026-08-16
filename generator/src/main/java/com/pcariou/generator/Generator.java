@@ -124,7 +124,20 @@ public class Generator implements IGenerator
     }
 
     private static final String CLI_USAGE =
-            "Usage: java -jar generator.jar <input file> <output file> <execution date YYYY-MM-DD> [--format=02|09]";
+            "Usage: java -jar generator.jar <input file> <output file> <execution date YYYY-MM-DD> [--format=02|03|09]";
+
+    /** Publisher of the product. Niryosys is not part of the product name. */
+    private static final String PUBLISHER = "Niryosys";
+
+    /**
+     * Product, edition, installed version and publisher, printed once above the
+     * CLI usage. The edition and version come from the shared application
+     * sources, so the line is correct wherever this code is reused.
+     */
+    private static String cliIdentity()
+    {
+        return AppEdition.PRODUCT_NAME + " " + AppInfo.getVersion() + " \u2014 by " + PUBLISHER;
+    }
 
     public static void fromCommandLine(String[] args)
     {
@@ -141,14 +154,14 @@ public class Generator implements IGenerator
      */
     static int runCommandLine(String[] args)
     {
-        // Optional --format=02|09 argument (anywhere); defaults to pain.001.001.02.
+        // Optional --format=02|03|09 argument (anywhere); defaults to pain.001.001.02.
         PainVersion version = PainVersion.PAIN_001_001_02;
         java.util.List<String> positional = new java.util.ArrayList<>();
         for (String arg : args) {
             if (arg != null && arg.startsWith("--format=")) {
                 PainVersion parsed = PainVersion.fromCode(arg.substring("--format=".length()));
                 if (parsed == null) {
-                    System.out.println("Unknown format. Supported values: --format=02 (pain.001.001.02), --format=09 (pain.001.001.09)");
+                    System.out.println("Unknown format. Supported values: --format=02 (pain.001.001.02), --format=03 (pain.001.001.03), --format=09 (pain.001.001.09)");
                     return 1;
                 }
                 version = parsed;
@@ -160,6 +173,7 @@ public class Generator implements IGenerator
         // 3 positional arguments expected; a legacy unused 4th argument is
         // still tolerated for backward compatibility with old invocations.
         if (positional.size() < 3 || positional.size() > 4) {
+            System.out.println(cliIdentity());
             System.out.println(CLI_USAGE);
             return 1;
         }

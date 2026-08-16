@@ -7,7 +7,8 @@ import com.opencsv.bean.CsvBindByName;
  *
  * <p>All fields are optional, but when any field is provided the address must
  * contain at least a town/city and a 2-letter ISO country code — enforced by
- * {@link ValidPostalAddress}. The address is only emitted in pain.001.001.09
+ * {@link ValidPostalAddress}. The address is emitted in pain.001.001.09 and
+ * pain.001.001.03
  * output; it is deliberately excluded from the pain.001.001.02 message, so
  * the fields referencing this class are marked {@code @XmlTransient} there.
  *

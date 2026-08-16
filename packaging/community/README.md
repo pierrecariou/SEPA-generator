@@ -199,10 +199,11 @@ Quick reference (see below for the full list of secrets):
 MAC_SIGN=true MAC_SIGNING_IDENTITY="Developer ID Application: Your Name (TEAMID)" \
   ./packaging/community/package-macos.sh
 
-# Sign AND notarize + staple (requires Apple credentials):
+# Sign AND notarize + staple (requires an App Store Connect API key):
 MAC_SIGN=true MAC_SIGNING_IDENTITY="Developer ID Application: Your Name (TEAMID)" \
-MAC_NOTARIZE=true APPLE_ID="you@example.com" APPLE_TEAM_ID="TEAMID" \
-APPLE_APP_PASSWORD="app-specific-password" \
+MAC_NOTARIZE=true APPLE_API_KEY_ID="XXXXXXXXXX" \
+APPLE_API_ISSUER_ID="00000000-0000-0000-0000-000000000000" \
+APPLE_API_KEY_P8_BASE64="$(base64 < AuthKey_XXXXXXXXXX.p8)" \
   ./packaging/community/package-macos.sh
 ```
 
@@ -387,36 +388,65 @@ artifact is added later, add it to `expected_artifacts` in
 [`release-lib.sh`](release/release-lib.sh) so completeness/checksum checks cover
 it.
 
+### Update manifest & full runbook
+
+Publishing a release also involves the **update manifest** that tells installed
+copies a newer version exists. The complete, ordered procedure — version bump,
+tests, tag, build, verify, manual publish, website links, and publishing the
+manifest last — is the [Community release runbook](../../docs/release/RELEASE.md).
+The manifest schema (edition-safe, `"edition": "community"`) is illustrated by
+[`community-latest.json.example`](../../docs/release/community-latest.json.example).
+
 ---
 
 ## Signing & notarization (optional, cross-platform)
 
-Signing is **infrastructure only**: the hooks below let a signed/notarized build
-happen when credentials are supplied, but their presence does **not** mean any
-current artifact is signed. Unsigned development builds always work with no
-secrets.
+Signing is a deliberate per-run decision: it is enabled by the RC `sign` input or
+the `COMMUNITY_RELEASE_SIGN` variable for tag releases. Unsigned development
+builds always work with no secrets, and an unsigned build is always reported as
+unsigned.
 
 Key properties:
 
 - **Disabled by default.** A normal build (and any ordinary pull request) needs
   no secrets and produces an unsigned installer.
-- **Explicit opt-in.** Signing activates only when you set the enable flag
-  (`WINDOWS_SIGN=true` / `-Sign` on Windows, `MAC_SIGN=true` on macOS).
-- **Fail-closed.** If you request signing but a required input is missing,
-  packaging **aborts** instead of emitting an unsigned artifact under a "signed"
-  label. A single stray partial credential can never silently switch signing on.
+- **Explicit opt-in.** Signing activates only when the release signing state is
+  enabled (RC `sign` input / `COMMUNITY_RELEASE_SIGN`), or, for the legacy local
+  hooks, an explicit flag (`-Sign` on Windows, `MAC_SIGN=true` on macOS).
+- **Fail-closed.** When signing is required, a failed signing, notarization or
+  verification step **aborts** the job before upload instead of emitting an
+  unsigned artifact under a "signed" label. A single stray partial credential can
+  never silently switch signing on.
 - **No secret leakage.** Passwords are never echoed; command previews redact
   them. Temporary certificates/keychains are always cleaned up.
 
-> Enabling these hooks is a **separate release gate**. Actually signing,
-> notarizing, and verifying artifacts is decided and performed outside these
-> packaging steps. This document does **not** claim any artifact is signed.
-
 ### Windows (Authenticode)
+
+Release builds are signed by **Microsoft Azure Artifact Signing**, which
+authenticates from GitHub Actions through **Azure OIDC** in the `release-signing`
+environment. No certificate material is stored in the repository.
+
+| Name                    | Kind   | Purpose                                        |
+| ----------------------- | ------ | ---------------------------------------------- |
+| `AZURE_CLIENT_ID`       | secret | Azure OIDC application (client) id.            |
+| `AZURE_TENANT_ID`       | secret | Azure tenant id.                               |
+| `AZURE_SUBSCRIPTION_ID` | secret | Azure subscription id.                         |
+
+The workflow signs exactly the final
+`SEPA-Generator-Community-<version>-windows-x64.msi` (the bundled runtime is not
+signed separately) with `SHA256` digests and an RFC3161 timestamp, then verifies
+it with `Get-AuthenticodeSignature`; anything other than `Valid` fails the job
+before the artifact is uploaded. When signing is disabled these steps are skipped
+and the MSI is genuinely unsigned.
+
+#### Legacy PFX / signtool fallback (not the normal path)
+
+`package-windows.ps1` still contains a local PFX/`signtool` signing hook, kept as
+an emergency/local fallback. Normal CI releases never require these inputs.
 
 | Variable                  | Secret? | Purpose                                                        |
 | ------------------------- | ------- | -------------------------------------------------------------- |
-| `WINDOWS_SIGN` / `-Sign`  | no      | Enable signing (`true`). Off by default.                       |
+| `-Sign` / `WINDOWS_SIGN`  | no      | Enable the legacy hook (`true`). Off by default. In CI fed only by the explicit `WINDOWS_LEGACY_PFX_SIGN` variable. |
 | `WINDOWS_CERT_PFX_BASE64` | **yes** | Base64 of the code-signing `.pfx` (PKCS#12).                   |
 | `WINDOWS_CERT_PASSWORD`   | **yes** | Password for the `.pfx`.                                       |
 | `WINDOWS_TIMESTAMP_URL`   | no      | RFC3161 timestamp URL. Default `http://timestamp.digicert.com`.|
@@ -434,26 +464,69 @@ $env:WINDOWS_CERT_PASSWORD   = "…"
 
 ### macOS (Developer ID + notarization)
 
-| Variable               | Secret? | Purpose                                                            |
-| ---------------------- | ------- | ------------------------------------------------------------------ |
-| `MAC_SIGN`             | no      | Enable Developer ID signing (`true`). Off by default.              |
-| `MAC_SIGNING_IDENTITY` | no*     | e.g. `Developer ID Application: Name (TEAMID)`. Required if signing.|
-| `MACOS_CERT_P12_BASE64`| **yes** | Optional: base64 `.p12` imported into a temporary keychain.        |
-| `MACOS_CERT_PASSWORD`  | **yes** | Password for the `.p12` (required if `MACOS_CERT_P12_BASE64` set). |
-| `MAC_NOTARIZE`         | no      | Enable notarization + stapling (`true`). Requires `MAC_SIGN=true`. |
-| `APPLE_ID`             | **yes** | Apple ID for `notarytool`. Required if notarizing.                 |
-| `APPLE_TEAM_ID`        | **yes** | Apple Developer Team ID. Required if notarizing.                   |
-| `APPLE_APP_PASSWORD`   | **yes** | App-specific password for `notarytool`. Required if notarizing.    |
+| Variable                  | Secret? | Purpose                                                            |
+| ------------------------- | ------- | ------------------------------------------------------------------ |
+| `MAC_SIGN`                | no      | Enable Developer ID signing (`true`). Off by default.              |
+| `MAC_SIGNING_IDENTITY`    | no*     | e.g. `Developer ID Application: Name (TEAMID)`. Required if signing. Must end with the Team ID in parentheses. |
+| `MACOS_CERT_P12_BASE64`   | **yes** | Optional: base64 `.p12` imported into a temporary keychain.        |
+| `MACOS_CERT_PASSWORD`     | **yes** | Password for the `.p12` (required if `MACOS_CERT_P12_BASE64` set). |
+| `MAC_NOTARIZE`            | no      | Enable notarization + stapling (`true`). Requires `MAC_SIGN=true`. |
+| `APPLE_API_KEY_P8_BASE64` | **yes** | Base64 of the App Store Connect API key `AuthKey_<KEYID>.p8`.      |
+| `APPLE_API_KEY_ID`        | **yes** | App Store Connect API Key ID. Required if notarizing.              |
+| `APPLE_API_ISSUER_ID`     | **yes** | App Store Connect Issuer ID (UUID). Required if notarizing.        |
 
 \*Not a secret, but signing fails closed if it is empty.
 
-`jpackage` signs the `.app` and its bundled Java runtime, applying the
-hardened-runtime entitlements in `packaging/macos/entitlements.plist`. When
-`MACOS_CERT_P12_BASE64` is supplied the certificate is imported into a
-**temporary keychain** that is removed on exit; otherwise the identity is taken
-from an existing keychain. Notarization requires signing — `notarytool submit
---wait`, `stapler staple`, `stapler validate` and a `spctl` Gatekeeper check all
-must pass or packaging aborts.
+Notarization authenticates with an **App Store Connect API key** (Users and
+Access → Integrations → App Store Connect API → *Team Keys*, role **Developer**).
+An API key is scoped to App Store Connect, is revocable on its own, needs no
+interactive 2FA and is the credential Apple recommends for automated builds.
+Apple-ID + app-specific-password authentication is **not** used.
+
+`jpackage` signs the `.app`, its native launcher and its bundled Java runtime,
+applying the hardened-runtime entitlements in `packaging/macos/entitlements.plist`
+(`allow-jit`, `allow-unsigned-executable-memory` and `disable-library-validation`,
+all required by a bundled JVM). That file must contain **no XML comments**:
+Apple's entitlements parser (`AMFIUnserializeXML`) rejects them with
+`syntax error`, which fails the build.
+
+`jpackage` does **not** look inside JAR files, but Apple's notary service does.
+Any unsigned Mach-O binary embedded in the application JAR — currently FlatLaf's
+`com/formdev/flatlaf/natives/libflatlaf-macos-{arm64,x86_64}.dylib` — is a
+critical notarization error. The build therefore signs those binaries in the
+staged JAR *before* jpackage runs (`sign_jar_native_binaries`), using the same
+Developer ID identity and hardened runtime. Non-Mach-O natives (the Linux `.so`
+and the Windows `.dll`s) are deliberately left untouched.
+
+When `MACOS_CERT_P12_BASE64` is supplied the certificate is imported into a
+**temporary keychain** that is removed on exit (including after a failure);
+otherwise the identity is taken from an existing keychain.
+
+The `.p12` must use a **SHA-1 MAC**. macOS `security import` cannot read the
+SHA-256 MAC that OpenSSL 3 produces by default and misreports it as
+`MAC verification failed during PKCS12 import (wrong password?)`. Export with
+`-macalg sha1 -certpbe PBE-SHA1-3DES -keypbe PBE-SHA1-3DES`.
+
+Every step fails closed, in this order:
+
+1. the requested identity must exist, be valid for code signing and be
+   unambiguous (`security find-identity`) — the identity actually used is
+   printed;
+2. `codesign --verify --deep --strict` must pass for the whole `.app` tree, and
+   explicitly for the native launcher and the bundled Java runtime
+   (`--deep` is used for **verification only**, never for signing);
+3. the signature must chain `Developer ID Application → Developer ID
+   Certification Authority → Apple Root CA`, carry the expected Team ID, and
+   have the hardened runtime flag set;
+4. the DMG container itself must be signed — it is signed once, explicitly,
+   only if `jpackage` did not already sign it;
+5. `notarytool submit --wait` must return `Accepted` (on any other status the
+   full Apple notarization log is retrieved and printed);
+6. `stapler staple`, `stapler validate` and the `spctl` Gatekeeper assessment
+   must all pass.
+
+Checksums are generated **after** signing and stapling, and an artifact that
+fails any of the above never reaches the upload or release step.
 
 ### Local vs GitHub Actions
 
@@ -464,10 +537,12 @@ are wired as encrypted **GitHub Actions secrets/variables** consumed by the
 
 | Name                                                | Kind     | Used by            |
 | --------------------------------------------------- | -------- | ------------------ |
-| `WINDOWS_CERT_PFX_BASE64`, `WINDOWS_CERT_PASSWORD`  | secret   | Windows job        |
-| `WINDOWS_TIMESTAMP_URL`                             | variable | Windows job (opt.) |
+| `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID` | secret | Windows job (Azure Artifact Signing) |
+| `WINDOWS_LEGACY_PFX_SIGN`                           | variable | Windows job (legacy fallback opt-in) |
+| `WINDOWS_CERT_PFX_BASE64`, `WINDOWS_CERT_PASSWORD`  | secret   | Windows job (legacy fallback only) |
+| `WINDOWS_TIMESTAMP_URL`                             | variable | Windows job (legacy, opt.) |
 | `MACOS_CERT_P12_BASE64`, `MACOS_CERT_PASSWORD`      | secret   | macOS jobs         |
-| `APPLE_ID`, `APPLE_TEAM_ID`, `APPLE_APP_PASSWORD`   | secret   | macOS jobs         |
+| `APPLE_API_KEY_P8_BASE64`, `APPLE_API_KEY_ID`, `APPLE_API_ISSUER_ID` | secret | macOS jobs |
 | `MAC_SIGNING_IDENTITY`                              | variable | macOS jobs         |
 | `COMMUNITY_RELEASE_SIGN`                            | variable | enables tag-release signing |
 

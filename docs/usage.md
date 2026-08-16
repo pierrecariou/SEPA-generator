@@ -39,13 +39,13 @@ Required columns:
 
 The column order does not matter.
 
-For `pain.001.001.09`, you may optionally add structured creditor postal address columns (`street`, `building_number`, `postcode`, `town`, `country`). When any address field is provided, `town` and a 2-letter ISO `country` code are required. Files without address columns remain fully supported.
+For `pain.001.001.09` and `pain.001.001.03`, you may optionally add structured creditor postal address columns (`street`, `building_number`, `postcode`, `town`, `country`). When any address field is provided, `town` and a 2-letter ISO `country` code are required. Files without address columns remain fully supported.
 
 ### 3. Generate the SEPA XML
 
 1. Click **Browse** and select your input file.
 2. Choose the **execution date** (must be a future date).
-3. Choose the **SEPA format** (`pain.001.001.02` or `pain.001.001.09`).
+3. Choose the **SEPA format** (`pain.001.001.02`, `pain.001.001.03` or `pain.001.001.09`).
 4. Click **Generate**.
 5. The output XML file will be saved in the same directory as your input file, or in the configured output directory.
 
@@ -53,25 +53,34 @@ A summary card shows the number of transactions, total amount, and execution dat
 
 ## Output Format
 
-SEPA Generator produces SEPA Credit Transfer Initiation XML in two ISO 20022 formats:
+SEPA Generator produces SEPA Credit Transfer Initiation XML in three ISO 20022 formats:
 
 - `pain.001.001.02` (classic)
+- `pain.001.001.03` (legacy bank compatibility, with optional structured postal addresses)
 - `pain.001.001.09` (modern ISO 20022, with optional structured postal addresses)
 
+`pain.001.001.09` is the modern recommended format. Choose `pain.001.001.03` when your bank or upload channel explicitly requests that legacy format.
+
 The files are designed to follow the ISO 20022 standard. Final bank acceptance can depend on your bank, upload channel, account configuration, the required `pain.001` version, and bank-specific rules.
+
+### Payments involving a bank outside the EEA
+
+SEPA also covers countries and territories outside the EEA, such as Switzerland, the United Kingdom, Monaco and San Marino. When the payer's bank or the beneficiary's bank is located in one of them, additional party information becomes mandatory: the payer's (originator's) address is required in the payment file, and BIC or agent information may also be requested depending on your bank and upload channel.
+
+What matters is where each bank is established, which cannot reliably be derived from the IBAN country alone. If any bank involved in a payment is outside the EEA, confirm the exact customer-to-bank requirements with your bank.
 
 ## Command Line
 
 SEPA Generator can also be run from the command line:
 
 ```bash
-java -jar generator.jar <input.csv|.xls|.xlsx> <output.xml> <YYYY-MM-DD> [--format=02|09]
+java -jar generator.jar <input.csv|.xls|.xlsx> <output.xml> <YYYY-MM-DD> [--format=02|03|09]
 ```
 
 - `<input>` — payment input file (`.csv`, `.xls`, or `.xlsx`)
 - `<output>` — destination file, must end with `.xml`
 - `<YYYY-MM-DD>` — execution date (must be a future date)
-- `--format=02|09` — optional SEPA format; defaults to `02`
+- `--format=02|03|09` — optional SEPA format; defaults to `02`
 
 Debtor and initiating party information is read from the local configuration file.
 
