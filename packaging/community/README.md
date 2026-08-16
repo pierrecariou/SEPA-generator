@@ -401,32 +401,52 @@ The manifest schema (edition-safe, `"edition": "community"`) is illustrated by
 
 ## Signing & notarization (optional, cross-platform)
 
-Signing is **infrastructure only**: the hooks below let a signed/notarized build
-happen when credentials are supplied, but their presence does **not** mean any
-current artifact is signed. Unsigned development builds always work with no
-secrets.
+Signing is a deliberate per-run decision: it is enabled by the RC `sign` input or
+the `COMMUNITY_RELEASE_SIGN` variable for tag releases. Unsigned development
+builds always work with no secrets, and an unsigned build is always reported as
+unsigned.
 
 Key properties:
 
 - **Disabled by default.** A normal build (and any ordinary pull request) needs
   no secrets and produces an unsigned installer.
-- **Explicit opt-in.** Signing activates only when you set the enable flag
-  (`WINDOWS_SIGN=true` / `-Sign` on Windows, `MAC_SIGN=true` on macOS).
-- **Fail-closed.** If you request signing but a required input is missing,
-  packaging **aborts** instead of emitting an unsigned artifact under a "signed"
-  label. A single stray partial credential can never silently switch signing on.
+- **Explicit opt-in.** Signing activates only when the release signing state is
+  enabled (RC `sign` input / `COMMUNITY_RELEASE_SIGN`), or, for the legacy local
+  hooks, an explicit flag (`-Sign` on Windows, `MAC_SIGN=true` on macOS).
+- **Fail-closed.** When signing is required, a failed signing, notarization or
+  verification step **aborts** the job before upload instead of emitting an
+  unsigned artifact under a "signed" label. A single stray partial credential can
+  never silently switch signing on.
 - **No secret leakage.** Passwords are never echoed; command previews redact
   them. Temporary certificates/keychains are always cleaned up.
 
-> Enabling these hooks is a **separate release gate**. Actually signing,
-> notarizing, and verifying artifacts is decided and performed outside these
-> packaging steps. This document does **not** claim any artifact is signed.
-
 ### Windows (Authenticode)
+
+Release builds are signed by **Microsoft Azure Artifact Signing**, which
+authenticates from GitHub Actions through **Azure OIDC** in the `release-signing`
+environment. No certificate material is stored in the repository.
+
+| Name                    | Kind   | Purpose                                        |
+| ----------------------- | ------ | ---------------------------------------------- |
+| `AZURE_CLIENT_ID`       | secret | Azure OIDC application (client) id.            |
+| `AZURE_TENANT_ID`       | secret | Azure tenant id.                               |
+| `AZURE_SUBSCRIPTION_ID` | secret | Azure subscription id.                         |
+
+The workflow signs exactly the final
+`SEPA-Generator-Community-<version>-windows-x64.msi` (the bundled runtime is not
+signed separately) with `SHA256` digests and an RFC3161 timestamp, then verifies
+it with `Get-AuthenticodeSignature`; anything other than `Valid` fails the job
+before the artifact is uploaded. When signing is disabled these steps are skipped
+and the MSI is genuinely unsigned.
+
+#### Legacy PFX / signtool fallback (not the normal path)
+
+`package-windows.ps1` still contains a local PFX/`signtool` signing hook, kept as
+an emergency/local fallback. Normal CI releases never require these inputs.
 
 | Variable                  | Secret? | Purpose                                                        |
 | ------------------------- | ------- | -------------------------------------------------------------- |
-| `WINDOWS_SIGN` / `-Sign`  | no      | Enable signing (`true`). Off by default.                       |
+| `-Sign` / `WINDOWS_SIGN`  | no      | Enable the legacy hook (`true`). Off by default. In CI fed only by the explicit `WINDOWS_LEGACY_PFX_SIGN` variable. |
 | `WINDOWS_CERT_PFX_BASE64` | **yes** | Base64 of the code-signing `.pfx` (PKCS#12).                   |
 | `WINDOWS_CERT_PASSWORD`   | **yes** | Password for the `.pfx`.                                       |
 | `WINDOWS_TIMESTAMP_URL`   | no      | RFC3161 timestamp URL. Default `http://timestamp.digicert.com`.|
@@ -517,8 +537,10 @@ are wired as encrypted **GitHub Actions secrets/variables** consumed by the
 
 | Name                                                | Kind     | Used by            |
 | --------------------------------------------------- | -------- | ------------------ |
-| `WINDOWS_CERT_PFX_BASE64`, `WINDOWS_CERT_PASSWORD`  | secret   | Windows job        |
-| `WINDOWS_TIMESTAMP_URL`                             | variable | Windows job (opt.) |
+| `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID` | secret | Windows job (Azure Artifact Signing) |
+| `WINDOWS_LEGACY_PFX_SIGN`                           | variable | Windows job (legacy fallback opt-in) |
+| `WINDOWS_CERT_PFX_BASE64`, `WINDOWS_CERT_PASSWORD`  | secret   | Windows job (legacy fallback only) |
+| `WINDOWS_TIMESTAMP_URL`                             | variable | Windows job (legacy, opt.) |
 | `MACOS_CERT_P12_BASE64`, `MACOS_CERT_PASSWORD`      | secret   | macOS jobs         |
 | `APPLE_API_KEY_P8_BASE64`, `APPLE_API_KEY_ID`, `APPLE_API_ISSUER_ID` | secret | macOS jobs |
 | `MAC_SIGNING_IDENTITY`                              | variable | macOS jobs         |

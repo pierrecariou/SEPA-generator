@@ -64,9 +64,15 @@ param(
     # (SEPA-Generator-Community-<ver>-windows-<arch>.<type>).
     [string]$ArchLabel = 'x64',
 
-    # Explicitly enable optional Authenticode signing of the produced installer.
-    # Signing is OFF by default. It can also be enabled by setting the
-    # environment variable WINDOWS_SIGN=true (useful in CI). When enabled, the
+    # Explicitly enable the LEGACY local PFX/signtool Authenticode signing of the
+    # produced installer. This is NOT the normal release path: CI signs Windows
+    # installers with Microsoft Azure Artifact Signing (GitHub OIDC) after this
+    # script has produced the MSI, so a normal release needs no certificate
+    # material here.
+    #
+    # This switch remains as a local/emergency fallback. It is OFF by default and
+    # can also be enabled by setting WINDOWS_SIGN=true (in CI that variable is fed
+    # only by the explicit WINDOWS_LEGACY_PFX_SIGN opt-in). When enabled, the
     # required secret inputs must be present or packaging fails (fail-closed):
     #   WINDOWS_CERT_PFX_BASE64  base64 of the .pfx code-signing certificate
     #   WINDOWS_CERT_PASSWORD    password for that .pfx
@@ -162,12 +168,16 @@ $JpDestDir   = Join-Path $StageRoot 'out'
 $FinalArtifact = "$ArtifactSlug-$AppVersion-windows-$ArchLabel.$Type"
 
 # -----------------------------------------------------------------------------
-# Signing configuration (optional; DISABLED unless explicitly requested)
+# Legacy PFX signing configuration (optional; DISABLED unless explicitly asked)
 # -----------------------------------------------------------------------------
-# Signing logic lives in the sibling windows-signing.ps1 so its decision logic
-# is unit-testable. Signing never activates just because a partial credential is
-# present: it requires an explicit request (-Sign or WINDOWS_SIGN=true) AND all
-# secret inputs, otherwise packaging fails closed.
+# Normal releases do NOT use this path: CI signs the finished MSI with Microsoft
+# Azure Artifact Signing (GitHub OIDC), which needs no certificate material here.
+# This legacy PFX/signtool hook is kept as a local/emergency fallback.
+#
+# Its logic lives in the sibling windows-signing.ps1 so the decision is
+# unit-testable. It never activates just because a partial credential is present:
+# it requires an explicit request (-Sign or WINDOWS_SIGN=true) AND all secret
+# inputs, otherwise packaging fails closed.
 . (Join-Path $PSScriptRoot 'windows-signing.ps1')
 $SignRequested = $Sign.IsPresent -or ($env:WINDOWS_SIGN -eq 'true')
 try {
@@ -184,10 +194,10 @@ if ($SigningPlan.Enabled) {
         Fail 'Signing is supported for msi/exe installers only, not -Type app-image.'
     }
     try { $SigntoolPath = Resolve-Signtool } catch { Fail $_.Exception.Message }
-    Write-Ok 'Signing hook: ENABLED (installer will be Authenticode-signed and its signature verified).'
+    Write-Ok 'Legacy PFX signing hook: ENABLED (installer will be Authenticode-signed with signtool and its signature verified).'
 } else {
     $SigntoolPath = $null
-    Write-Ok 'Signing hook: DISABLED (unsigned build; this is the default).'
+    Write-Ok 'Legacy PFX signing hook: DISABLED (this is the default; release signing is done by Azure Artifact Signing in CI).'
 }
 
 # -----------------------------------------------------------------------------

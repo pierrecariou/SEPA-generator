@@ -182,9 +182,15 @@ jobs:
         run: ./packaging/community/package-windows.ps1
 
       # ---- Azure Artifact Signing -------------------------------------------
-      # Runs after the final MSI exists and before the upload, so the artifact
-      # (and therefore the released installer) is always the signed one.
+      # Only for a signing-enabled build. Runs after the final MSI exists and
+      # before the upload, so the artifact (and therefore the released
+      # installer) is always the signed one.
+      #
+      # When signing is disabled these three steps are skipped and the job
+      # uploads a truthfully unsigned installer, which the draft release body
+      # reports as an unsigned build.
       - name: Azure login (OIDC)
+        if: needs.preflight.outputs.sign_enabled == 'true'
         uses: azure/login@v3
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
@@ -192,6 +198,7 @@ jobs:
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       - name: Sign the MSI with Azure Artifact Signing
+        if: needs.preflight.outputs.sign_enabled == 'true'
         uses: azure/artifact-signing-action@v2
         with:
           endpoint: https://neu.codesigning.azure.net/
@@ -205,6 +212,7 @@ jobs:
           timestamp-digest: SHA256
 
       - name: Verify the MSI Authenticode signature
+        if: needs.preflight.outputs.sign_enabled == 'true'
         shell: pwsh
         run: |
           $path = $env:MSI_PATH
