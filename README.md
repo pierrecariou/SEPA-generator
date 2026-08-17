@@ -69,19 +69,21 @@ generation and advanced validation and migration workflows are available in
 
 ### Main window
 
-![SEPA Generator main window with generation summary](docs/assets/screenshot-sepa-generator-summary-light.png)
+Select an input file, choose an execution date and SEPA format, generate, and get a summary of the generated file.
 
-### Dark theme
-
-![SEPA Generator dark theme](docs/assets/screenshot-sepa-generator-home-dark.png)
+![SEPA Generator Community main window showing a successful generation summary](docs/assets/screenshot-sepa-generator-main-window-light.png)
 
 ### Settings
 
-![SEPA Generator settings](docs/assets/screenshot-sepa-generator-settings-light.png)
+Debtor and initiating party details, including the optional postal address used by `pain.001.001.03` and `.09` (dark theme shown).
 
-### Validation and error handling
+![SEPA Generator settings window with debtor and initiating party fields](docs/assets/screenshot-sepa-generator-settings-dark.png)
 
-![SEPA Generator validation error](docs/assets/screenshot-sepa-generator-invalid-dark.png)
+### Validation feedback
+
+Input files are validated before generation, with row-level messages explaining what to fix.
+
+![SEPA Generator reporting three row-level input validation issues](docs/assets/screenshot-sepa-generator-validation-error-light.png)
 
 ---
 
