@@ -12,8 +12,8 @@ name: Package Community
 #      builds the four installers, generates + verifies SHA-256 checksums, and
 #      creates/updates a DRAFT GitHub Release for manual review. It never
 #      publishes automatically and never marks the release "latest".
-#      Signing/notarization is ALWAYS ON for this mode: a release tag can never
-#      produce an unsigned artifact.
+#      Windows/macOS signing/notarization is ALWAYS ON for this mode. Linux is
+#      a standalone unsigned DEB, covered by the release checksums.
 #
 # All packaging logic (jpackage, icons, WiX checks, signing hooks) lives in the
 # scripts under packaging/community/. This workflow only orchestrates them so
@@ -363,10 +363,16 @@ jobs:
           cache: maven
 
       - name: Install Debian packaging tools (required by jpackage for .deb)
-        run: sudo apt-get update && sudo apt-get install -y fakeroot
+        run: sudo apt-get update && sudo apt-get install -y fakeroot desktop-file-utils appstream
+
+      - name: Test Linux desktop metadata
+        run: python3 packaging/community/tests/test-linux-packaging.py
 
       - name: Build Linux DEB (x64)
         run: ./packaging/community/package-linux.sh
+
+      - name: Inspect final Linux DEB metadata and artwork
+        run: python3 packaging/community/tests/test-linux-packaging.py --deb dist/SEPA-Generator-Community-${{ needs.preflight.outputs.version }}-linux-x64.deb
 
       - name: Upload DEB artifact
         uses: actions/upload-artifact@v4
@@ -463,6 +469,10 @@ jobs:
           > verification checklist has passed.
 
           ${SIGN_LINE}
+
+          Linux: the standalone DEB is unsigned and is not distributed through a
+          trusted APT repository. A graphical installer may warn about its origin.
+          SHA-256 checksums verify file integrity; they do not establish APT trust.
 
           ## Downloads
           - Windows (x64): \`SEPA-Generator-Community-${VERSION}-windows-x64.msi\`

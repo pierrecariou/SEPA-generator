@@ -237,11 +237,15 @@ Linux packaging uses a PNG icon, resolved in this order:
 
 1. **Prefer** `packaging/linux/sepa-generator.png`.
 2. **Otherwise** fall back to the shared 1024×1024 source PNG
-   `packaging/macos/sepa-generator-1024.png` (jpackage scales it for the desktop
-   entry).
+   `packaging/macos/sepa-generator-1024.png` (copied into the application image
+   by jpackage).
 
 For **release** packaging (the default, `RELEASE=true`) the build **fails** if no
 PNG is found. Set `RELEASE=false` for a local build with jpackage's default icon.
+
+The final package also installs the existing 16, 32, 48, 64 and 256 pixel
+application PNGs in `/usr/share/icons/hicolor/<size>x<size>/apps/` under the
+icon name `sepa-generator-community`. No icon is generated or downloaded.
 
 ### How to run
 
@@ -264,9 +268,51 @@ The package is written to
 | Setting           | Value                                |
 | ----------------- | ------------------------------------ |
 | Package name      | `sepa-generator-community`           |
-| Menu categories   | `Office;Finance`                     |
+| Menu categories   | `Office;Finance;`                    |
 | Debian section    | `utils`                              |
-| Maintainer        | `contact@sepa-xml-generator.com`     |
+| Maintainer        | `Niryosys <contact@sepa-xml-generator.com>` |
+
+`linux-desktop.sh` completes jpackage's desktop metadata in an extracted package
+tree, which `dpkg-deb` rebuilds with root ownership before release checksums are
+computed. Runtime contents, launcher paths, dependencies and jpackage's
+maintainer scripts are retained. The installed launcher is still
+`/opt/sepa-generator-community/bin/SEPA Generator Community`.
+
+The released desktop ID is preserved:
+`sepa-generator-community-SEPA_Generator_Community.desktop`. The package ships
+it under `/usr/share/applications/` for discovery before installation, and keeps
+the identical `/opt/.../lib/` copy used by jpackage's xdg install/uninstall hooks.
+Both copies use the same ID, so there is one application-menu entry.
+`StartupWMClass=com-pcariou-generator-Generator` matches OpenJDK's existing X11
+window class. This associates running Swing windows with the public launcher
+name and icon; it does not rename the Java main class. JDK 23 uses X11/XWayland;
+native Wayland behavior in future JDKs needs separate verification.
+
+AppStream metadata is installed as
+`/usr/share/metainfo/com.pcariou.sepa.community.metainfo.xml`, using the existing
+edition identifier internally, with the public name **SEPA Generator Community**,
+publisher **Niryosys**, homepage, description, desktop linkage and stock icon.
+Software centres can use these standard files for artwork and application
+details. A standalone `.deb` has no installer wizard/banner. Whether a particular
+GUI reads metadata inside a local package before installing it, and whether it
+uses repository AppStream catalogs instead, depends on that GUI. This does not
+guarantee a branded thumbnail in every package installer or file manager.
+
+### Automated package inspection
+
+```bash
+# Test staging with a fixture matching the released jpackage layout:
+python3 packaging/community/tests/test-linux-packaging.py
+
+# Inspect the actual final artifact (extracts to a temporary directory):
+python3 packaging/community/tests/test-linux-packaging.py \
+  --deb dist/SEPA-Generator-Community-1.4.0-linux-x64.deb
+```
+
+The Linux workflow runs both and installs `desktop-file-utils` and `appstream`
+for native metadata validation. Locally, those validators are used when present.
+The checks cover the desktop name, quoted executable path, window-class mapping,
+desktop ID, PNG bytes/dimensions, AppStream links and Debian metadata.
 
 ### Test install / uninstall
 
@@ -282,14 +328,34 @@ sudo apt-get remove -y sepa-generator-community
 sudo dpkg -r sepa-generator-community
 ```
 
-### Package signing (not applicable)
+### Download trust and signing
 
-DEB **signing is intentionally not implemented**. Repository signing
-(`dpkg-sig` / GPG-signed APT `Release` files) is only meaningful when
-distributing through an APT repository. The Community release model is direct
-download of a standalone `.deb`, whose integrity is covered by the published
-**SHA-256 checksums** (added in the release-workflow stage). No Linux signing
-system existed previously, so there is nothing to preserve.
+The Linux `.deb` is **unsigned**, including release-tag builds. The release
+signing gate signs the Windows MSI and signs/notarizes the macOS DMGs; it does
+not sign Linux packages. Community distributes the `.deb` directly over HTTPS,
+outside a trusted APT repository. A graphical installer may therefore describe
+it as untrusted or from an unknown source. Correct icons, publisher strings and
+AppStream metadata do not establish cryptographic trust.
+
+[APT authenticates repository metadata](https://manpages.debian.org/testing/apt/apt-secure.8.en.html),
+through signed `InRelease` / `Release` files and package hashes, and does **not**
+normally verify signatures embedded in individual `.deb` files. Tools such as
+`debsig-verify` can check package signatures with separately installed trust
+policies; adding such a signature alone would **not** eliminate the common
+Ubuntu/Debian GUI warning for a standalone download. No standalone signing or
+repository infrastructure is added here, and security checks are not bypassed.
+
+The published `SHA256SUMS.txt` detects changed download bytes when obtained
+from the official release, but is not independently signed and does not by
+itself prove publisher identity. Future options are a maintained signed APT
+repository with a scoped `Signed-By` keyring, distribution inclusion, or a
+separately authenticated checksum/provenance channel. The latter improves manual
+verification but still does not grant APT repository trust.
+
+An exact warning still needs its distribution, GUI and wording recorded:
+browser-origin warnings and a file manager's “untrusted launcher” prompt for a
+loose `.desktop` file are separate mechanisms. Metadata changes cannot promise
+to remove them. See [the Linux packaging audit](LINUX-AUDIT.md).
 
 ---
 
@@ -356,12 +422,12 @@ sha256sum -c SHA256SUMS.txt          # from the folder containing the installers
 
 ### Signing in the release
 
-Signing is a **separate, deliberate release gate** for RC builds, and
-**mandatory** for real releases:
+Windows/macOS signing is a **separate, deliberate release gate** for RC builds,
+and **mandatory** for real releases. Linux remains a standalone unsigned DEB:
 
 - **RC (`workflow_dispatch`):** the `sign` input (default off), so unsigned
   packaging smoke tests remain possible.
-- **Final release (`vX.Y.Z` tag):** always signed. The workflow resolves
+- **Final release (`vX.Y.Z` tag):** Windows/macOS always signed. The workflow resolves
   `sign_enabled=true` unconditionally in tag mode, **fails closed** if the
   required signing secrets are missing, verifies every signature during
   packaging, and the `release` job refuses to create or update the release at
@@ -435,20 +501,20 @@ Notes:
   overridden; the background is sized to the window layout that script produces.
 - Branding is applied before jpackage runs, therefore before signing and
   notarization. Nothing modifies a package after it is signed.
-- Linux gets no artwork (a `.deb` has no installer wizard); its branding is the
-  package metadata users actually see. jpackage renders `Maintainer:` as
-  `<vendor> <<maintainer email>>`, so the control file now reads `Maintainer:
-  Niryosys <contact@sepa-xml-generator.com>` and gains a `Homepage:` field,
-  alongside the existing `.desktop` entry, icon and menu category.
+- Linux has no installer wizard. Its package includes the desktop entry,
+  icon-theme PNGs and AppStream metadata described above, alongside
+  `Maintainer: Niryosys <contact@sepa-xml-generator.com>` and `Homepage:`.
+  Graphical package managers choose which of these they display.
 
 ---
 
 ## Signing & notarization
 
-Signing is mandatory for release tags and a deliberate per-run choice for
-release candidates: it is enabled by the RC `sign` input, and forced on for any
-`vX.Y.Z` tag build. Unsigned development builds always work with no secrets, and
-an unsigned build is always reported as unsigned.
+Windows/macOS signing is mandatory for release tags and a deliberate per-run
+choice for release candidates: it is enabled by the RC `sign` input, and forced
+on for any `vX.Y.Z` tag build. Linux stays unsigned as explained above. Unsigned
+development builds always work with no secrets, and an unsigned build is always
+reported as unsigned.
 
 Key properties:
 

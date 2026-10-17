@@ -82,12 +82,11 @@ APP_VERSION="$(derive_app_version)"
 # -----------------------------------------------------------------------------
 # Package signing: intentionally NOT implemented for Linux.
 #
-# DEB repository (dpkg-sig / Release-file GPG) signing is only meaningful when
-# distributing through an APT repository. The Community release model is direct
-# download of a standalone .deb, whose integrity is covered by the published
-# SHA-256 checksums (release workflow stage). Adding a GPG signing system here
-# would be unused infrastructure, so it is deferred. No Linux signing existed
-# previously, so there is nothing to preserve.
+# APT authenticates signed repository metadata, not embedded .deb signatures.
+# Signing this standalone download would not establish the repository trust
+# expected by typical GUI installers. Published SHA-256 checksums detect changed
+# bytes, but do not independently authenticate the publisher. See README.md for
+# the warning's limitations and future authenticated distribution options.
 # -----------------------------------------------------------------------------
 
 # Runnable fat JAR produced by the Maven build (generator module, shaded).
@@ -97,7 +96,8 @@ MAIN_JAR_PATH="${REPO_ROOT}/generator/target/${MAIN_JAR_NAME}"
 # Linux icon (PNG). Resolution order (handled after the Maven build):
 #   1. Prefer packaging/linux/sepa-generator.png.
 #   2. Otherwise fall back to the shared 1024x1024 source PNG under packaging/macos.
-# jpackage scales the PNG for the generated desktop entry.
+# jpackage copies the PNG into the application image. Standard icon-theme sizes
+# are installed separately from the existing classpath artwork below.
 ICON_PNG="${REPO_ROOT}/packaging/linux/sepa-generator.png"
 ICON_SOURCE_PNG="${REPO_ROOT}/packaging/macos/sepa-generator-1024.png"
 
@@ -253,14 +253,24 @@ fi
 "${JPACKAGE}" "${JP_ARGS[@]}" || fail "jpackage failed. See the output above for the exact cause."
 
 # -----------------------------------------------------------------------------
-# 7. Move the produced .deb into dist/ with the canonical name
+# 7. Add standard desktop discovery metadata, then collect the final .deb.
+# jpackage has no option for installing AppStream files under /usr/share.
+# Retain its runtime, launcher, dependency metadata and maintainer scripts;
+# only augment the unpacked package with desktop metadata and existing artwork.
 # -----------------------------------------------------------------------------
 step "Collecting .deb"
 PRODUCED="$(find "${JP_DEST_DIR}" -maxdepth 1 -name '*.deb' | head -n 1)"
 [ -n "${PRODUCED}" ] || fail "Could not find the generated .deb in ${JP_DEST_DIR}."
 FINAL_PATH="${OUTPUT_DIR}/${FINAL_ARTIFACT}"
-rm -f "${FINAL_PATH}"
-mv "${PRODUCED}" "${FINAL_PATH}"
+PACKAGE_ROOT="${STAGE_ROOT}/deb-root"
+dpkg-deb --raw-extract "${PRODUCED}" "${PACKAGE_ROOT}"
+bash "${SCRIPT_DIR}/linux-desktop.sh" "${REPO_ROOT}" "${PACKAGE_ROOT}"
+# Include the added artwork in the package manager's installed-size estimate.
+INSTALLED_SIZE="$(du -sk --exclude=DEBIAN "${PACKAGE_ROOT}" | cut -f1)"
+sed -i "s/^Installed-Size:.*/Installed-Size: ${INSTALLED_SIZE}/" "${PACKAGE_ROOT}/DEBIAN/control"
+# Root ownership must not depend on the CI/local user's uid.
+dpkg-deb --build --root-owner-group "${PACKAGE_ROOT}" "${PRODUCED}"
+mv -f "${PRODUCED}" "${FINAL_PATH}"
 ok ".deb: ${FINAL_PATH}"
 
 printf '\n'
