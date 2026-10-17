@@ -55,7 +55,7 @@ cat > "${METAINFO}" <<EOF
     <p>$(xml_escape "${APP_NAME}"), published by $(xml_escape "$(prop VENDOR)"), generates SEPA credit transfer XML files from CSV, XLS and XLSX payment files.</p>
     <p>Payment processing runs locally on your computer. Configure the debtor, select an input file, execution date and pain.001 format, then generate the XML.</p>
   </description>
-  <developer id="niryosys">
+  <developer id="com.niryosys">
     <name>$(xml_escape "$(prop VENDOR)")</name>
   </developer>
   <url type="homepage">$(xml_escape "$(prop HOMEPAGE)")</url>

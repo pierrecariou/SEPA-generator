@@ -121,6 +121,7 @@ class LinuxMetadataTest(unittest.TestCase):
 
     def test_appstream_public_identity_and_licenses(self):
         self.assertEqual(self.metainfo.findtext("name"), "SEPA Generator Community")
+        self.assertEqual(self.metainfo.find("developer").attrib["id"], "com.niryosys")
         self.assertEqual(self.metainfo.findtext("developer/name"), "Niryosys")
         self.assertEqual(self.metainfo.findtext("url[@type='homepage']"), PROPS["HOMEPAGE"])
         self.assertEqual(self.metainfo.findtext("metadata_license"), "CC0-1.0")
