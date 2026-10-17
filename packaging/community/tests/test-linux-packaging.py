@@ -145,7 +145,7 @@ class LinuxMetadataTest(unittest.TestCase):
             self.skipTest("native desktop/AppStream validators unavailable")
         commands = [
             ("desktop-file-validate", [str(self.desktop_path)]),
-            ("appstreamcli", ["--no-net", "validate", str(self.metainfo_path)]),
+            ("appstreamcli", ["validate", "--no-net", str(self.metainfo_path)]),
         ]
         for name, args in commands:
             with self.subTest(validator=name):
