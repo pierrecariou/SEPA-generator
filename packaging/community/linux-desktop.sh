@@ -27,10 +27,25 @@ WRAPPER_EOF
   
   chmod 755 "${wrapper_bin}"
   
-  if [ -x "${wrapper_bin}" ]; then
-    echo "    ✓ Wrapper installed and executable ($(wc -c < "${wrapper_bin}") bytes)" >&2
-  else
+  # Verification
+  if [ ! -f "${wrapper_bin}" ]; then
+    echo "    ✗ ERROR: Wrapper file not created!" >&2
+    return 1
+  fi
+  
+  if [ ! -x "${wrapper_bin}" ]; then
     echo "    ✗ ERROR: Wrapper not executable!" >&2
+    return 1
+  fi
+  
+  echo "    ✓ Wrapper installed and executable ($(stat -c%s "${wrapper_bin}" 2>/dev/null || echo "?") bytes)" >&2
+  
+  # Verify it will be in the DEB
+  echo "    Verifying wrapper will be included in final DEB..." >&2
+  if grep -q "usr/bin/xdg-desktop-menu-wrapper" "${PACKAGE_ROOT}/DEBIAN/md5sums" 2>/dev/null || true; then
+    echo "    ✓ Wrapper is in md5sums (will be included in DEB)" >&2
+  elif [ -f "${PACKAGE_ROOT}/DEBIAN/md5sums" ]; then
+    echo "    Note: md5sums file exists but wrapper not yet listed (may be added during rebuild)" >&2
   fi
 }
 
@@ -38,56 +53,63 @@ WRAPPER_EOF
 # The postinst calls xdg-desktop-menu directly; we replace it with our wrapper.
 patch_postinst_for_desktop_menu() {
   local postinst="${PACKAGE_ROOT}/DEBIAN/postinst"
-  local postinst_backup="${PACKAGE_ROOT}/DEBIAN/postinst.jpackage"
   
   echo "==> Patching postinst for xdg-desktop-menu..." >&2
   
   if [ ! -f "${postinst}" ]; then
-    echo "WARNING: postinst script not found at ${postinst}; skipping patch" >&2
+    echo "    ERROR: postinst script not found at ${postinst}" >&2
     ls -la "${PACKAGE_ROOT}/DEBIAN/" >&2 || true
-    return 0
+    return 1
   fi
 
-  echo "    postinst found, size: $(wc -c < "${postinst}") bytes" >&2
-  
-  # DEBUG: Dump first 50 lines of postinst to understand its structure
-  echo "    First 50 lines of postinst for debugging:" >&2
-  head -50 "${postinst}" >&2
+  local filesize
+  filesize=$(wc -c < "${postinst}")
+  echo "    postinst size: ${filesize} bytes" >&2
   
   # Check if already patched
   if grep -q "xdg-desktop-menu-wrapper" "${postinst}"; then
-    echo "    Already patched (found xdg-desktop-menu-wrapper)" >&2
+    echo "    ✓ Already patched (wrapper reference found)" >&2
     return 0
   fi
 
-  # Check if xdg-desktop-menu is in the postinst at all
-  if ! grep -q "xdg-desktop-menu" "${postinst}"; then
-    echo "    WARNING: xdg-desktop-menu not found in postinst" >&2
-    echo "    Attempting to make installation non-fatal anyway..." >&2
-    # If we can't find the pattern, wrap entire script to catch any failures
-    cp "${postinst}" "${postinst_backup}"
-    chmod 755 "${postinst}"
-    return 0
-  fi
-
-  echo "    Found xdg-desktop-menu calls, applying replacements..." >&2
-
-  # Backup original
-  cp "${postinst}" "${postinst_backup}"
-
-  # Try different sed patterns to catch xdg-desktop-menu in various contexts
-  sed -i 's|/usr/bin/xdg-desktop-menu|/usr/bin/xdg-desktop-menu-wrapper|g' "${postinst}"
-  sed -i 's|^\([[:space:]]*\)xdg-desktop-menu|\1/usr/bin/xdg-desktop-menu-wrapper|g' "${postinst}"
-  sed -i 's|\bxdg-desktop-menu\b|/usr/bin/xdg-desktop-menu-wrapper|g' "${postinst}"
-  sed -i 's|xdg-desktop-menu install|xdg-desktop-menu-wrapper install|g' "${postinst}"
-  sed -i 's|xdg-desktop-menu uninstall|xdg-desktop-menu-wrapper uninstall|g' "${postinst}"
+  # Critical debugging: show the actual content that contains xdg
+  echo "    === Lines containing 'xdg' in postinst: ===" >&2
+  grep -n "xdg" "${postinst}" >&2 || echo "    (no 'xdg' found in postinst)" >&2
+  echo "    ===" >&2
   
-  # Verify the patch worked
+  # If xdg-desktop-menu is not in the postinst, something is very wrong
+  if ! grep -q "xdg-desktop-menu" "${postinst}"; then
+    echo "    WARNING: xdg-desktop-menu not found in postinst at all" >&2
+    echo "    The package may not need patching, OR the postinst structure is unexpected" >&2
+    echo "    First 30 lines of postinst:" >&2
+    head -30 "${postinst}" >&2
+    return 0
+  fi
+
+  echo "    xdg-desktop-menu found, attempting replacement..." >&2
+  
+  # Save backup
+  cp "${postinst}" "${postinst}.bak"
+  
+  # Apply all plausible sed patterns
+  local count_before
+  count_before=$(grep -c "xdg-desktop-menu" "${postinst}")
+  
+  sed -i 's|/usr/bin/xdg-desktop-menu|/usr/bin/xdg-desktop-menu-wrapper|g' "${postinst}" 2>&1 | sed 's/^/      [sed1] /' >&2 || true
+  sed -i 's|^\([[:space:]]*\)xdg-desktop-menu|\1/usr/bin/xdg-desktop-menu-wrapper|g' "${postinst}" 2>&1 | sed 's/^/      [sed2] /' >&2 || true
+  sed -i 's|\bxdg-desktop-menu\b|/usr/bin/xdg-desktop-menu-wrapper|g' "${postinst}" 2>&1 | sed 's/^/      [sed3] /' >&2 || true
+  
+  local count_after
+  count_after=$(grep -c "xdg-desktop-menu" "${postinst}")
+  
+  echo "    References before: ${count_before}, after: ${count_after}" >&2
+  
   if grep -q "xdg-desktop-menu-wrapper" "${postinst}"; then
-    echo "    ✓ Patch applied successfully" >&2
+    echo "    ✓ Replacement succeeded" >&2
   else
-    echo "    ✗ WARNING: Patch did not apply - xdg-desktop-menu-wrapper not found" >&2
-    grep -n "xdg" "${postinst}" | tail -5 >&2 || echo "    (no xdg references found)" >&2
+    echo "    ✗ Replacement may not have worked" >&2
+    echo "    xdg references after patching:" >&2
+    grep -n "xdg" "${postinst}" >&2 || echo "    (none found)" >&2
   fi
 }
 
