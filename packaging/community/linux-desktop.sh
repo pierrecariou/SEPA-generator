@@ -20,17 +20,43 @@ patch_postinst_for_desktop_menu() {
   fi
 
   # Check if the postinst already has our error handling
-  if grep -q "xdg-desktop-menu.*||.*true" "${postinst}"; then
+  if grep -q "set.*-e.*posix\|xdg-desktop-menu.*||" "${postinst}"; then
     return 0  # Already patched
   fi
 
-  # Make xdg-desktop-menu errors non-fatal. jpackage generates something like:
-  #   xdg-desktop-menu install --mode system --dir "$xdgdir" "$file"
-  # We need to wrap this to:
-  #   xdg-desktop-menu install --mode system --dir "$xdgdir" "$file" || true
-  # Use a pattern that matches from xdg-desktop-menu to end-of-line, excluding
-  # any existing && or || chains, then append || true
-  sed -i 's/^\([[:space:]]*\)xdg-desktop-menu \(.*\)$/\1xdg-desktop-menu \2 || true/' "${postinst}"
+  # Strategy: Use sed to find lines with xdg-desktop-menu and make them non-fatal.
+  # The xdg-desktop-menu call is typically:
+  #   xdg-desktop-menu install --mode system --dir "$dir" "$file"
+  # We need to make it:
+  #   xdg-desktop-menu install --mode system --dir "$dir" "$file" || true
+  #
+  # But jpackage's postinst might have complex quoting or be embedded in functions.
+  # Use a simple approach: look for the exact line with xdg-desktop-menu and append || true
+
+  # First, make a backup
+  cp "${postinst}" "${postinst}.bak"
+
+  # Use awk to process the script:
+  # - If a line contains xdg-desktop-menu and doesn't already have || true
+  # - Append " || true" before any trailing comment or newline
+  awk '
+    /xdg-desktop-menu/ && ! /\|\| *true/ {
+      # Found a line with xdg-desktop-menu that doesn't already have error handling
+      if ($0 ~ /[^#]*#/) {
+        # Has a comment; insert before the comment
+        match($0, /^([^#]*)(.*)$/, m)
+        $0 = m[1] " || true " m[2]
+      } else {
+        # No comment; just append
+        $0 = $0 " || true"
+      }
+    }
+    { print }
+  ' "${postinst}.bak" > "${postinst}.tmp"
+
+  # Replace original with patched version
+  mv "${postinst}.tmp" "${postinst}"
+  chmod 755 "${postinst}"
 }
 
 APP_NAME="$(prop APP_NAME)"
