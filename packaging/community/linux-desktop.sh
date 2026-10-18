@@ -24,10 +24,13 @@ patch_postinst_for_desktop_menu() {
     return 0  # Already patched
   fi
 
-  # Make xdg-desktop-menu errors non-fatal by appending "|| true"
-  # This allows the package installation to continue even if desktop menu
-  # registration fails (e.g., in CI/container environments).
-  sed -i 's/^\(\s*xdg-desktop-menu [^&]*\)$/\1 || true/' "${postinst}"
+  # Make xdg-desktop-menu errors non-fatal. jpackage generates something like:
+  #   xdg-desktop-menu install --mode system --dir "$xdgdir" "$file"
+  # We need to wrap this to:
+  #   xdg-desktop-menu install --mode system --dir "$xdgdir" "$file" || true
+  # Use a pattern that matches from xdg-desktop-menu to end-of-line, excluding
+  # any existing && or || chains, then append || true
+  sed -i 's/^\([[:space:]]*\)xdg-desktop-menu \(.*\)$/\1xdg-desktop-menu \2 || true/' "${postinst}"
 }
 
 APP_NAME="$(prop APP_NAME)"
