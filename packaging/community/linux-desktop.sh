@@ -8,6 +8,28 @@ PACKAGE_ROOT="$2"
 prop() { sed -n "s/^${1}=//p" "${REPO_ROOT}/packaging/edition.properties"; }
 xml_escape() { printf '%s' "$1" | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g'; }
 
+# Patch the jpackage-generated postinst script to make xdg-desktop-menu errors
+# non-fatal. Desktop menu registration can fail in sandboxed/restricted environments
+# (CI, containers, minimal installations) but should not break the entire package
+# installation. The application remains fully functional without desktop menu.
+patch_postinst_for_desktop_menu() {
+  local postinst="${PACKAGE_ROOT}/DEBIAN/postinst"
+  if [ ! -f "${postinst}" ]; then
+    echo "WARNING: postinst script not found; skipping desktop menu error handling patch" >&2
+    return 0
+  fi
+
+  # Check if the postinst already has our error handling
+  if grep -q "xdg-desktop-menu.*||.*true" "${postinst}"; then
+    return 0  # Already patched
+  fi
+
+  # Make xdg-desktop-menu errors non-fatal by appending "|| true"
+  # This allows the package installation to continue even if desktop menu
+  # registration fails (e.g., in CI/container environments).
+  sed -i 's/^\(\s*xdg-desktop-menu [^&]*\)$/\1 || true/' "${postinst}"
+}
+
 APP_NAME="$(prop APP_NAME)"
 PACKAGE_NAME="$(prop LINUX_PACKAGE_NAME)"
 MAIN_CLASS="$(prop MAIN_CLASS)"
@@ -22,6 +44,9 @@ if [ ! -f "${DESKTOP_SOURCE}" ]; then
   echo "ERROR: jpackage desktop layout changed: missing ${DESKTOP_SOURCE}" >&2
   exit 1
 fi
+
+# Patch postinst script to handle desktop menu registration errors gracefully
+patch_postinst_for_desktop_menu
 
 # The bundled JVM needs libasound.so.2. On amd64, both pre-t64 libasound2
 # (Debian 12 / Ubuntu 22.04) and libasound2t64 supply that SONAME. jpackage
