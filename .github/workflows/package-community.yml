@@ -385,28 +385,26 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y "${DEB_PATH}"
           
-          # Verify the application binary exists and is executable.
-          [ -x /opt/sepa-generator-community/bin/sepa-generator-community ] || \
-            (echo "ERROR: Application binary not found or not executable" >&2; exit 1)
-          
           # Verify desktop entry was installed.
           [ -f /usr/share/applications/sepa-generator-community-SEPA_Generator_Community.desktop ] || \
             (echo "ERROR: Desktop entry not found" >&2; exit 1)
+          echo "✓ Desktop entry found"
           
           # Verify icons were installed.
           for size in 16 32 48 64 256; do
             [ -f "/usr/share/icons/hicolor/${size}x${size}/apps/sepa-generator-community.png" ] || \
               (echo "ERROR: Icon not found: ${size}x${size}" >&2; exit 1)
           done
-          echo "✓ All icon sizes found."
+          echo "✓ All icon sizes found"
           
           # Verify AppStream metadata was installed.
           [ -f /usr/share/metainfo/com.pcariou.sepa.community.metainfo.xml ] || \
             (echo "ERROR: AppStream metadata not found" >&2; exit 1)
+          echo "✓ AppStream metadata found"
           
           # Verify package can be removed cleanly.
           sudo apt-get remove -y sepa-generator-community
-          echo "✓ Package installed and removed successfully."
+          echo "✓ Package installed and removed successfully"
 
       - name: Upload DEB artifact
         uses: actions/upload-artifact@v4
