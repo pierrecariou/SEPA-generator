@@ -69,12 +69,16 @@ patch_postinst_for_desktop_menu() {
   sed -i 's|/usr/bin/xdg-desktop-menu|/usr/bin/xdg-desktop-menu-wrapper|g' "${postinst}"
   sed -i 's|^\([[:space:]]*\)xdg-desktop-menu|\1/usr/bin/xdg-desktop-menu-wrapper|g' "${postinst}"
   
+  # Also try a broader word-boundary pattern in case xdg-desktop-menu is called differently
+  sed -i 's|\bxdg-desktop-menu\b|/usr/bin/xdg-desktop-menu-wrapper|g' "${postinst}"
+  
   # Verify the patch worked
   if grep -q "xdg-desktop-menu-wrapper" "${postinst}"; then
     echo "    ✓ Patch applied successfully (wrapper found in postinst)" >&2
   else
     echo "    ✗ WARNING: Patch may not have worked (wrapper not found)" >&2
-    grep -n "xdg" "${postinst}" >&2 || true
+    echo "    Showing xdg-related lines in postinst:" >&2
+    grep -n "xdg\|desktop" "${postinst}" >&2 || echo "    (no matches found)" >&2
   fi
 }
 
