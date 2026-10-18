@@ -46,6 +46,10 @@ def fixture(root):
         "Icon=/opt/" + PACKAGE + "/lib/SEPA_Generator_Community.png\n" +
         "Terminal=false\nType=Application\nCategories=Office;Finance\nMimeType=\n",
         encoding="utf-8")
+    (root / "DEBIAN").mkdir()
+    (root / "DEBIAN/control").write_text(
+        "Package: " + PACKAGE + "\nDepends: libc6, libasound2t64, xdg-utils\n",
+        encoding="utf-8")
 
 
 class LinuxMetadataTest(unittest.TestCase):
@@ -128,6 +132,14 @@ class LinuxMetadataTest(unittest.TestCase):
         self.assertEqual(self.metainfo.findtext("project_license"), "Apache-2.0")
         self.assertIn("published by Niryosys", self.metainfo.findtext("description/p"))
 
+    def test_alsa_dependency_accepts_pre_t64_provider(self):
+        control = (self.root / "DEBIAN/control").read_text()
+        depends = next(line for line in control.splitlines() if line.startswith("Depends:"))
+        if "libasound2t64" in depends:
+            self.assertIn("libasound2t64 | libasound2", depends)
+        else:
+            self.assertIn("libasound2", depends)
+
     @unittest.skipUnless(DEB, "requires --deb artifact")
     def test_actual_debian_control_and_maintainer_hooks(self):
         control = subprocess.check_output(["dpkg-deb", "--field", str(DEB)], text=True)
@@ -171,6 +183,22 @@ class StagingTest(unittest.TestCase):
             stage(root)
             desktop = root / "usr/share/applications" / DESKTOP_ID
             self.assertEqual(desktop.read_text().count("StartupWMClass="), 1)
+            self.assertEqual((root / "DEBIAN/control").read_text().count("libasound2t64 | libasound2"), 1)
+
+    def test_alsa_rewrite_preserves_other_dependencies_and_constraints(self):
+        for before, after in (
+                ("Depends: libasound2t64, libc6", "Depends: libasound2t64 | libasound2, libc6"),
+                ("Depends: libc6, libasound2t64, xdg-utils", "Depends: libc6, libasound2t64 | libasound2, xdg-utils"),
+                ("Depends: libc6, libasound2t64", "Depends: libc6, libasound2t64 | libasound2"),
+                ("Depends: libc6, libasound2t64 (>= 1.2.11)", "Depends: libc6, libasound2t64 (>= 1.2.11)"),
+                ("Depends: libc6, libasound2", "Depends: libc6, libasound2")):
+            with self.subTest(dependencies=before), tempfile.TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                fixture(root)
+                control = root / "DEBIAN/control"
+                control.write_text(before + "\n", encoding="utf-8")
+                stage(root)
+                self.assertEqual(control.read_text(), after + "\n")
 
     def test_publisher_text_is_xml_escaped(self):
         with tempfile.TemporaryDirectory() as tmp:

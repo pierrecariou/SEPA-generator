@@ -199,3 +199,113 @@ logic, verify the Pro main class/window-class association and desktop ID,
 adapt the AppStream description and edition-specific tests, then build/inspect
 Pro's actual package. Do not blindly cherry-pick Community expectations or
 change either edition's released technical identifiers.
+
+## Follow-up: GNOME Software local-file presentation and dependencies
+
+The real installation attempt reported a package-style title, generic icon,
+“Proprietary”, “Potentially Unsafe”, “No Software Repository Included”, and
+unmet dependencies. Installation did not complete, so the installed launcher
+and dock behavior remain untested on that machine. Its distribution/version,
+architecture, GNOME Software version and exact APT failure were not supplied.
+
+The successful validation artifact from run `39079706384`, commit `e9397fc`,
+was inspected again. Its AppStream name, stock icon, developer, `CC0-1.0`
+metadata license and `Apache-2.0` project license are present and valid. Its
+desktop entry and all five hicolor icon sizes are present. The reported title
+is the Debian `Package:` name, not the AppStream component ID.
+
+### Why the local installer still shows a package name and generic icon
+
+[GNOME Software's PackageKit local-file path](https://github.com/GNOME/gnome-software/blob/46.0/plugins/packagekit/gs-plugin-packagekit.c)
+initializes the visible name from the package name returned by PackageKit.
+It reads the package's file list to find a desktop ID, but does not extract and
+parse that desktop entry, its icon, or the metainfo file from the archive.
+The [dpkg plugin](https://github.com/GNOME/gnome-software/blob/46.0/plugins/dpkg/gs-plugin-dpkg.c)
+also initializes the name from `${Package}` and reads only selected control
+fields. Current upstream implementations retain these fallback behaviors.
+
+The existing installed stock-icon reference resolves through hicolor. Those
+icons are not installed yet when the local DEB page is opened, and the fallback
+path does not read them from inside the package. Repository AppStream catalogs
+or installed metadata can refine the fallback, but a standalone file does not
+provide a repository catalog merely by containing metainfo. Thus correct
+embedded metadata does not guarantee a branded local-file page. No new display
+fields or icon aliases were added on speculation, and no released IDs were
+renamed. The exact target-version behavior still needs its version/logs.
+
+### License and safety classification
+
+Community's project source is Apache-2.0; the existing `project_license` is
+correct and was not replaced. `metadata_license=CC0-1.0` licenses the metadata
+text, not the program. The local dpkg plugin instead queries a nonstandard
+`${License}` control field, which this DEB lacks. PackageKit's APT backend
+also [emits an unknown package license](https://github.com/PackageKit/PackageKit/blob/v1.2.8/backends/apt/apt-job.cpp)
+rather than deriving it from embedded AppStream. Depending on frontend/version,
+unrefined local packages can therefore get unknown/nonfree fallback labels.
+The screenshot label is not proof that Community's source is proprietary.
+
+There is an additional distinction: the generated shaded JAR actually includes
+`com/aspose/cells/` classes from the `aspose-cells:22.12` dependency. Aspose.Cells
+has [separate vendor licensing](https://docs.aspose.com/cells/java/licensing/)
+and an [Aspose EULA](https://about.aspose.com/legal/eula/), rather than becoming
+Apache-licensed through this project's LICENSE. Treating the whole bundled
+binary as exclusively Apache-2.0/FOSS would be inaccurate. A package-wide license
+inventory or replacement of that dependency is separate work; this packaging
+fix neither changes licensing nor adds a misleading `License: Apache-2.0`
+override to force a green label. The exact “Proprietary” fallback on the target
+still needs its GNOME/PackageKit versions or logs to distinguish the plugins.
+
+GNOME's [documented safety model](https://gnome.pages.gitlab.gnome.org/gnome-software/help/C/software-metadata.html)
+has no sandbox permission metadata for ordinary DEB/RPM packages. Its safety
+tile treats an unsandboxed package without distribution provenance as potentially
+unsafe. That is separate from the source-code license and an antivirus finding.
+“No Software Repository Included” is accurate: this package adds no APT source,
+keyring or automatic APT update channel. None of these trust/provenance facts
+can be changed honestly through an icon or publisher string. No warnings are
+bypassed and no repository infrastructure is added.
+
+### Confirmed dependency portability defect and narrow fix
+
+The inspected amd64 DEB declares:
+
+```text
+libasound2t64, libbsd0, libc6, libmd0, libx11-6, libxau6, libxcb1,
+libxdmcp6, libxext6, libxi6, libxrender1, libxtst6, xdg-utils
+```
+
+There is no Java package dependency: jpackage includes a full runtime. The native
+launcher/runtime still need host C, X11 and sound libraries. jpackage discovers
+library-provider packages on its Ubuntu runner; our script adds no extra Java
+or system-library dependencies.
+
+`libjsound.so` in the actual bundled JVM needs the SONAME `libasound.so.2`.
+[Ubuntu 22.04's libasound2](https://packages.ubuntu.com/jammy/amd64/libasound2/filelist),
+[Debian 12's libasound2](https://packages.debian.org/bookworm/amd64/libasound2/filelist),
+and [Ubuntu 24.04's libasound2t64](https://packages.ubuntu.com/en/noble/amd64/libasound2t64/filelist)
+all supply that amd64 library. The old DEB unnecessarily required only the new
+build-host package name. The staging helper now changes that exact unversioned
+dependency to `libasound2t64 | libasound2`. It preserves all other dependencies,
+existing alternatives and explicit version constraints. It does not remove the
+ALSA dependency, bundle a replacement system library, or claim universal distro
+compatibility. Focused tests cover first/middle/last placement, repeated staging,
+unaffected dependencies, and version-constraint preservation.
+
+This fixes an evidenced portability defect, but cannot prove that it was the
+specific target's failure. An older distro without `libasound2t64` is a strong
+candidate; architecture mismatch, unavailable repositories or other library
+requirements remain possible. To identify the actual blocker, run these in the
+folder containing the exact test DEB and preserve the output:
+
+```bash
+cat /etc/os-release
+dpkg --print-architecture
+gnome-software --version
+dpkg-deb --field ./SEPA-Generator-Community-1.4.0-linux-x64.deb Architecture Depends
+apt-cache policy libasound2 libasound2t64
+sudo apt install --simulate ./SEPA-Generator-Community-1.4.0-linux-x64.deb
+```
+
+The simulation does not install the application. Do not force dependencies,
+disable authentication, or install newer-distribution system libraries by hand.
+After APT can resolve installation, repeat the launcher/dock checks separately
+from the local package-viewer presentation checks.

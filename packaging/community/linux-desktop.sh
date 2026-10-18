@@ -23,6 +23,14 @@ if [ ! -f "${DESKTOP_SOURCE}" ]; then
   exit 1
 fi
 
+# The bundled JVM needs libasound.so.2. On amd64, both pre-t64 libasound2
+# (Debian 12 / Ubuntu 22.04) and libasound2t64 supply that SONAME. jpackage
+# records only the build host's package name. Allow either provider, retaining
+# every other dependency. Match only an unversioned standalone dependency;
+# leave version constraints and existing alternatives alone.
+sed -i -E 's/(^Depends:[[:space:]]*|,[[:space:]]*)libasound2t64([[:space:]]*,|[[:space:]]*$)/\1libasound2t64 | libasound2\2/' \
+  "${PACKAGE_ROOT}/DEBIAN/control"
+
 # OpenJDK's XToolkit derives WM_CLASS from the main class, replacing dots with
 # dashes. Match it instead of renaming Java packages or using private AWT APIs.
 # Keep jpackage's quoted Exec path and the released desktop filename unchanged.
