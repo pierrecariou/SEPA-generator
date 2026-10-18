@@ -391,8 +391,19 @@ jobs:
           DEB="dist/SEPA-Generator-Community-${{ needs.preflight.outputs.version }}-linux-x64.deb"
           PACKAGE="sepa-generator-community"
           
+          echo "==> Verifying DEB file exists..."
+          ls -lh "${DEB}" || { echo "FAILED: DEB file not found at ${DEB}"; exit 1; }
+          
+          echo "==> DEB file integrity check..."
+          file "${DEB}" || { echo "WARNING: file command not available"; }
+          
           echo "==> Installing DEB..."
-          sudo apt-get install -y "./${DEB}"
+          sudo apt-get install -y "./${DEB}" 2>&1 || {
+            echo "FAILED: apt-get install returned non-zero exit code"
+            echo "==> Checking apt error log..."
+            sudo tail -n 50 /var/log/apt/term.log 2>/dev/null || echo "Could not read apt term.log"
+            exit 1
+          }
           
           echo "==> Verifying installation..."
           dpkg -l | grep "^ii.*${PACKAGE}" || { echo "FAILED: Package not installed"; exit 1; }
@@ -414,7 +425,9 @@ jobs:
             { echo "FAILED: AppStream metainfo not found"; exit 1; }
           
           echo "==> Uninstalling DEB..."
-          sudo apt-get remove -y "${PACKAGE}"
+          sudo apt-get remove -y "${PACKAGE}" 2>&1 || {
+            echo "WARNING: apt-get remove returned non-zero exit code"
+          }
           
           echo "==> Verifying cleanup..."
           ! dpkg -l | grep "^ii.*${PACKAGE}" || { echo "FAILED: Package still installed after removal"; exit 1; }
