@@ -268,6 +268,31 @@ The package is written to
 | Debian section    | `utils`                              |
 | Maintainer        | `contact@sepa-xml-generator.com`     |
 
+### Desktop integration
+
+The DEB provides standard Linux desktop integration:
+
+- **Desktop entry** — installed to `/usr/share/applications/sepa-generator-community-SEPA_Generator_Community.desktop`
+- **Application icons** — installed to `/usr/share/icons/hicolor/{16,32,48,64,256}x{16,32,48,64,256}/apps/sepa-generator-community.png`
+- **AppStream metadata** — installed to `/usr/share/metainfo/com.pcariou.sepa.community.metainfo.xml` for package manager discovery
+- **Window class association** — `StartupWMClass` set to `com-pcariou-generator-Generator` (Java main class with dots replaced by dashes) to ensure the running application groups with its launcher icon in the task switcher
+
+### DEB maintainer scripts
+
+The `.deb` uses a custom `postinst` script (provided to `jpackage` via `--resource-dir`) that makes desktop menu registration best-effort rather than fatal:
+
+```bash
+# In postinst on configuration:
+xdg-desktop-menu install --dir-name applications "/opt/sepa-generator-community/lib/..." || true
+xdg-desktop-icon install --size 48 "/opt/sepa-generator-community/lib/..." || true
+```
+
+**Why?** — `jpackage` auto-generates a `postinst` that invokes `xdg-desktop-menu` to register the application in system menus. This call fails (and **aborts** the entire installation) in headless environments (CI runners, minimal containers) where `/etc/xdg/menus/` does not exist. However, the application is already discoverable via the standard `/usr/share/applications/` location (which modern desktop shells prefer), so menu registration is supplementary.
+
+The `|| true` suffix ensures that when menu registration is unavailable, the installation continues anyway. Genuine package configuration errors (e.g., permissions, corrupted files) still cause installation to fail.
+
+The same logic applies to `xdg-desktop-icon` registration. Modern desktops (GNOME, KDE) do not require this call; it is kept for compatibility with older menu systems that may be present on some systems.
+
 ### Test install / uninstall
 
 ```bash
@@ -290,6 +315,30 @@ distributing through an APT repository. The Community release model is direct
 download of a standalone `.deb`, whose integrity is covered by the published
 **SHA-256 checksums** (added in the release-workflow stage). No Linux signing
 system existed previously, so there is nothing to preserve.
+
+### GNOME Software and standalone DEBs
+
+When opening a downloaded `.deb` with **GNOME Software** (the graphical package
+manager on Ubuntu/GNOME), a locally downloaded package shows:
+
+- **"Potentially Unsafe"** and **"Provided by a third party"** warnings, because it is not from an APT repository that GNOME trusts.
+- **Package name** as shown to the system (`sepa-generator-community`), not the polished AppStream name (`SEPA Generator Community`). GNOME does not extract metadata before installation.
+- **"Proprietary"** label if the bundled software includes proprietary third-party components (in this case, the Java runtime and Aspose.Cells library). This is not an error.
+
+These are expected behavior for a standalone DEB and are **not** bugs. To avoid
+these messages and receive automatic updates, users would need to be registered
+with an APT repository (which requires maintaining secure infrastructure and is
+outside the scope of Community packaging).
+
+**Recommended workflow for users**: Use the command line to install the `.deb`:
+
+```bash
+sudo apt-get install -y ~/Downloads/SEPA-Generator-Community-1.4.0-linux-x64.deb
+```
+
+The installed application will appear in the system application menu with the
+correct icon, name, and description. It can be launched normally and uninstalled
+via the command line or the system software manager once installed.
 
 ---
 
