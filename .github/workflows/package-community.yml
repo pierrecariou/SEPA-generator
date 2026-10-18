@@ -368,6 +368,44 @@ jobs:
       - name: Build Linux DEB (x64)
         run: ./packaging/community/package-linux.sh
 
+      - name: Verify DEB installation
+        run: |
+          set -euo pipefail
+          
+          # Find the DEB file with full path
+          DEB_FILE=$(find dist -name 'SEPA-Generator-Community-*-linux-x64.deb' -type f)
+          if [ -z "$DEB_FILE" ]; then
+            echo "ERROR: DEB file not found in dist/" >&2
+            exit 1
+          fi
+          DEB_PATH="$(cd "$(dirname "$DEB_FILE")" && pwd)/$(basename "$DEB_FILE")"
+          echo "Testing DEB installation: ${DEB_PATH}"
+          
+          # Install the package.
+          sudo apt-get update
+          sudo apt-get install -y "${DEB_PATH}"
+          
+          # Verify desktop entry was installed.
+          [ -f /usr/share/applications/sepa-generator-community-SEPA_Generator_Community.desktop ] || \
+            (echo "ERROR: Desktop entry not found" >&2; exit 1)
+          echo "✓ Desktop entry found"
+          
+          # Verify icons were installed.
+          for size in 16 32 48 64 256; do
+            [ -f "/usr/share/icons/hicolor/${size}x${size}/apps/sepa-generator-community.png" ] || \
+              (echo "ERROR: Icon not found: ${size}x${size}" >&2; exit 1)
+          done
+          echo "✓ All icon sizes found"
+          
+          # Verify AppStream metadata was installed.
+          [ -f /usr/share/metainfo/com.pcariou.sepa.community.metainfo.xml ] || \
+            (echo "ERROR: AppStream metadata not found" >&2; exit 1)
+          echo "✓ AppStream metadata found"
+          
+          # Verify package can be removed cleanly.
+          sudo apt-get remove -y sepa-generator-community
+          echo "✓ Package installed and removed successfully"
+
       - name: Upload DEB artifact
         uses: actions/upload-artifact@v4
         with:

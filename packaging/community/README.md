@@ -268,6 +268,25 @@ The package is written to
 | Debian section    | `utils`                              |
 | Maintainer        | `contact@sepa-xml-generator.com`     |
 
+### Desktop integration
+
+After `jpackage` builds the base DEB, `package-linux.sh` unpacks it, runs
+`linux-desktop.sh`, recomputes `Installed-Size` and repacks it. That step adds:
+
+- the desktop entry under `/usr/share/applications/` (with `StartupWMClass=com-pcariou-generator-Generator`,
+  the Java window class, so the running window groups with the launcher);
+- hicolor theme icons (`16`–`256` px) named `sepa-generator-community`;
+- AppStream metadata in `/usr/share/metainfo/com.pcariou.sepa.community.metainfo.xml`;
+- the ALSA dependency `libasound2t64 | libasound2` (Ubuntu 24.04 and older releases).
+
+### DEB maintainer scripts
+
+`postinst` and `prerm` in `resources/linux/` replace jpackage's defaults via
+`--resource-dir`. They keep the `xdg-desktop-menu`/`xdg-desktop-icon` calls but
+make them best-effort (`|| true`): on headless or minimal systems without
+`/etc/xdg/menus/` the default script aborted installation, while the app stays
+discoverable through `/usr/share/applications/`.
+
 ### Test install / uninstall
 
 ```bash
@@ -290,6 +309,15 @@ distributing through an APT repository. The Community release model is direct
 download of a standalone `.deb`, whose integrity is covered by the published
 **SHA-256 checksums** (added in the release-workflow stage). No Linux signing
 system existed previously, so there is nothing to preserve.
+
+### GNOME Software and standalone DEBs
+
+A downloaded standalone `.deb` opened in GNOME Software may be labelled
+"Potentially Unsafe" / "Provided by a third party" because it does not come
+from a trusted APT repository. This is expected and accepted; removing it would
+require a signed APT repository, which is out of scope. Pre-install
+presentation is not an acceptance criterion — the supported experience is the
+installed launcher name, icon and window identity.
 
 ---
 

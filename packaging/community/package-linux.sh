@@ -224,6 +224,11 @@ ok "Staged ${MAIN_JAR_NAME} for packaging."
 # -----------------------------------------------------------------------------
 step "Running jpackage (--type deb)"
 
+# Provide custom DEB maintainer scripts (postinst, prerm) to ensure desktop menu
+# registration is best-effort and does not abort installation in headless/minimal
+# environments (e.g., CI runners).
+RESOURCE_DIR="${SCRIPT_DIR}/resources/linux"
+
 JP_ARGS=(
   --type deb
   --name "${APP_NAME}"
@@ -242,6 +247,8 @@ JP_ARGS=(
   --linux-shortcut
   # Populates the Debian "Homepage:" control field, which package managers show.
   --about-url "${HOMEPAGE}"
+  # Use custom DEB maintainer scripts for robust headless environment handling.
+  --resource-dir "${RESOURCE_DIR}"
 )
 
 # Attach the Linux icon when one was resolved.
@@ -253,15 +260,31 @@ fi
 "${JPACKAGE}" "${JP_ARGS[@]}" || fail "jpackage failed. See the output above for the exact cause."
 
 # -----------------------------------------------------------------------------
-# 7. Move the produced .deb into dist/ with the canonical name
+# 7. Post-process: add standard desktop resources, icons, and AppStream metadata
+# The DEB from jpackage includes the application in /opt/ with minimal desktop
+# integration. We augment it with standard Linux desktop discovery resources.
 # -----------------------------------------------------------------------------
-step "Collecting .deb"
+step "Adding standard Linux desktop resources"
 PRODUCED="$(find "${JP_DEST_DIR}" -maxdepth 1 -name '*.deb' | head -n 1)"
 [ -n "${PRODUCED}" ] || fail "Could not find the generated .deb in ${JP_DEST_DIR}."
 FINAL_PATH="${OUTPUT_DIR}/${FINAL_ARTIFACT}"
-rm -f "${FINAL_PATH}"
-mv "${PRODUCED}" "${FINAL_PATH}"
-ok ".deb: ${FINAL_PATH}"
+PACKAGE_ROOT="${STAGE_ROOT}/deb-root"
+dpkg-deb --raw-extract "${PRODUCED}" "${PACKAGE_ROOT}"
+
+# Invoke the desktop integration helper to add standard resources.
+bash "${SCRIPT_DIR}/linux-desktop.sh" "${REPO_ROOT}" "${PACKAGE_ROOT}"
+
+# Update Installed-Size to reflect the added resources.
+INSTALLED_SIZE="$(du -sk --exclude=DEBIAN "${PACKAGE_ROOT}" | cut -f1)"
+sed -i "s/^Installed-Size:.*/Installed-Size: ${INSTALLED_SIZE}/" "${PACKAGE_ROOT}/DEBIAN/control"
+
+# Rebuild the DEB with correct ownership (not dependent on build user).
+dpkg-deb --build --root-owner-group "${PACKAGE_ROOT}" "${PRODUCED}"
+mv -f "${PRODUCED}" "${FINAL_PATH}"
+ok "Enhanced DEB: ${FINAL_PATH}"
+
+# Remove the extracted DEB source to avoid clutter.
+rm -rf "${PACKAGE_ROOT}"
 
 printf '\n'
 printf 'SUCCESS: %s %s packaged.\n' "${APP_NAME}" "${APP_VERSION}"

@@ -1,0 +1,28 @@
+#!/bin/bash
+set -e
+
+# Post-installation script for SEPA Generator Community DEB package
+# Customized to handle environments where desktop menu registration may not be available.
+# 
+# Desktop menu and icon registration are best-effort: if they fail (e.g., in CI or
+# headless environments without /etc/xdg/menus/), the installation still succeeds.
+# The application is still discoverable via /usr/share/applications and /usr/share/icons.
+
+case "$1" in
+    configure)
+        # Attempt to register the application in the desktop environment.
+        # This is a courtesy for systems with graphical desktops; headless/minimal
+        # systems may not have xdg-desktop-menu or the required directories.
+        # We suppress errors (|| true) so installation is not aborted if this fails.
+        xdg-desktop-menu install --dir-name applications "/opt/sepa-generator-community/lib/sepa-generator-community-SEPA_Generator_Community.desktop" 2>/dev/null || true
+        xdg-desktop-icon install --size 256 "/opt/sepa-generator-community/lib/sepa-generator-icon-app-bg-256.png" "sepa-generator-community.png" 2>/dev/null || true
+        ;;
+    abort-upgrade|abort-remove|abort-deconfigure)
+        ;;
+    *)
+        echo "postinst called with unknown argument \`$1'" >&2
+        exit 1
+        ;;
+esac
+
+exit 0
