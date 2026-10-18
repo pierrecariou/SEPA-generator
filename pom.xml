@@ -7,7 +7,7 @@
     <version>2</version>
     <packaging>pom</packaging>
     <name>sepa</name>
-    <url>http://www.pcariou.com</url>
+    <url>https://sepa-xml-generator.com</url>
 
     <properties>
         <revision>1.4.0</revision>

@@ -1,0 +1,19 @@
+#!/bin/bash
+set -e
+
+# Pre-removal script for SEPA Generator Community DEB package
+# Unregisters the application from the desktop environment on removal.
+
+case "$1" in
+    remove)
+        xdg-desktop-menu uninstall --dir-name applications "/opt/sepa-generator-community/lib/sepa-generator-community-SEPA_Generator_Community.desktop" 2>/dev/null || true
+        ;;
+    deconfigure)
+        ;;
+    *)
+        echo "prerm called with unknown argument \`$1'" >&2
+        exit 1
+        ;;
+esac
+
+exit 0
