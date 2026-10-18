@@ -397,6 +397,29 @@ jobs:
           echo "==> DEB file integrity check..."
           file "${DEB}" || { echo "WARNING: file command not available"; }
           
+          echo "==> Inspecting DEB contents for debugging..."
+          mkdir -p /tmp/deb-inspect
+          cd /tmp/deb-inspect
+          ar x "${PWD}/${DEB}" 2>/dev/null || { echo "Could not extract DEB with ar"; }
+          mkdir -p control
+          tar -xzf control.tar.gz -C control 2>/dev/null || { echo "Could not extract control files"; }
+          
+          if [ -f control/postinst ]; then
+            echo "    === DEB postinst script content ==="
+            echo "    --- first 20 lines:"
+            head -20 control/postinst || true
+            echo "    --- lines containing xdg:"
+            grep -n "xdg" control/postinst || echo "    (no xdg references found)"
+            echo "    --- lines containing wrapper:"
+            grep -n "wrapper" control/postinst || echo "    (no wrapper references found)"
+            echo "    ==="
+          else
+            echo "    WARNING: postinst not found in DEB"
+          fi
+          
+          cd -
+          
+          echo ""
           echo "==> Installing DEB..."
           sudo apt-get install -y "./${DEB}" 2>&1 || {
             echo "FAILED: apt-get install returned non-zero exit code"
