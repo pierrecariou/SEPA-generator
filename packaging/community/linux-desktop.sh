@@ -95,9 +95,9 @@ patch_postinst_for_desktop_menu() {
   local count_before
   count_before=$(grep -c "xdg-desktop-menu" "${postinst}")
   
-  sed -i 's|/usr/bin/xdg-desktop-menu|/usr/bin/xdg-desktop-menu-wrapper|g' "${postinst}" 2>&1 | sed 's/^/      [sed1] /' >&2 || true
-  sed -i 's|^\([[:space:]]*\)xdg-desktop-menu|\1/usr/bin/xdg-desktop-menu-wrapper|g' "${postinst}" 2>&1 | sed 's/^/      [sed2] /' >&2 || true
-  sed -i 's|\bxdg-desktop-menu\b|/usr/bin/xdg-desktop-menu-wrapper|g' "${postinst}" 2>&1 | sed 's/^/      [sed3] /' >&2 || true
+  sed -i 's|/usr/bin/xdg-desktop-menu|/usr/bin/xdg-desktop-menu-wrapper|g' "${postinst}" || true
+  sed -i 's|^\([[:space:]]*\)xdg-desktop-menu|\1/usr/bin/xdg-desktop-menu-wrapper|g' "${postinst}" || true
+  sed -i 's|\bxdg-desktop-menu\b|/usr/bin/xdg-desktop-menu-wrapper|g' "${postinst}" || true
   
   local count_after
   count_after=$(grep -c "xdg-desktop-menu" "${postinst}")
