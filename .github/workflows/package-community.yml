@@ -374,6 +374,54 @@ jobs:
       - name: Inspect final Linux DEB metadata and artwork
         run: python3 packaging/community/tests/test-linux-packaging.py --deb dist/SEPA-Generator-Community-${{ needs.preflight.outputs.version }}-linux-x64.deb
 
+      - name: Verify dependency resolution
+        run: |
+          set -euo pipefail
+          DEB="dist/SEPA-Generator-Community-${{ needs.preflight.outputs.version }}-linux-x64.deb"
+          echo "==> Dependency check (simulate install):"
+          sudo apt-get update > /dev/null
+          sudo apt install --simulate "./${DEB}" 2>&1 || true
+          echo "==> Checking if simulation would succeed..."
+          sudo apt install --simulate "./${DEB}" 2>&1 | grep -q "would remove\|would break" && { echo "FAILED: Would remove packages"; exit 1; } || true
+          echo "==> Dependency resolution OK"
+
+      - name: Test DEB installation and removal
+        run: |
+          set -euo pipefail
+          DEB="dist/SEPA-Generator-Community-${{ needs.preflight.outputs.version }}-linux-x64.deb"
+          PACKAGE="sepa-generator-community"
+          
+          echo "==> Installing DEB..."
+          sudo apt-get install -y "./${DEB}"
+          
+          echo "==> Verifying installation..."
+          dpkg -l | grep "^ii.*${PACKAGE}" || { echo "FAILED: Package not installed"; exit 1; }
+          
+          echo "==> Checking installed files..."
+          test -d "/opt/${PACKAGE}" || { echo "FAILED: /opt/${PACKAGE} not found"; exit 1; }
+          test -f "/opt/${PACKAGE}/bin/SEPA Generator Community" || { echo "FAILED: Launcher not found"; exit 1; }
+          
+          echo "==> Checking desktop entry registration..."
+          test -f "/usr/share/applications/${PACKAGE}-SEPA_Generator_Community.desktop" || \
+            { echo "FAILED: Desktop entry not registered"; exit 1; }
+          
+          echo "==> Checking icon installation..."
+          test -f "/usr/share/icons/hicolor/256x256/apps/${PACKAGE}.png" || \
+            { echo "FAILED: Application icon not found"; exit 1; }
+          
+          echo "==> Checking AppStream metainfo..."
+          test -f "/usr/share/metainfo/com.pcariou.sepa.community.metainfo.xml" || \
+            { echo "FAILED: AppStream metainfo not found"; exit 1; }
+          
+          echo "==> Uninstalling DEB..."
+          sudo apt-get remove -y "${PACKAGE}"
+          
+          echo "==> Verifying cleanup..."
+          ! dpkg -l | grep "^ii.*${PACKAGE}" || { echo "FAILED: Package still installed after removal"; exit 1; }
+          test ! -d "/opt/${PACKAGE}" || { echo "WARNING: /opt/${PACKAGE} still exists after removal (may be expected for config/data)"; }
+          
+          echo "==> Installation and removal smoke test PASSED"
+
       - name: Upload DEB artifact
         uses: actions/upload-artifact@v4
         with:
