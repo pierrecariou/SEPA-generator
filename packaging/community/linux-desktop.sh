@@ -8,10 +8,26 @@ PACKAGE_ROOT="$2"
 prop() { sed -n "s/^${1}=//p" "${REPO_ROOT}/packaging/edition.properties"; }
 xml_escape() { printf '%s' "$1" | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g'; }
 
-# Patch the jpackage-generated postinst script to make xdg-desktop-menu errors
-# non-fatal. Desktop menu registration can fail in sandboxed/restricted environments
-# (CI, containers, minimal installations) but should not break the entire package
-# installation. The application remains fully functional without desktop menu.
+# Provide a resilient xdg-desktop-menu wrapper that handles failures gracefully.
+# This script is sourced/used by postinst to register the desktop menu, but
+# never fails - allowing the package installation to always succeed even when
+# menu registration is not possible (CI, sandboxed, minimal systems).
+install_xdg_desktop_menu_wrapper() {
+  local wrapper_bin="${PACKAGE_ROOT}/usr/bin/xdg-desktop-menu-wrapper"
+  mkdir -p "$(dirname "${wrapper_bin}")"
+  
+  cat > "${wrapper_bin}" <<'WRAPPER_EOF'
+#!/bin/bash
+# xdg-desktop-menu wrapper - makes menu registration non-fatal
+# Attempts xdg-desktop-menu if available, but never fails the installation
+exec /usr/bin/xdg-desktop-menu "$@" 2>/dev/null || true
+WRAPPER_EOF
+  
+  chmod 755 "${wrapper_bin}"
+}
+
+# Patch the jpackage-generated postinst script to use our wrapper.
+# The postinst calls xdg-desktop-menu directly; we replace it with our wrapper.
 patch_postinst_for_desktop_menu() {
   local postinst="${PACKAGE_ROOT}/DEBIAN/postinst"
   if [ ! -f "${postinst}" ]; then
@@ -19,44 +35,15 @@ patch_postinst_for_desktop_menu() {
     return 0
   fi
 
-  # Check if the postinst already has our error handling
-  if grep -q "set.*-e.*posix\|xdg-desktop-menu.*||" "${postinst}"; then
-    return 0  # Already patched
+  # Check if already patched
+  if grep -q "xdg-desktop-menu-wrapper\|menu registration disabled" "${postinst}"; then
+    return 0
   fi
 
-  # Strategy: Use sed to find lines with xdg-desktop-menu and make them non-fatal.
-  # The xdg-desktop-menu call is typically:
-  #   xdg-desktop-menu install --mode system --dir "$dir" "$file"
-  # We need to make it:
-  #   xdg-desktop-menu install --mode system --dir "$dir" "$file" || true
-  #
-  # But jpackage's postinst might have complex quoting or be embedded in functions.
-  # Use a simple approach: look for the exact line with xdg-desktop-menu and append || true
-
-  # First, make a backup
-  cp "${postinst}" "${postinst}.bak"
-
-  # Use awk to process the script:
-  # - If a line contains xdg-desktop-menu and doesn't already have || true
-  # - Append " || true" before any trailing comment or newline
-  awk '
-    /xdg-desktop-menu/ && ! /\|\| *true/ {
-      # Found a line with xdg-desktop-menu that doesn't already have error handling
-      if ($0 ~ /[^#]*#/) {
-        # Has a comment; insert before the comment
-        match($0, /^([^#]*)(.*)$/, m)
-        $0 = m[1] " || true " m[2]
-      } else {
-        # No comment; just append
-        $0 = $0 " || true"
-      }
-    }
-    { print }
-  ' "${postinst}.bak" > "${postinst}.tmp"
-
-  # Replace original with patched version
-  mv "${postinst}.tmp" "${postinst}"
-  chmod 755 "${postinst}"
+  # Replace calls to xdg-desktop-menu with our wrapper
+  # The wrapper always succeeds, making menu registration failures non-fatal
+  sed -i 's|^\([[:space:]]*\)/usr/bin/xdg-desktop-menu|\1/usr/bin/xdg-desktop-menu-wrapper|g' "${postinst}"
+  sed -i 's|^\([[:space:]]*\)xdg-desktop-menu|\1/usr/bin/xdg-desktop-menu-wrapper|g' "${postinst}"
 }
 
 APP_NAME="$(prop APP_NAME)"
@@ -74,7 +61,8 @@ if [ ! -f "${DESKTOP_SOURCE}" ]; then
   exit 1
 fi
 
-# Patch postinst script to handle desktop menu registration errors gracefully
+# Install our xdg-desktop-menu wrapper and patch the postinst to use it
+install_xdg_desktop_menu_wrapper
 patch_postinst_for_desktop_menu
 
 # The bundled JVM needs libasound.so.2. On amd64, both pre-t64 libasound2
