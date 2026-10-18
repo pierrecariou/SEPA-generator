@@ -398,9 +398,10 @@ jobs:
           file "${DEB}" || { echo "WARNING: file command not available"; }
           
           echo "==> Inspecting DEB contents for debugging..."
+          DEB_FULL_PATH="$(pwd)/${DEB}"
           mkdir -p /tmp/deb-inspect
           cd /tmp/deb-inspect
-          ar x "${PWD}/${DEB}" 2>/dev/null || { echo "Could not extract DEB with ar"; }
+          ar x "${DEB_FULL_PATH}" 2>/dev/null || { echo "Could not extract DEB with ar"; }
           mkdir -p control
           tar -xzf control.tar.gz -C control 2>/dev/null || { echo "Could not extract control files"; }
           
@@ -421,7 +422,7 @@ jobs:
           
           echo ""
           echo "==> Installing DEB..."
-          sudo apt-get install -y "./${DEB}" 2>&1 || {
+          sudo apt-get install -y "${DEB_FULL_PATH}" 2>&1 || {
             echo "FAILED: apt-get install returned non-zero exit code"
             echo "==> Checking apt error log..."
             sudo tail -n 50 /var/log/apt/term.log 2>/dev/null || echo "Could not read apt term.log"
