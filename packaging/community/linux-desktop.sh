@@ -14,6 +14,8 @@ xml_escape() { printf '%s' "$1" | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g'; 
 # menu registration is not possible (CI, sandboxed, minimal systems).
 install_xdg_desktop_menu_wrapper() {
   local wrapper_bin="${PACKAGE_ROOT}/usr/bin/xdg-desktop-menu-wrapper"
+  echo "==> Installing xdg-desktop-menu wrapper at ${wrapper_bin}..." >&2
+  
   mkdir -p "$(dirname "${wrapper_bin}")"
   
   cat > "${wrapper_bin}" <<'WRAPPER_EOF'
@@ -24,26 +26,56 @@ exec /usr/bin/xdg-desktop-menu "$@" 2>/dev/null || true
 WRAPPER_EOF
   
   chmod 755 "${wrapper_bin}"
+  
+  if [ -x "${wrapper_bin}" ]; then
+    echo "    ✓ Wrapper installed and executable ($(wc -c < "${wrapper_bin}") bytes)" >&2
+  else
+    echo "    ✗ ERROR: Wrapper not executable!" >&2
+  fi
 }
 
 # Patch the jpackage-generated postinst script to use our wrapper.
 # The postinst calls xdg-desktop-menu directly; we replace it with our wrapper.
 patch_postinst_for_desktop_menu() {
   local postinst="${PACKAGE_ROOT}/DEBIAN/postinst"
+  echo "==> Patching postinst for xdg-desktop-menu..." >&2
+  
   if [ ! -f "${postinst}" ]; then
-    echo "WARNING: postinst script not found; skipping desktop menu error handling patch" >&2
+    echo "WARNING: postinst script not found at ${postinst}; skipping patch" >&2
+    # List what's in DEBIAN for debugging
+    ls -la "${PACKAGE_ROOT}/DEBIAN/" >&2 || true
     return 0
   fi
 
+  echo "    postinst found, size: $(wc -c < "${postinst}") bytes" >&2
+  
   # Check if already patched
-  if grep -q "xdg-desktop-menu-wrapper\|menu registration disabled" "${postinst}"; then
+  if grep -q "xdg-desktop-menu-wrapper" "${postinst}"; then
+    echo "    Already patched (found xdg-desktop-menu-wrapper)" >&2
     return 0
   fi
+
+  # Check if xdg-desktop-menu is in the postinst at all
+  if ! grep -q "xdg-desktop-menu" "${postinst}"; then
+    echo "    WARNING: xdg-desktop-menu not found in postinst (nothing to patch)" >&2
+    grep -n "xdg" "${postinst}" >&2 || true
+    return 0
+  fi
+
+  echo "    Found xdg-desktop-menu calls in postinst, applying patch..." >&2
 
   # Replace calls to xdg-desktop-menu with our wrapper
   # The wrapper always succeeds, making menu registration failures non-fatal
-  sed -i 's|^\([[:space:]]*\)/usr/bin/xdg-desktop-menu|\1/usr/bin/xdg-desktop-menu-wrapper|g' "${postinst}"
+  sed -i 's|/usr/bin/xdg-desktop-menu|/usr/bin/xdg-desktop-menu-wrapper|g' "${postinst}"
   sed -i 's|^\([[:space:]]*\)xdg-desktop-menu|\1/usr/bin/xdg-desktop-menu-wrapper|g' "${postinst}"
+  
+  # Verify the patch worked
+  if grep -q "xdg-desktop-menu-wrapper" "${postinst}"; then
+    echo "    ✓ Patch applied successfully (wrapper found in postinst)" >&2
+  else
+    echo "    ✗ WARNING: Patch may not have worked (wrapper not found)" >&2
+    grep -n "xdg" "${postinst}" >&2 || true
+  fi
 }
 
 APP_NAME="$(prop APP_NAME)"
