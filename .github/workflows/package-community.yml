@@ -371,7 +371,7 @@ jobs:
       - name: Verify DEB installation
         run: |
           set -euo pipefail
-          DEB_PATH="$(ls dist/SEPA-Generator-Community-*-linux-x64.deb)"
+          DEB_PATH="$(cd dist && pwd)/$(ls SEPA-Generator-Community-*-linux-x64.deb | head -1)"
           echo "Testing DEB installation: ${DEB_PATH}"
           
           # Install the package.
