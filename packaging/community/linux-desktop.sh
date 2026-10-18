@@ -49,6 +49,9 @@ patch_postinst_for_desktop_menu() {
 
   echo "    postinst found, size: $(wc -c < "${postinst}") bytes" >&2
   
+  # DEBUG: Dump first 50 lines of postinst to understand its structure
+  echo "    First 50 lines of postinst for debugging:" >&2
+  head -50 "${postinst}" >&2
   # Check if already patched
   if grep -q "xdg-desktop-menu-wrapper" "${postinst}"; then
     echo "    Already patched (found xdg-desktop-menu-wrapper)" >&2
