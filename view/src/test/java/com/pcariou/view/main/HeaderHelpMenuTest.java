@@ -73,7 +73,12 @@ public class HeaderHelpMenuTest {
      */
     @Test
     public void onlineGuidesOpensTheCanonicalGuidesPage() {
-        assertEquals("https://sepa-xml-generator.com/guides/", AppLinks.GUIDES);
+        assertEquals("https://sepa-xml-generator.com/guides/#community", AppLinks.GUIDES);
+        java.net.URI uri = java.net.URI.create(AppLinks.GUIDES);
+        assertEquals("https", uri.getScheme());
+        assertEquals("sepa-xml-generator.com", uri.getHost());
+        assertEquals("/guides/", uri.getPath());
+        assertEquals("The Community anchor must survive URI parsing", "community", uri.getFragment());
         assertEquals("The guides live under the product website",
                 ExternalLinks.Kind.BROWSE, ExternalLinks.classify(AppLinks.GUIDES));
 

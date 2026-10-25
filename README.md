@@ -21,7 +21,7 @@
   ·
   <a href="https://sepa-xml-generator.com/pro/"><strong>SEPA Generator Pro</strong></a>
   ·
-  <a href="https://sepa-xml-generator.com/guides/"><strong>Guides</strong></a>
+  <a href="https://sepa-xml-generator.com/guides/#community"><strong>Guides</strong></a>
 </p>
 
 ---
@@ -357,7 +357,7 @@ Do not commit real payment data, private configuration files, or sensitive banki
 * [Usage Guide](docs/usage.md) — detailed in-repository instructions
 * [Official website](https://sepa-xml-generator.com/) — product home
 * [Download SEPA Generator Community](https://sepa-xml-generator.com/download/) — installers for Windows, macOS and Linux
-* [Guides](https://sepa-xml-generator.com/guides/) — including [CSV to SEPA XML](https://sepa-xml-generator.com/csv-to-sepa-xml/), [Excel to SEPA XML](https://sepa-xml-generator.com/excel-to-sepa-xml/), the [pain.001 generator guide](https://sepa-xml-generator.com/pain-001-generator/) and [SEPA XML validation](https://sepa-xml-generator.com/sepa-xml-validation/)
+* [Guides](https://sepa-xml-generator.com/guides/#community) — including [CSV to SEPA XML](https://sepa-xml-generator.com/csv-to-sepa-xml/), [Excel to SEPA XML](https://sepa-xml-generator.com/excel-to-sepa-xml/), the [pain.001 generator guide](https://sepa-xml-generator.com/pain-001-generator/) and [SEPA XML validation](https://sepa-xml-generator.com/sepa-xml-validation/)
 * [SEPA Generator Pro](https://sepa-xml-generator.com/pro/) — commercial edition
 * [Privacy](https://sepa-xml-generator.com/privacy/)
 * [GitHub releases](https://github.com/pierrecariou/SEPA-generator/releases/latest)

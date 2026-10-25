@@ -8,8 +8,11 @@ public final class AppLinks {
     public static final String WEBSITE       = "https://sepa-xml-generator.com";
     /** Publisher's company site. Niryosys publishes the product; it is not the product name. */
     public static final String COMPANY       = "https://niryosys.com";
-    /** Practical guidance on SEPA formats and workflows, opened from Help and the footer. */
-    public static final String GUIDES        = "https://sepa-xml-generator.com/guides/";
+    /**
+     * Practical guidance on SEPA formats and workflows, opened from Help and the footer.
+     * The {@code #community} anchor lands on the Community section of the guides page.
+     */
+    public static final String GUIDES        = "https://sepa-xml-generator.com/guides/#community";
     public static final String PRIVACY       = "https://sepa-xml-generator.com/privacy";
     public static final String CONTACT       = "mailto:contact@sepa-xml-generator.com";
     public static final String CHECK_UPDATES = "https://sepa-xml-generator.com/download";
