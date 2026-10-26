@@ -28,10 +28,15 @@
 
 ## Overview
 
-**SEPA Generator Community** is a free and open source desktop application,
-published by **Niryosys**, that generates **SEPA Credit Transfer Initiation
-XML** files from a CSV or Excel input file. Everything runs on your own
-machine.
+**SEPA Generator Community** is a free and open source (Apache-2.0) desktop
+application, published by **Niryosys**, that generates **SEPA Credit Transfer
+Initiation XML** files from a CSV or Excel input file. Everything runs on your
+own machine.
+
+> **Current stable release: [Community 1.4.1](https://github.com/pierrecariou/SEPA-generator/releases/tag/v1.4.1)**,
+> a maintenance update that improves Linux installation and desktop integration
+> and opens the Community guides from **Help → Online guides**. SEPA generation
+> is unchanged from 1.4.0.
 
 * **Input:** `.csv`, `.xls` or `.xlsx` payment files
 * **Output:** ISO 20022 SEPA Credit Transfer XML
@@ -71,7 +76,10 @@ generation and advanced validation and migration workflows are available in
 
 Select an input file, choose an execution date and SEPA format, generate, and get a summary of the generated file.
 
-![SEPA Generator Community main window showing a successful generation summary](docs/assets/screenshot-sepa-generator-main-window-light.png)
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshot-community-1.4.1-main-window-dark.png" />
+  <img src="docs/assets/screenshot-community-1.4.1-main-window-light.png" alt="SEPA Generator Community 1.4.1 main window showing a successful generation summary" />
+</picture>
 
 ### Settings
 
@@ -83,7 +91,12 @@ Debtor and initiating party details, including the optional postal address used 
 
 Input files are validated before generation, with row-level messages explaining what to fix.
 
-![SEPA Generator reporting three row-level input validation issues](docs/assets/screenshot-sepa-generator-validation-error-light.png)
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshot-community-1.4.1-validation-dark.png" />
+  <img src="docs/assets/screenshot-community-1.4.1-validation-light.png" alt="SEPA Generator Community 1.4.1 reporting four row-level input validation issues" />
+</picture>
+
+The main window and validation screenshots follow your GitHub light or dark theme.
 
 ---
 
@@ -131,20 +144,25 @@ Input files are validated before generation, with row-level messages explaining 
 
 ## Downloads
 
-Pre-built desktop packages are published for each Community release:
+The current stable release is
+[**Community 1.4.1**](https://github.com/pierrecariou/SEPA-generator/releases/tag/v1.4.1):
 
 | Platform                   | Package                                             |
 | --------------------------- | --------------------------------------------------- |
-| Windows x64                | `SEPA-Generator-Community-<version>-windows-x64.msi` |
-| macOS (Apple Silicon)      | `SEPA-Generator-Community-<version>-macos-arm64.dmg` |
-| macOS (Intel)              | `SEPA-Generator-Community-<version>-macos-x64.dmg`   |
-| Linux x64 (Debian/Ubuntu)  | `SEPA-Generator-Community-<version>-linux-x64.deb`   |
+| Windows x64                | [`SEPA-Generator-Community-1.4.1-windows-x64.msi`](https://github.com/pierrecariou/SEPA-generator/releases/download/v1.4.1/SEPA-Generator-Community-1.4.1-windows-x64.msi) |
+| macOS (Apple Silicon)      | [`SEPA-Generator-Community-1.4.1-macos-arm64.dmg`](https://github.com/pierrecariou/SEPA-generator/releases/download/v1.4.1/SEPA-Generator-Community-1.4.1-macos-arm64.dmg) |
+| macOS (Intel)              | [`SEPA-Generator-Community-1.4.1-macos-x64.dmg`](https://github.com/pierrecariou/SEPA-generator/releases/download/v1.4.1/SEPA-Generator-Community-1.4.1-macos-x64.dmg) |
+| Linux x64 (Debian/Ubuntu)  | [`SEPA-Generator-Community-1.4.1-linux-x64.deb`](https://github.com/pierrecariou/SEPA-generator/releases/download/v1.4.1/SEPA-Generator-Community-1.4.1-linux-x64.deb) |
+
+The Windows MSI is Authenticode-signed by Niryosys, and the macOS DMGs are
+Developer ID signed and notarized by Apple. Verify any download against
+[`SHA256SUMS.txt`](https://github.com/pierrecariou/SEPA-generator/releases/download/v1.4.1/SHA256SUMS.txt)
+with `sha256sum -c SHA256SUMS.txt`.
 
 Each packaged download **bundles its own Java runtime**, so you do not need to
-install Java separately. Get the current build and version number from the
-[official download page](https://sepa-xml-generator.com/download/) or the
-[GitHub releases page](https://github.com/pierrecariou/SEPA-generator/releases/latest),
-which always reflect the latest published Community release. See
+install Java separately. Later versions are always available from the
+[official download page](https://sepa-xml-generator.com/download/) and the
+[latest GitHub release](https://github.com/pierrecariou/SEPA-generator/releases/latest). See
 [`packaging/community/README.md`](packaging/community/README.md) for how the
 packages are built and how to install/uninstall them.
 
