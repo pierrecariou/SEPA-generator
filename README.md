@@ -33,10 +33,11 @@ application, published by **Niryosys**, that generates **SEPA Credit Transfer
 Initiation XML** files from a CSV or Excel input file. Everything runs on your
 own machine.
 
-> **Current stable release: [Community 1.4.1](https://github.com/pierrecariou/SEPA-generator/releases/tag/v1.4.1)**,
-> a maintenance update that improves Linux installation and desktop integration
-> and opens the Community guides from **Help → Online guides**. SEPA generation
-> is unchanged from 1.4.0.
+> **Current stable release: [Community 1.4.2](https://github.com/pierrecariou/SEPA-generator/releases/tag/v1.4.2)**,
+> a maintenance update that makes the initiating party identifier optional and
+> no longer limited to a French SIRET, with an optional scheme and issuer. It
+> follows 1.4.1, which improved Linux installation and desktop integration.
+> Other SEPA generation behavior is unchanged.
 
 * **Input:** `.csv`, `.xls` or `.xlsx` payment files
 * **Output:** ISO 20022 SEPA Credit Transfer XML
@@ -119,7 +120,7 @@ The main window and validation screenshots follow your GitHub light or dark them
   * required payment fields
   * IBAN format and checksum
   * BIC format
-  * SIRET format
+  * optional initiating party identifier (14 digits when the ISO scheme code is `SRET`, 9 digits for `SREN`)
   * amount greater than 0 with at most 2 decimal places
   * EndToEndId length
   * remittance information length
@@ -145,18 +146,18 @@ The main window and validation screenshots follow your GitHub light or dark them
 ## Downloads
 
 The current stable release is
-[**Community 1.4.1**](https://github.com/pierrecariou/SEPA-generator/releases/tag/v1.4.1):
+[**Community 1.4.2**](https://github.com/pierrecariou/SEPA-generator/releases/tag/v1.4.2):
 
 | Platform                   | Package                                             |
 | --------------------------- | --------------------------------------------------- |
-| Windows x64                | [`SEPA-Generator-Community-1.4.1-windows-x64.msi`](https://github.com/pierrecariou/SEPA-generator/releases/download/v1.4.1/SEPA-Generator-Community-1.4.1-windows-x64.msi) |
-| macOS (Apple Silicon)      | [`SEPA-Generator-Community-1.4.1-macos-arm64.dmg`](https://github.com/pierrecariou/SEPA-generator/releases/download/v1.4.1/SEPA-Generator-Community-1.4.1-macos-arm64.dmg) |
-| macOS (Intel)              | [`SEPA-Generator-Community-1.4.1-macos-x64.dmg`](https://github.com/pierrecariou/SEPA-generator/releases/download/v1.4.1/SEPA-Generator-Community-1.4.1-macos-x64.dmg) |
-| Linux x64 (Debian/Ubuntu)  | [`SEPA-Generator-Community-1.4.1-linux-x64.deb`](https://github.com/pierrecariou/SEPA-generator/releases/download/v1.4.1/SEPA-Generator-Community-1.4.1-linux-x64.deb) |
+| Windows x64                | [`SEPA-Generator-Community-1.4.2-windows-x64.msi`](https://github.com/pierrecariou/SEPA-generator/releases/download/v1.4.2/SEPA-Generator-Community-1.4.2-windows-x64.msi) |
+| macOS (Apple Silicon)      | [`SEPA-Generator-Community-1.4.2-macos-arm64.dmg`](https://github.com/pierrecariou/SEPA-generator/releases/download/v1.4.2/SEPA-Generator-Community-1.4.2-macos-arm64.dmg) |
+| macOS (Intel)              | [`SEPA-Generator-Community-1.4.2-macos-x64.dmg`](https://github.com/pierrecariou/SEPA-generator/releases/download/v1.4.2/SEPA-Generator-Community-1.4.2-macos-x64.dmg) |
+| Linux x64 (Debian/Ubuntu)  | [`SEPA-Generator-Community-1.4.2-linux-x64.deb`](https://github.com/pierrecariou/SEPA-generator/releases/download/v1.4.2/SEPA-Generator-Community-1.4.2-linux-x64.deb) |
 
 The Windows MSI is Authenticode-signed by Niryosys, and the macOS DMGs are
 Developer ID signed and notarized by Apple. Verify any download against
-[`SHA256SUMS.txt`](https://github.com/pierrecariou/SEPA-generator/releases/download/v1.4.1/SHA256SUMS.txt)
+[`SHA256SUMS.txt`](https://github.com/pierrecariou/SEPA-generator/releases/download/v1.4.2/SHA256SUMS.txt)
 with `sha256sum -c SHA256SUMS.txt`.
 
 Each packaged download **bundles its own Java runtime**, so you do not need to
@@ -180,7 +181,9 @@ Open the settings window from the header icon and fill in the debtor and initiat
 | Debtor IBAN           | Your debtor account IBAN                  |
 | Debtor BIC            | Your bank BIC/SWIFT code                  |
 | Initiating party name | Legal entity initiating the payment batch |
-| SIRET                 | 14-digit French company identifier        |
+| Identifier (optional) | Initiating party identifier, for example a SIRET |
+| Scheme (optional)     | ISO scheme code or proprietary scheme name |
+| Issuer (optional)     | Organisation that issued the identifier   |
 
 Settings are stored locally and reused for future generations.
 
