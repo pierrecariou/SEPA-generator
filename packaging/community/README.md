@@ -8,16 +8,16 @@ application into a platform installer.
 
 | Platform | Script               | Output (CI release artifact)                              |
 | -------- | -------------------- | --------------------------------------------------------- |
-| Windows  | `package-windows.ps1`| `dist/SEPA-Generator-Community-1.4.1-windows-x64.msi`     |
-| macOS    | `package-macos.sh`   | `dist/SEPA-Generator-Community-1.4.1-macos-arm64.dmg`     |
-| macOS    | `package-macos.sh`   | `dist/SEPA-Generator-Community-1.4.1-macos-x64.dmg`       |
-| Linux    | `package-linux.sh`   | `dist/SEPA-Generator-Community-1.4.1-linux-x64.deb`       |
+| Windows  | `package-windows.ps1`| `dist/SEPA-Generator-Community-1.4.2-windows-x64.msi`     |
+| macOS    | `package-macos.sh`   | `dist/SEPA-Generator-Community-1.4.2-macos-arm64.dmg`     |
+| macOS    | `package-macos.sh`   | `dist/SEPA-Generator-Community-1.4.2-macos-x64.dmg`       |
+| Linux    | `package-linux.sh`   | `dist/SEPA-Generator-Community-1.4.2-linux-x64.deb`       |
 
 > Each installer **bundles its own Java runtime** — end users do **not** need to
 > install Java separately. The Linux `.deb` targets **Debian/Ubuntu-compatible**
 > distributions (anything using `dpkg`/`apt`).
 
-### Final v1.4.1 release artifacts
+### Final v1.4.2 release artifacts
 
 The [`Package Community`](../../.github/workflows/package-community.yml) workflow
 builds four architecture-specific packages, each on a native runner, by calling
@@ -25,10 +25,10 @@ the scripts in this folder (no jpackage/icon logic is duplicated in YAML):
 
 | Artifact                                            | Runner            | Arch label |
 | --------------------------------------------------- | ----------------- | ---------- |
-| `SEPA-Generator-Community-1.4.1-windows-x64.msi`    | `windows-latest`  | `x64`      |
-| `SEPA-Generator-Community-1.4.1-macos-arm64.dmg`    | `macos-26`        | `arm64`    |
-| `SEPA-Generator-Community-1.4.1-macos-x64.dmg`      | `macos-26-intel`  | `x64`      |
-| `SEPA-Generator-Community-1.4.1-linux-x64.deb`      | `ubuntu-latest`   | `x64`      |
+| `SEPA-Generator-Community-1.4.2-windows-x64.msi`    | `windows-latest`  | `x64`      |
+| `SEPA-Generator-Community-1.4.2-macos-arm64.dmg`    | `macos-26`        | `arm64`    |
+| `SEPA-Generator-Community-1.4.2-macos-x64.dmg`      | `macos-26-intel`  | `x64`      |
+| `SEPA-Generator-Community-1.4.2-linux-x64.deb`      | `ubuntu-latest`   | `x64`      |
 
 The workflow has **two clearly-separated modes** — a manual **release
 candidate** and a tag-driven **final release** that produces a reviewable draft
@@ -46,9 +46,9 @@ never drift. Bump the release version by editing the Maven POMs only.
 | Setting     | Value                             | Source                      |
 | ----------- | --------------------------------- | --------------------------- |
 | App name    | `SEPA Generator Community`        | `edition.properties`        |
-| Version     | `1.4.1`                           | Maven (`generator` module)  |
+| Version     | `1.4.2`                           | Maven (`generator` module)  |
 | Vendor      | `Niryosys`                        | `edition.properties`        |
-| Main JAR    | `generator-1.4.1.jar` (shaded)    | Maven (`generator` module)  |
+| Main JAR    | `generator-1.4.2.jar` (shaded)    | Maven (`generator` module)  |
 | Main class  | `com.pcariou.generator.Generator` | `edition.properties`        |
 | Output dir  | `dist/`                           | script (constant)           |
 
@@ -102,7 +102,7 @@ powershell -ExecutionPolicy Bypass -File packaging\community\package-windows.ps1
 ```
 
 The installer is written to
-`dist\SEPA-Generator-Community-1.4.1-windows-x64.msi`.
+`dist\SEPA-Generator-Community-1.4.2-windows-x64.msi`.
 
 ### Test install / uninstall
 
@@ -110,9 +110,9 @@ The installer is written to
 2. **Launch:** from the **Start Menu** group *SEPA Generator Community* or the
    **Desktop shortcut**. Confirm the correct icon appears.
 3. **Verify registration:** *Settings → Apps → Installed apps* should list
-   *SEPA Generator Community 1.4.1* by *Niryosys*.
+   *SEPA Generator Community 1.4.2* by *Niryosys*.
 4. **Uninstall:** from *Installed apps*, or run
-   `msiexec /x dist\SEPA-Generator-Community-1.4.1-windows-x64.msi`.
+   `msiexec /x dist\SEPA-Generator-Community-1.4.2-windows-x64.msi`.
 
 ---
 
@@ -167,7 +167,7 @@ RELEASE=false ./packaging/community/package-macos.sh
 ```
 
 By default the DMG is written to
-`dist/SEPA-Generator-Community-1.4.1-macos.dmg`. With `ARCH_LABEL` set, the name
+`dist/SEPA-Generator-Community-1.4.2-macos.dmg`. With `ARCH_LABEL` set, the name
 becomes `…-macos-arm64.dmg` or `…-macos-x64.dmg`. The CI workflow builds both:
 `arm64` on `macos-26` (Apple Silicon) and `x64` on `macos-26-intel`.
 
@@ -257,7 +257,7 @@ RELEASE=false ./packaging/community/package-linux.sh
 ```
 
 The package is written to
-`dist/SEPA-Generator-Community-1.4.1-linux-x64.deb`.
+`dist/SEPA-Generator-Community-1.4.2-linux-x64.deb`.
 
 ### Package metadata
 
@@ -291,9 +291,9 @@ discoverable through `/usr/share/applications/`.
 
 ```bash
 # Install
-sudo apt-get install -y ./dist/SEPA-Generator-Community-1.4.1-linux-x64.deb
+sudo apt-get install -y ./dist/SEPA-Generator-Community-1.4.2-linux-x64.deb
 #   - or -
-sudo dpkg -i ./dist/SEPA-Generator-Community-1.4.1-linux-x64.deb
+sudo dpkg -i ./dist/SEPA-Generator-Community-1.4.2-linux-x64.deb
 
 # Launch from the application menu (Office/Finance), then uninstall:
 sudo apt-get remove -y sepa-generator-community
@@ -342,13 +342,13 @@ Use RC builds to smoke-test packaging on any branch without touching releases.
 ### Mode 2 — Final release (tag)
 
 Trigger: pushing an annotated **`vX.Y.Z`** tag whose version exactly matches
-Maven's `${revision}` (currently `1.4.1`).
+Maven's `${revision}` (currently `1.4.2`).
 
 ```bash
 # From a clean, green checkout of the exact release commit:
 mvn clean verify                     # full suite must pass
-git tag -a v1.4.1 -m "Community 1.4.1"
-git push origin v1.4.1               # <-- this triggers the release run
+git tag -a v1.4.2 -m "Community 1.4.2"
+git push origin v1.4.2               # <-- this triggers the release run
 ```
 
 The run then:

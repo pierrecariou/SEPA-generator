@@ -55,7 +55,7 @@ https://sepa-xml-generator.com/releases/community/X.Y.Z/
 For the current release that page is:
 
 ```
-https://sepa-xml-generator.com/releases/community/1.4.1/
+https://sepa-xml-generator.com/releases/community/1.4.2/
 ```
 
 That page must be deployed and confirmed reachable **before** the `latest.json`

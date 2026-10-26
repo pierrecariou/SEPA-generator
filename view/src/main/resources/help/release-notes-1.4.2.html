@@ -1,0 +1,35 @@
+<html>
+<body>
+<h2>SEPA Generator Community 1.4.2</h2>
+
+<p>A maintenance update for initiating party identification. Payment files are
+still processed locally on your computer.</p>
+
+<h3>Initiating party identifier</h3>
+<ul>
+  <li>The initiating party identifier in <b>Settings</b> is now optional and is
+      no longer limited to a French SIRET. Enter any organisation identifier
+      your bank requires, or leave it blank to write the initiating party
+      name only.</li>
+  <li>You can add an optional scheme (an ISO code such as BANK or CUST, or a
+      proprietary scheme name) and an optional issuer. pain.001.001.03 and
+      .09 write both.</li>
+  <li>pain.001.001.02 has no place for a scheme name. When a scheme is
+      configured and that format is selected, a short note explains that the
+      scheme is left out; the identifier and issuer are still written.</li>
+  <li>Existing settings keep working: a saved SIRET produces the same XML as
+      before.</li>
+</ul>
+
+<h3>Suggested file name</h3>
+<ul>
+  <li>The save dialog now suggests a bank-neutral name such as
+      <code>20261026_145200_PAIN001.xml</code>. You can still choose any
+      name.</li>
+</ul>
+
+<p>Other SEPA generation behaviour is unchanged.</p>
+
+<p>Questions or feedback? Use <b>Help &gt; Contact</b>.</p>
+</body>
+</html>
