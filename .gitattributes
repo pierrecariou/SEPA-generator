@@ -14,3 +14,7 @@
 *.png binary
 *.ico binary
 *.icns binary
+
+# Authentic ISO 20022 schemas used by tests: keep byte-identical to the
+# published downloads (see service/src/test/resources/iso20022/README.md).
+service/src/test/resources/iso20022/*.xsd -text

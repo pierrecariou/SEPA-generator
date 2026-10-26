@@ -201,11 +201,19 @@ public class Document09
 		}
 	}
 
+	/** {@code Othr}: Id, optional SchmeNm (Cd or Prtry) and Issr, in schema order. */
 	@XmlAccessorType(XmlAccessType.FIELD)
+	@XmlType(propOrder = { "id", "schemeName", "issuer" })
 	public static class GenericIdentification
 	{
 		@XmlElement(name = "Id")
 		private String id;
+
+		@XmlElement(name = "SchmeNm")
+		private OrganisationSchemeName schemeName;
+
+		@XmlElement(name = "Issr")
+		private String issuer;
 
 		public GenericIdentification()
 		{
@@ -214,6 +222,39 @@ public class Document09
 		public GenericIdentification(String id)
 		{
 			this.id = id;
+		}
+
+		public GenericIdentification(String id, OrganisationSchemeName schemeName, String issuer)
+		{
+			this.id = id;
+			this.schemeName = schemeName;
+			this.issuer = issuer;
+		}
+	}
+
+	/** {@code SchmeNm} choice: an ISO external code or a proprietary name. */
+	@XmlAccessorType(XmlAccessType.FIELD)
+	public static class OrganisationSchemeName
+	{
+		@XmlElement(name = "Cd")
+		private String code;
+
+		@XmlElement(name = "Prtry")
+		private String proprietary;
+
+		public OrganisationSchemeName()
+		{
+		}
+
+		public static OrganisationSchemeName of(String code, String proprietary)
+		{
+			if (code == null && proprietary == null) {
+				return null;
+			}
+			OrganisationSchemeName name = new OrganisationSchemeName();
+			name.code = code;
+			name.proprietary = code == null ? proprietary : null;
+			return name;
 		}
 	}
 

@@ -6,6 +6,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
 
 import com.pcariou.model.BicValidator;
+import com.pcariou.model.InitiatingPartyIdentifier;
 import com.pcariou.view.config.AppConfig;
 import com.pcariou.view.config.ConfigStore;
 import com.pcariou.view.custom.Cards;
@@ -134,7 +135,7 @@ public class SettingsFrame extends JDialog {
 
         if (config.initiatingParty != null) {
             initiatingPartyPanel.setName(defaultValue(config.initiatingParty.name));
-            initiatingPartyPanel.setSiret(defaultValue(config.initiatingParty.siret));
+            initiatingPartyPanel.setIdentifier(identifierOf(config.initiatingParty));
         }
         // A config without these sections simply shows empty fields.
     }
@@ -160,8 +161,22 @@ public class SettingsFrame extends JDialog {
 
         config.initiatingParty = new AppConfig.InitiatingParty();
         config.initiatingParty.name = initiatingPartyPanel.getName();
-        config.initiatingParty.siret = initiatingPartyPanel.getSiret();
+        InitiatingPartyIdentifier identifier = initiatingPartyPanel.getIdentifier();
+        if (identifier != null) {
+            config.initiatingParty.siret = identifier.getId();
+            config.initiatingParty.schemeCode = identifier.getSchemeCode();
+            config.initiatingParty.schemeProprietary = identifier.getSchemeProprietary();
+            config.initiatingParty.issuer = identifier.getIssuer();
+        }
         return config;
+    }
+
+    /** The identifier stored in {@code party}, or {@code null} when none is configured. */
+    public static InitiatingPartyIdentifier identifierOf(AppConfig.InitiatingParty party) {
+        if (party == null) {
+            return null;
+        }
+        return InitiatingPartyIdentifier.of(party.siret, party.schemeCode, party.schemeProprietary, party.issuer);
     }
 
     /** Returns the entered address, or null when every address field is blank. */
@@ -192,7 +207,6 @@ public class SettingsFrame extends JDialog {
 
     private static final String IBAN_FORMAT_PATTERN = "^[A-Z]{2}[0-9]{2}[A-Z0-9]{11,30}$";
     private static final String BIC_PATTERN         = BicValidator.BIC_PATTERN;
-    private static final String SIRET_PATTERN       = "^[0-9]{14}$";
     private static final String COUNTRY_PATTERN     = "^[A-Z]{2}$";
 
     private void saveConfig() {
@@ -290,16 +304,16 @@ public class SettingsFrame extends JDialog {
             initiatingPartyPanel.clearNameError();
         }
 
-        // Initiating party SIRET — 14 digits
-        String siret = config.initiatingParty.siret == null ? "" : config.initiatingParty.siret.trim();
-        if (isBlank(siret)) {
-            initiatingPartyPanel.setSiretError("The SIRET is mandatory");
-            valid = false;
-        } else if (!siret.matches(SIRET_PATTERN)) {
-            initiatingPartyPanel.setSiretError("SIRET must be exactly 14 digits");
+        // Optional initiating party identifier (any organisation identifier;
+        // a SRET scheme still requires a 14-digit SIRET)
+        InitiatingPartyIdentifier identifier = identifierOf(config.initiatingParty);
+        java.util.List<String> identifierProblems =
+                identifier == null ? java.util.Collections.<String>emptyList() : identifier.problems();
+        if (!identifierProblems.isEmpty()) {
+            initiatingPartyPanel.setIdentifierError(identifierProblems.get(0));
             valid = false;
         } else {
-            initiatingPartyPanel.clearSiretError();
+            initiatingPartyPanel.clearIdentifierError();
         }
 
         return valid;

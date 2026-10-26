@@ -101,6 +101,7 @@ public final class XmlCharacterValidation
 		}
 		check(findings, "Debtor name", "debtor name", debtor.name);
 		check(findings, "Initiating party name", "initiating party name", debtor.initiatingPartyName);
+		checkIdentifier(findings, debtor.initiatingPartyIdentifier);
 		if (debtor.address != null) {
 			check(findings, "Debtor street", "debtor street", debtor.address.getStreet());
 			check(findings, "Debtor building number", "debtor building number", debtor.address.getBuildingNumber());
@@ -108,6 +109,19 @@ public final class XmlCharacterValidation
 			check(findings, "Debtor town/city", "debtor town/city", debtor.address.getTown());
 		}
 		return findings;
+	}
+
+	private static void checkIdentifier(List<Finding> findings,
+			com.pcariou.model.InitiatingPartyIdentifier identifier)
+	{
+		if (identifier == null) {
+			return;
+		}
+		check(findings, "Initiating party identifier", "initiating party identifier", identifier.getId());
+		check(findings, "Initiating party scheme name", "initiating party scheme name",
+				identifier.getSchemeProprietary());
+		check(findings, "Initiating party identifier issuer", "initiating party identifier issuer",
+				identifier.getIssuer());
 	}
 
 	private static void check(List<Finding> findings, String fieldKey, String fieldLabel, String value)

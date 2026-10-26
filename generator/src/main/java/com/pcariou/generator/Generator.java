@@ -214,6 +214,9 @@ public class Generator implements IGenerator
             Document document = new CsvToBeans(executionDate).read(inputFilename);
             PainWriter.forVersion(version).write(document, outputFilename);
             System.out.println(outputFilename + " generated successfully.");
+            for (String warning : GenerationWarnings.forDocument(document, version)) {
+                System.out.println("Warning: " + warning);
+            }
             return 0;
         } catch (Exception e) {
             System.out.println("Generation failed: " + e.getMessage());

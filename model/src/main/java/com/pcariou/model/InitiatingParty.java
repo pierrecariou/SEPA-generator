@@ -16,8 +16,8 @@ public class InitiatingParty
 	@Size(max = 70, message = "Name for InitiatingParty must be at most 70 characters")
 	private String name;
 
+	/** Optional ({@code Id} is {@code minOccurs="0"}); omitted when no identifier is configured. */
 	@XmlElement(name = "Id")
-	@NotNull(message = "Identification for InitiatingParty is mandatory")
 	private PartyIdentification partyIdentification;
 
 	public InitiatingParty() {

@@ -154,9 +154,10 @@ public class CsvToBeans
 		}
 		String controlSum = String.format(Locale.US,"%.2f", totalAmountDecimal);
 		
-		ProprietaryIdentification proprietaryIdentification = new ProprietaryIdentification(debtorInformations.initiatingPartySiret);
-		OrganisationIdentification organisationIdentification = new OrganisationIdentification(proprietaryIdentification);
-		PartyIdentification partyIdentification = new PartyIdentification(organisationIdentification);
+		InitiatingPartyIdentifier identifier = debtorInformations.initiatingPartyIdentifier;
+		PartyIdentification partyIdentification = identifier == null ? null
+				: new PartyIdentification(new OrganisationIdentification(
+						ProprietaryIdentification.of(identifier)));
 		InitiatingParty initiatingParty = new InitiatingParty(debtorInformations.initiatingPartyName, partyIdentification);
 
 		// Unique MsgId/PmtInfId: filenames are neither unique nor guaranteed

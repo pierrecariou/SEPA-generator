@@ -1,11 +1,15 @@
 package com.pcariou.view.main.center;
 
 import com.formdev.flatlaf.FlatClientProperties;
+import com.pcariou.model.InitiatingPartyIdentifier;
 import com.pcariou.model.PainVersion;
 import com.pcariou.view.AppDialogs;
+import com.pcariou.view.ExportFileNames;
 import com.pcariou.view.ExternalLinks;
 import com.pcariou.view.InputTemplates;
+import com.pcariou.view.SettingsFrame;
 import com.pcariou.view.SvgIcons;
+import com.pcariou.view.config.AppConfig;
 import com.pcariou.view.config.ConfigStore;
 import com.pcariou.view.custom.Cards;
 import com.pcariou.view.custom.FlatDatePickerField;
@@ -15,7 +19,6 @@ import com.pcariou.view.main.AppStatus;
 import com.pcariou.view.main.MainFrame;
 import lombok.Getter;
 import net.miginfocom.swing.MigLayout;
-import org.apache.commons.io.FilenameUtils;
 
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
@@ -46,6 +49,7 @@ public class FormPanel extends JPanel implements Scrollable {
     private JTextField inputField;
     private FlatDatePickerField flatDatePickerField;
     private JComboBox<PainVersion> formatCombo;
+    private JLabel formatNotice;
     private JButton generateButton;
 
     // Summary card fields
@@ -161,7 +165,37 @@ public class FormPanel extends JPanel implements Scrollable {
         grid.add(formatLabel, "alignx right");
         grid.add(formatCombo, "growx, wrap");
 
+        formatNotice = new JLabel();
+        formatNotice.setIcon(SvgIcons.linkIcon(SvgIcons.TRIANGLE_ALERT, "App.warningColor"));
+        formatNotice.setIconTextGap(6);
+        formatNotice.setVerticalAlignment(SwingConstants.TOP);
+        formatNotice.setForeground(UIManager.getColor("Label.disabledForeground"));
+        grid.add(formatNotice, "skip 1, growx, wmin 0, wrap");
+        refreshFormatNotice();
+
         return grid;
+    }
+
+    /**
+     * Shows or hides the nonblocking note about configured data the selected
+     * format cannot carry (currently: an identifier scheme with pain.001.001.02).
+     */
+    public void refreshFormatNotice() {
+        if (formatNotice == null || formatCombo == null) {
+            return;
+        }
+        AppConfig config = configStore.read();
+        String warning = formatNoticeFor(getSelectedPainVersion(),
+                config == null ? null : SettingsFrame.identifierOf(config.initiatingParty));
+        formatNotice.setVisible(warning != null);
+        formatNotice.setText(warning == null ? "" : "<html>" + warning + "</html>");
+        revalidate();
+        repaint();
+    }
+
+    /** The format note for {@code version} and the configured identifier, or {@code null}. */
+    static String formatNoticeFor(PainVersion version, InitiatingPartyIdentifier identifier) {
+        return InitiatingPartyIdentifier.formatWarning(identifier, version);
     }
 
     private JComboBox<PainVersion> createFormatCombo() {
@@ -185,6 +219,7 @@ public class FormPanel extends JPanel implements Scrollable {
             if (selected != null) {
                 configStore.savePainFormat(selected.getCode());
             }
+            refreshFormatNotice();
         });
         return combo;
     }
@@ -356,7 +391,7 @@ public class FormPanel extends JPanel implements Scrollable {
 
     private void onGenerate() {
         Path input = Paths.get(filenameInput);
-        String suggestedOutput = FilenameUtils.getBaseName(filenameInput) + ".xml";
+        String suggestedOutput = ExportFileNames.suggested();
 
         JFileChooser fc = new JFileChooser(input.getParent().toFile());
         fc.setDialogTitle("Save SEPA XML");

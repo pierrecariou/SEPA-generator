@@ -1,7 +1,14 @@
 package com.pcariou.service;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+
+import com.pcariou.model.InitiatingPartyIdentifier;
+
+import javax.validation.Validation;
+import javax.validation.Validator;
 
 import org.junit.After;
 import org.junit.Before;
@@ -70,7 +77,52 @@ public class DebtorInformationsTest {
         assertEquals("GB29NWBK60161331926819", info.iban);
         assertEquals("BNPAFRPP", info.bic);
         assertEquals("Nïryosys éditeur", info.initiatingPartyName);
-        assertEquals("12345678901234", info.initiatingPartySiret);
+        assertEquals("12345678901234", info.initiatingPartyIdentifier.getId());
+        assertNull("A legacy SIRET-only config has no scheme", info.initiatingPartyIdentifier.getSchemeCode());
+        assertNull(info.initiatingPartyIdentifier.getSchemeProprietary());
+        assertNull(info.initiatingPartyIdentifier.getIssuer());
+        assertTrue(validator().validate(info).isEmpty());
+    }
+
+    @Test
+    public void readsInternationalIdentifierWithSchemeAndIssuer() throws Exception {
+        writeJson("{ \"debtor\": { \"name\": \"Acme\", \"iban\": \"GB29NWBK60161331926819\", \"bic\": \"BNPAFRPP\" },"
+                + " \"initiatingParty\": { \"name\": \"Acme\", \"siret\": \"IE77889900\","
+                + " \"schemeCode\": \"BANK\", \"issuer\": \"BOFI\" } }");
+        DebtorInformations info = new DebtorInformations(LocalDate.now().plusDays(7));
+
+        assertEquals(InitiatingPartyIdentifier.of("IE77889900", "BANK", null, "BOFI"),
+                info.initiatingPartyIdentifier);
+        assertTrue(validator().validate(info).isEmpty());
+    }
+
+    @Test
+    public void missingOrBlankIdentifierIsAllowed() throws Exception {
+        for (String party : new String[] { "{ \"name\": \"Acme\" }", "{ \"name\": \"Acme\", \"siret\": \"  \" }" }) {
+            writeJson("{ \"debtor\": { \"name\": \"Acme\", \"iban\": \"GB29NWBK60161331926819\","
+                    + " \"bic\": \"BNPAFRPP\" }, \"initiatingParty\": " + party + " }");
+            DebtorInformations info = new DebtorInformations(LocalDate.now().plusDays(7));
+
+            assertNull(party, info.initiatingPartyIdentifier);
+            assertTrue(party, validator().validate(info).isEmpty());
+        }
+    }
+
+    @Test
+    public void invalidSchemeCombinationIsReported() throws Exception {
+        writeJson("{ \"debtor\": { \"name\": \"Acme\", \"iban\": \"GB29NWBK60161331926819\", \"bic\": \"BNPAFRPP\" },"
+                + " \"initiatingParty\": { \"name\": \"Acme\", \"schemeCode\": \"BANK\" } }");
+        DebtorInformations info = new DebtorInformations(LocalDate.now().plusDays(7));
+
+        assertFalse(validator().validate(info).isEmpty());
+    }
+
+    private void writeJson(String json) throws Exception {
+        Files.write(config.toPath(), json.getBytes(StandardCharsets.UTF_8));
+    }
+
+    private static Validator validator() {
+        return Validation.buildDefaultValidatorFactory().getValidator();
     }
 
     @Test

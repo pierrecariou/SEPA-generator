@@ -32,7 +32,18 @@ public class AppConfig {
 
     public static class InitiatingParty {
         public String name;
+        /**
+         * Optional initiating party identifier value. The historical key name
+         * is kept for compatibility; the value is any organisation identifier
+         * (e.g. a SIRET or a bank-assigned identifier).
+         */
         public String siret;
+        /** Optional ISO scheme code ({@code SchmeNm/Cd}), e.g. BANK or SRET. */
+        public String schemeCode;
+        /** Optional proprietary scheme name ({@code SchmeNm/Prtry}). */
+        public String schemeProprietary;
+        /** Optional identifier issuer ({@code Issr}). */
+        public String issuer;
     }
 
     public static class FileSettings {

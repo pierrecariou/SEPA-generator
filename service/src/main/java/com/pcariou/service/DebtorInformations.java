@@ -11,9 +11,11 @@ import java.time.format.DateTimeFormatter;
 
 import javax.validation.constraints.*;
 
+import com.pcariou.model.InitiatingPartyIdentifier;
 import com.pcariou.model.PostalAddress;
 import com.pcariou.model.ValidBic;
 import com.pcariou.model.ValidIban;
+import com.pcariou.model.ValidInitiatingPartyIdentifier;
 import com.pcariou.model.ValidPostalAddress;
 
 
@@ -34,9 +36,12 @@ public class DebtorInformations {
 	@Size(max = 70, message = "The initiating party name must be at most 70 characters")
 	public String initiatingPartyName;
 
-	@NotBlank(message = "The initiating party SIRET is mandatory")
-	@Pattern(regexp = "^[0-9]{14}$", message = "SIRET for initiating party is not valid (expected: 14 digits)")
-	public String initiatingPartySiret;
+	/**
+	 * Optional initiating party organisation identification (e.g. a SIRET or a
+	 * bank-assigned identifier); {@code null} writes the initiating party name only.
+	 */
+	@ValidInitiatingPartyIdentifier
+	public InitiatingPartyIdentifier initiatingPartyIdentifier;
 	
 	@NotBlank(message = "The execution date is mandatory")
 	@Pattern(regexp = "^(\\d{4})-(\\d{2})-(\\d{2})$", message = "Execution date is not valid")
@@ -82,7 +87,12 @@ public class DebtorInformations {
 
 		JSONObject initiatingParty = (JSONObject) jsonObject.get("initiatingParty");
 		this.initiatingPartyName = (String) initiatingParty.get("name");
-		this.initiatingPartySiret = (String) initiatingParty.get("siret");
+		// "siret" is the historical key of the identifier value, kept for compatibility.
+		this.initiatingPartyIdentifier = InitiatingPartyIdentifier.of(
+				(String) initiatingParty.get("siret"),
+				(String) initiatingParty.get("schemeCode"),
+				(String) initiatingParty.get("schemeProprietary"),
+				(String) initiatingParty.get("issuer"));
 		
 		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 		this.requestedExecutionDate = requestedExecutionDate.format(formatter);

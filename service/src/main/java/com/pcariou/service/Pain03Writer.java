@@ -6,6 +6,7 @@ import com.pcariou.model.GroupHeader;
 import com.pcariou.model.InitiatingParty;
 import com.pcariou.model.PaymentInformation;
 import com.pcariou.model.PostalAddress;
+import com.pcariou.model.ProprietaryIdentification;
 import com.pcariou.model.pain03.Document03;
 
 import java.math.BigDecimal;
@@ -68,24 +69,27 @@ public class Pain03Writer implements PainWriter
 
 	private static Document03.Party mapInitiatingParty(InitiatingParty source)
 	{
-		String proprietaryId = extractProprietaryId(source);
-		if (proprietaryId == null) {
+		ProprietaryIdentification proprietaryId = extractProprietaryId(source);
+		if (proprietaryId == null || proprietaryId.getId() == null) {
 			return new Document03.Party(source.getName());
 		}
 		return new Document03.Party(source.getName(),
 				new Document03.PartyIdentification(
 						new Document03.OrganisationIdentification(
-								new Document03.GenericIdentification(proprietaryId))));
+								new Document03.GenericIdentification(proprietaryId.getId(),
+										Document03.OrganisationSchemeName.of(
+												proprietaryId.getSchemeCode(),
+												proprietaryId.getSchemeProprietary()),
+										proprietaryId.getIssuer()))));
 	}
 
-	private static String extractProprietaryId(InitiatingParty source)
+	private static ProprietaryIdentification extractProprietaryId(InitiatingParty source)
 	{
 		if (source.getPartyIdentification() == null
-				|| source.getPartyIdentification().getOrganisationIdentification() == null
-				|| source.getPartyIdentification().getOrganisationIdentification().getProprietaryIdentification() == null) {
+				|| source.getPartyIdentification().getOrganisationIdentification() == null) {
 			return null;
 		}
-		return source.getPartyIdentification().getOrganisationIdentification().getProprietaryIdentification().getId();
+		return source.getPartyIdentification().getOrganisationIdentification().getProprietaryIdentification();
 	}
 
 	private static Document03.PaymentInformation mapPaymentInformation(PaymentInformation source)

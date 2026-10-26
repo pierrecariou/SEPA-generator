@@ -157,4 +157,45 @@ public class ConfigStoreTest {
         assertFalse(configFile.exists());
         assertNull(store.read());
     }
+
+    @Test
+    public void initiatingPartyIdentifierIsOptionalForCompleteness() {
+        AppConfig cfg = debtorConfig("Niryosys SAS");
+        cfg.initiatingParty.siret = null;
+        assertTrue(store.write(cfg));
+        assertTrue(store.isDebtorConfigured());
+
+        cfg.initiatingParty.name = " ";
+        assertTrue(store.write(cfg));
+        assertFalse("The initiating party name stays mandatory", store.isDebtorConfigured());
+    }
+
+    @Test
+    public void legacySiretOnlyConfigStaysCompleteAndReadable() throws Exception {
+        Files.write(configFile.toPath(), ("{ \"debtor\": { \"name\": \"Acme\", \"iban\": \"FR7630006000011234567890189\","
+                + " \"bic\": \"AGRIFRPP\" }, \"initiatingParty\": { \"name\": \"Acme\","
+                + " \"siret\": \"12345678901234\" } }").getBytes("UTF-8"));
+
+        assertTrue(store.isDebtorConfigured());
+        AppConfig reloaded = store.read();
+        assertEquals("12345678901234", reloaded.initiatingParty.siret);
+        assertNull(reloaded.initiatingParty.schemeCode);
+        assertNull(reloaded.initiatingParty.schemeProprietary);
+        assertNull(reloaded.initiatingParty.issuer);
+    }
+
+    @Test
+    public void identifierSchemeAndIssuerRoundTrip() {
+        AppConfig cfg = debtorConfig("Niryosys SAS");
+        cfg.initiatingParty.siret = "IE77889900";
+        cfg.initiatingParty.schemeCode = "BANK";
+        cfg.initiatingParty.issuer = "BOFI";
+        assertTrue(store.write(cfg));
+
+        AppConfig reloaded = store.read();
+        assertEquals("IE77889900", reloaded.initiatingParty.siret);
+        assertEquals("BANK", reloaded.initiatingParty.schemeCode);
+        assertNull(reloaded.initiatingParty.schemeProprietary);
+        assertEquals("BOFI", reloaded.initiatingParty.issuer);
+    }
 }

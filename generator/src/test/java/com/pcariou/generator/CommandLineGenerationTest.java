@@ -114,6 +114,30 @@ public class CommandLineGenerationTest {
     }
 
     @Test
+    public void pain02WithAnIdentifierSchemeGeneratesAndPrintsAWarning() throws Exception {
+        String json = "{ \"debtor\": { \"name\": \"Test Debtor\", \"iban\": \"GB29NWBK60161331926819\","
+                + " \"bic\": \"BNPAFRPP\" }, \"initiatingParty\": { \"name\": \"Test Party\","
+                + " \"siret\": \"IE77889900\", \"schemeCode\": \"BANK\" } }";
+        Files.write(new File(System.getProperty("sepa.config.file")).toPath(),
+                json.getBytes(StandardCharsets.UTF_8));
+        File csv = writeCsv();
+
+        File xml02 = outputFile("cli-02-scheme.xml");
+        int exit = Generator.runCommandLine(new String[]{csv.getAbsolutePath(), xml02.getAbsolutePath(), futureDate()});
+        assertEquals("Expected success, output was:\n" + output(), 0, exit);
+        assertTrue(read(xml02).contains("<Id>IE77889900</Id>"));
+        assertTrue(output(), output().contains("Warning: pain.001.001.02 cannot carry"));
+
+        capturedOut.reset();
+        File xml09 = outputFile("cli-09-scheme.xml");
+        exit = Generator.runCommandLine(
+                new String[]{csv.getAbsolutePath(), xml09.getAbsolutePath(), futureDate(), "--format=09"});
+        assertEquals("Expected success, output was:\n" + output(), 0, exit);
+        assertTrue(read(xml09).replaceAll("\\s+", "").contains("<SchmeNm><Cd>BANK</Cd></SchmeNm>"));
+        assertFalse(output(), output().contains("Warning:"));
+    }
+
+    @Test
     public void validCliGenerationWithFormat03() throws Exception {
         File csv = writeCsv();
         File xml = outputFile("cli-03.xml");

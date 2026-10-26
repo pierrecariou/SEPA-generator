@@ -113,7 +113,10 @@ public final class ConfigStore {
         }
     }
 
-    /** True when all mandatory debtor and initiating-party fields are present. */
+    /**
+     * True when all mandatory debtor and initiating-party fields are present.
+     * The initiating party identifier is optional.
+     */
     public boolean isDebtorConfigured() {
         AppConfig cfg = read();
         return cfg != null
@@ -122,8 +125,7 @@ public final class ConfigStore {
                 && notBlank(cfg.debtor.iban)
                 && notBlank(cfg.debtor.bic)
                 && cfg.initiatingParty != null
-                && notBlank(cfg.initiatingParty.name)
-                && notBlank(cfg.initiatingParty.siret);
+                && notBlank(cfg.initiatingParty.name);
     }
 
     /**

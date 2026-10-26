@@ -182,6 +182,7 @@ public class MainFrame extends JFrame {
 	 * Call this whenever a relevant input changes.
 	 */
 	public void refreshStatus() {
+		formPanel.refreshFormatNotice();
 		// While the generation summary is visible, keep the success status instead
 		// of reverting to "Ready", so the footer stays consistent with the result.
 		if (formPanel.isSummaryVisible()) {
